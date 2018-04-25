@@ -104,7 +104,7 @@ fi
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>@preeti.khorjuvenkar,@ketank,@aborkar </room>
+      <room>@preeti.khorjuvenkar,@ketank,@aborkar,@abhays</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
