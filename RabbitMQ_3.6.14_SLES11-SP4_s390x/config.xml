@@ -146,6 +146,9 @@ sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
 sudo deps/rabbit/scripts/rabbitmq-server -detached
 sleep 3m
 
+
+#verification
+sudo yum install curl
 curl http://localhost:15672</command>
     </hudson.tasks.Shell>
   </builders>

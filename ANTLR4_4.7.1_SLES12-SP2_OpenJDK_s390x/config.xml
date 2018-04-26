@@ -97,8 +97,8 @@ sudo make install
 
 # install GO
 cd $WORK_DIR
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-tar -xzf go1.9.2.linux-s390x.tar.gz
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+tar -xzf go1.10.1.linux-s390x.tar.gz
 export PATH=$PATH:$PWD/go/bin
 export GOROOT=$PWD/go
 export CC=gcc
