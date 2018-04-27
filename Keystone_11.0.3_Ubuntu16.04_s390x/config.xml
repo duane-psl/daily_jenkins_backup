@@ -52,7 +52,7 @@ fi
 sudo apt-get update 
 export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get install -y mysql-server
-sudo apt-get install -y libpq-dev build-essential libncurses-dev git wget cmake gcc make tar libpcre3-dev bison scons libboost-dev libboost-program-options-dev openssl dh-autoreconf libssl-dev python-setuptools python-lxml curl python-ldap python-dev libxslt-dev net-tools libffi-dev apache2-dev python-mysqldb apache2 libapache2-mod-wsgi python-pkgconfig  python-psycopg2
+sudo apt-get install -y libpq-dev build-essential libncurses-dev git wget cmake gcc make tar libpcre3-dev bison scons libboost-dev libboost-program-options-dev openssl dh-autoreconf libssl-dev python-setuptools python-lxml curl python-ldap python-dev libxslt-dev net-tools libffi-dev apache2-dev python-mysqldb apache2 libapache2-mod-wsgi python-pkgconfig  
 sudo easy_install pip    
 sudo pip install --upgrade setuptools
 sudo pip install cryptography mod_wsgi python-memcached functools32 python-openstackclient requests pika==0.10.0

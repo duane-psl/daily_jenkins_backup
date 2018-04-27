@@ -29,7 +29,7 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;helm&quot;
-published_version=&quot;2.8.1&quot;
+published_version=&quot;2.8.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -82,7 +82,7 @@ mkdir -p $GOPATH/src/k8s.io
 cd $GOPATH/src/k8s.io
 git clone https://github.com/kubernetes/helm.git
 cd helm
-git checkout v2.8.1
+git checkout v2.8.2
  
 #Build Helm
 cd $GOPATH/src/k8s.io/helm
