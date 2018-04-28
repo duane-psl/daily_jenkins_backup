@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;redis&quot;
-published_version=&quot;4.0.8&quot;
+published_version=&quot;4.0.9&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -58,19 +58,19 @@ fi
 sudo apt-get update
 sudo apt-get install -y gcc g++ make tcl git
 
+sudo rm -rf redis
 #Get the source code
-git clone git://github.com/antirez/redis.git
+git clone https://github.com/antirez/redis.git
 cd redis
-git checkout 4.0.8 
+git checkout 4.0.9
 
-# Build redis
+# Build redis 
 make distclean
 make
 
 # Run the testcases
-make test
+make test 
 
- 
 # Install the redis
 sudo make install
 
@@ -84,6 +84,7 @@ if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &q
 then
     exit 1
 fi
+
  
 
 </command>

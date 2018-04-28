@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,10 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Check if published version is already present in repo 
-package_name=&quot;redis&quot;
-published_version=&quot;4.0.8&quot;
+      <command>#Check if published version is already present in repo 
+package_name=&quot;scala&quot;
+published_version=&quot;2.12.4&quot;
+
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
@@ -54,34 +54,61 @@ fi
 
 #==============================================================================================#
 
+
 # Install dependencies
-sudo yum install -y gcc gcc-c++ make which git tcl
+sudo apt-get update	
+sudo apt-get install  -y wget tar
 
-# Change directory to redis
-git clone git://github.com/antirez/redis.git
-cd redis
-git checkout 4.0.8
+wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.0/linux/s390x/ibm-java-s390x-sdk-8.0-5.0.bin
+wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
+tail -n +3 installer.properties.java | tee installer.properties
+cat installer.properties
+chmod +x ibm-java-s390x-sdk-8.0-5.0.bin
+sudo ./ibm-java-s390x-sdk-8.0-5.0.bin -r installer.properties
+export JAVA_HOME=/opt/ibm/java
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-# Build redis
-make distclean
-make
 
-# Run the testcases
-make test
+# Download and install Scala
+wget http://www.scala-lang.org/files/archive/scala-2.12.4.deb
+sudo dpkg -i scala-2.12.4.deb
 
-# Install the redis
-sudo make install
+# Check Scala binary and compiler version
+scala -version
+scalac -version
 
-# Start server
-redis-server &amp;
 
-sleep 10s
+# Testing Scala Sample Program
+echo &apos;
+    object HelloWorld
+    {
+        def main(args: Array[String]) {
+            println(&quot;Hello, world!&quot;)
+        }
+    }
+&apos; &gt; HelloWorld.scala
 
-# Verification
-if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &quot;OK&quot; ] || [ $(redis-cli get foo) != &quot;bar&quot; ];
-then
-    exit 1
-fi</command>
+
+# Compile the Test Program
+scalac HelloWorld.scala 
+
+# Execute the test program
+scala HelloWorld &gt; test_result.txt
+    
+       
+# Following ouput should be observed:
+# Hello, world!
+echo &apos;Hello, world!&apos; &gt; expected_result.txt
+
+result=`diff test_result.txt expected_result.txt`
+
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,10 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Check if published version is already present in repo 
+      <command>source /home/test/.bashrc
+#Check if published version is already present in repo 
 package_name=&quot;redis&quot;
-published_version=&quot;4.0.8&quot;
-
+published_version=&quot;4.0.9&quot;
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
@@ -51,25 +51,24 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-#test
+
 #==============================================================================================#
 
-
+source /home/test/.bashrc
 # Install dependencies
-sudo zypper update -y
-sudo zypper install -y gcc gcc-c++ make which git tcl
+sudo yum install -y gcc gcc-c++ make which git tcl
 
 #Get the source code
-git clone git://github.com/antirez/redis.git
+git clone https://github.com/antirez/redis.git
 cd redis
-git checkout 4.0.8 
+git checkout 4.0.9
 
-# Distclean 
-make distclean
-make
+# Build redis 
+make 
+
 # Run the testcases
-make test
- 
+make test 
+
 # Install the redis
 sudo make install
 
@@ -83,8 +82,6 @@ if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &q
 then
     exit 1
 fi
- 
-
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -95,9 +92,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>

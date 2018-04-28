@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,10 +27,9 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
-package_name=&quot;redis&quot;
-published_version=&quot;4.0.8&quot;
+package_name=&quot;ocaml&quot;
+published_version=&quot;4.06.1&quot;
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
 	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
@@ -54,38 +53,23 @@ fi
 
 #==============================================================================================#
 
-# Install dependencies
 sudo apt-get update
-sudo apt-get install -y gcc g++ make tcl git
+sudo apt-get install -y gcc make git
+git clone git://github.com/ocaml/ocaml.git
+cd ocaml 
+git checkout 4.06.1
 
-#Get the source code
-git clone git://github.com/antirez/redis.git
-cd redis
-git checkout 4.0.8 
-
-# Build redis
-make distclean
-make
-
-# Run the testcases
-make test
-
- 
-# Install the redis
+./configure
+make world
+make opt
+make opt.opt
+umask 022
 sudo make install
 
-# Start server
-redis-server &amp;
+ocaml_version=`/usr/local/bin/ocaml --version`
+ocaml_new_version=&quot;The OCaml toplevel, version 4.06.1&quot;
 
-sleep 10s
-
-# Verification
-if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &quot;OK&quot; ] || [ $(redis-cli get foo) != &quot;bar&quot; ];
-then
-    exit 1
-fi
- 
-
+if [[ $ocaml_version == $ocaml_new_version ]]; then exit 0; else exit 1; fi
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -96,9 +80,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -119,9 +103,9 @@ it.getComputer().doDoDelete()
       <notifyUnstable>false</notifyUnstable>
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
-      <notifyBackToNormal>false</notifyBackToNormal>
+      <notifyBackToNormal>true</notifyBackToNormal>
       <notifyRepeatedFailure>true</notifyRepeatedFailure>
-      <includeTestSummary>true</includeTestSummary>
+      <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>
       <includeCustomMessage>false</includeCustomMessage>
