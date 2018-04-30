@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,8 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
-package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+package_name=&quot;helm&quot;
+published_version=&quot;2.8.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -48,34 +48,69 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+export WORK_DIR=`pwd`
+
+#Install Go
+sudo zypper update -y
+sudo zypper install -y tar wget gcc
+cat /etc/os*
+cd $WORK_DIR
+wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
+chmod ugo+r go1.9.2.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+go version
+
+#
+sudo zypper install -y git make mercurial wget   
+
+export GOPATH=$WORK_DIR
+export PATH=$GOPATH/bin:$PATH
+ 
+#Install glide
+
+cd $GOPATH
+wget https://github.com/Masterminds/glide/releases/download/v0.13.0/glide-v0.13.0-linux-s390x.tar.gz
+tar -xzf glide-v0.13.0-linux-s390x.tar.gz
+export PATH=$GOPATH/linux-s390x:$PATH
+glide --version 
+
+#Download Helm source code
+mkdir -p $GOPATH/src/k8s.io
+cd $GOPATH/src/k8s.io
+git clone https://github.com/kubernetes/helm.git
+cd helm
+git checkout v2.8.2
+ 
+#Build Helm
+cd $GOPATH/src/k8s.io/helm
+make bootstrap build
+export PATH=$GOPATH/src/k8s.io/helm/bin:$PATH
+  
+sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/helm/Makefile
+
+git diff
+
+#Run test cases
+cd $GOPATH/src/k8s.io/helm/
+make test 2&gt;&amp;1 | tee -a test_logs
 
 
-export Apigility_home=$(pwd)
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update
-sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
-sudo -E apt-get install -y php
-
-#Build Apigility
-cd $Apigility_home
-sudo rm -rf zf-apigility-skeleton 
-git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
-cd zf-apigility-skeleton 
-git checkout 1.4.2
-curl -s https://getcomposer.org/installer | php --
-./composer.phar -n update
-./composer.phar -n install
-
-./vendor/bin/zf-development-mode enable
-export IP=$(hostname -i)
-sudo  apache2ctl start
-cd  $Apigility_home/zf-apigility-skeleton
-php -S $IP:8080 -t public -f public/index.php &amp;
-
-ps -aef | grep php
-
-curl http://localhost:80 | grep works!
-curl http://$(hostname -i):8080/apigility/ui#/</command>
+cd $GOPATH/src/k8s.io/helm
+bin/tiller &amp;
+sleep 20s
+export HELM_HOST=localhost:44134
+helm version
+ 
+sleep 20s
+grep -d&quot; &quot; -f &quot;tiller&quot; | sudo xargs kill || true 
+sleep 20s 
+ 
+ 
+ 
+ </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -100,7 +135,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ajakhade</room>
+      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

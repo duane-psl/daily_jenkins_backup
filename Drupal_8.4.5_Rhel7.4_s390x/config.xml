@@ -119,9 +119,9 @@ sudo chgrp -R mysql .
 
 cd /usr/local/mysql/bin
 sudo ./mysqld  --initialize-insecure --user=mysql &amp;
-sleep 30
+sleep 60
 sudo ./mysqld_safe --user=mysql &amp;
-sleep 30
+sleep 60
 	
 #Create Drupal database
 cd /usr/local/mysql/bin

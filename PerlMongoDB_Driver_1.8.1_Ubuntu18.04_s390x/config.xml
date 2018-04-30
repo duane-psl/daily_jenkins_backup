@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_4096</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,17 +18,13 @@
     <hudson.triggers.TimerTrigger>
       <spec>H 13 * * 5 </spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5 </spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command># Install Pre-Build Dependencies
 sudo apt-get update
-sudo apt-get install -y make gcc tar zip perl-modules-5.26 libyaml-perl libtest-yaml-perl
+sudo apt-get install -y make gcc tar zip perl-modules-5.22 libyaml-perl libtest-yaml-perl
 export Workdir=`pwd`
 # Build and Install Latest CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
@@ -43,7 +39,7 @@ sudo cpan MongoDB
 
 
 # Verification
-sudo apt-get install -y wget libmongodb-perl
+sudo apt-get install -y wget
 wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.5/multiverse/binary-s390x/mongodb-enterprise-unstable-server_3.5.3_s390x.deb
 sudo dpkg -i --force-all mongodb-enterprise-unstable-server_3.5.3_s390x.deb 
 sudo apt-get install -y -f

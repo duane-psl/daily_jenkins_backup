@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dockercloud_ubuntu18.04-ibm-java-8</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 23 * * 2</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 23 * * 2</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>
+sudo apt-get update
+sudo apt-get install -y wget tar subversion
+#Install Maven
+cd /home/test
+wget https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+tar -xvzf apache-maven-3.3.9-bin.tar.gz
+
+#Get Alfresco Source code
+    
+cd /home/test    
+svn co https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/COMMUNITYTAGS/5.2.g/
+sed -i &apos;31 s/^/\/\//&apos; ./5.2.g/root/projects/solr4/source/java/org/alfresco/solr/AlfrescoSolrCloseHook.java
+
+#Set Environment Variables
+
+export M2_HOME=/home/test/apache-maven-3.3.9
+export JAVA_HOME=/opt/ibm/java-s390x-80
+export PATH=$M2_HOME/bin:$JAVA_HOME/bin:$PATH
+
+export MAVEN_OPTS=&quot;-Xmx1024m &quot;
+java -version
+
+#Build and Install Alfresco (Skipping Test cases)
+		
+cd /home/test/5.2.g/root/
+#mvn clean install -DskipTests -fn
+
+#Testing ( Optional )
+cd /home/test/5.2.g/root/
+#mvn clean install -fn
+
+
+# Installing Tomcat
+
+sudo apt-get install -y wget git tar  make gcc
+cd /home/test/
+git clone https://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_0_2h
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make
+sudo make install
+cd /home/test/
+wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.6-bin.tar.gz 
+tar -zxvf apache-ant-1.9.6-bin.tar.gz
+export ANT_HOME=/home/test/apache-ant-1.9.6
+export PATH=$PATH:$ANT_HOME/bin
+cd /home/test/
+git clone https://github.com/apache/tomcat85.git
+cd tomcat85
+git checkout TOMCAT_8_5_16
+cp build.properties.default build.properties
+ant
+export CATALINA_HOME=/home/test/tomcat85/output/build
+export PATH=$PATH:$CATALINA_HOME/bin
+cd $CATALINA_HOME/bin
+
+
+cp /home/test/5.2.g/root/projects/web-client/target/alfresco.war /home/test/tomcat85/output/build/webapps/
+cp /home/test/5.2.g/root/projects/solr4/target/solr4.war /home/test/tomcat85/output/build/webapps/
+cp /home/test/5.2.g/root/projects/server-root/target/ROOT.war /home/test/tomcat85/output/build/webapps/
+cp /home/test/5.2.g/root/projects/solr/source/solr/instance/apache-solr-1.4.1.war /home/test/tomcat85/output/build/webapps/
+cp /home/test/5.2.g/root/projects/solr/target/solr.war /home/test/tomcat85/output/build/webapps/
+
+#cp /home/test/work/Alfresco_5.2/postgresql-9.4.1211.jre6.jar /home/test/tomcat85/output/build/webapps/.
+
+export CATALINA_HOME=/home/test/tomcat85/output/build
+export PATH=$PATH:$CATALINA_HOME/bin
+cd $CATALINA_HOME/bin
+
+rm -rf index.html
+sh catalina.sh start
+sleep 1m
+
+
+wget http://127.0.0.1:8080/
+
+
+#wget localhost:8080 
+
+cat index.html
+
+sh catalina.sh stop
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+if(it.name==x){
+it.getComputer().doDoDelete()
+}
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build, @cgopi</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -70,6 +70,7 @@ curl -s https://getcomposer.org/installer | php --
 ./composer.phar -n install
 
 ./vendor/bin/zf-development-mode enable
+sudo  apache2ctl start
 export IP=$(hostname -i)
 cd  $Apigility_home/zf-apigility-skeleton
 php -S $IP:8080 -t public -f public/index.php &amp;

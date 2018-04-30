@@ -9,74 +9,52 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>ravi_rh7.4 || dockercloud_rhel7.4-8192</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 1</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command># Install dependencies
+sudo apt-get update -y
+sudo apt-get install -y automake gcc git make texinfo libtool libltdl-dev pkg-config
 
-# Install Dependencies
-sudo yum install -y make git tar wget java-1.8.0-openjdk-devel gcc gcc-c++ patch libzip-devel zlib-devel libcurl-devel apr apr-util apr-devel subversion subversion-devel cyrus-sasl-md5 cyrus-sasl-devel python-devel which autoconf automake libtool bzip2 unzip
 
-# Set environment variables
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0
-export PATH=/usr/lib/jvm/java-1.8.0/bin:$PATH
+export WORK_DIR=`pwd`
+cd $WORK_DIR
 
-# Install Maven
-wget http://www-us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar zxvf apache-maven-3.3.9-bin.tar.gz
-export PATH=$PWD/apache-maven-3.3.9/bin:$PATH
+#Download libunwind
+git clone https://github.com/linux-on-ibm-z/libunwind .
+git checkout s390x-rebased
 
-# Download source code and apply patches
-git clone https://github.com/apache/mesos
-cd mesos/
-git checkout 1.5.0
+# Build and test libunwind
+cd $WORK_DIR
+./autogen.sh
+./configure
+make check 2&gt;&amp;1 | tee testlogs
 
-echo &quot;
-index 0b0b06c..075c406 100644
---- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-+++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-@@ -146,6 +146,14 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
- }
+grep FAIL testlogs | 2&gt;&amp;1 tee observed_failures
 
-+inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-+                                       Atomic64 old_value,
-+                                       Atomic64 new_value) {
-+  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
-+                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
-+  return old_value;
-+}
-+
- #endif // defined(__LP64__)
+echo &apos;FAIL: test-ptrace
+# XFAIL: 0
+# FAIL:  1&apos; &gt; expected_failures
 
- }  // namespace internal&quot; &gt;&gt; 3rdparty/protobuf-3.5.0.patch
-
-# Build and install Mesos
-./bootstrap
-mkdir build
-sed -i &apos;134i \          \&lt;maxmemory&gt;512m&lt;/maxmemory&gt;&apos; src/java/mesos.pom.in
-cd build
-../configure
-make
+diff -u expected_failures observed_failures
+# Install libunwind
+cd $WORK_DIR
 sudo make install
-
-# Start Master
-nohup sudo ./bin/mesos-master.sh --ip=127.0.0.1 --work_dir=/var/lib/mesos &amp;
-
-sleep 50
-
-# Verification
-wget http://127.0.0.1:5050</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -102,7 +80,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vkadam</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

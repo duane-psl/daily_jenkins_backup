@@ -9,74 +9,76 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>ravi_rh7.4 || dockercloud_rhel7.4-8192</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 1</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>#Set the below parameters manually
+package_name=&quot;apigility&quot;
+published_version=&quot;1.4.2&quot;
 
-# Install Dependencies
-sudo yum install -y make git tar wget java-1.8.0-openjdk-devel gcc gcc-c++ patch libzip-devel zlib-devel libcurl-devel apr apr-util apr-devel subversion subversion-devel cyrus-sasl-md5 cyrus-sasl-devel python-devel which autoconf automake libtool bzip2 unzip
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
 
-# Set environment variables
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0
-export PATH=/usr/lib/jvm/java-1.8.0/bin:$PATH
 
-# Install Maven
-wget http://www-us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar zxvf apache-maven-3.3.9-bin.tar.gz
-export PATH=$PWD/apache-maven-3.3.9/bin:$PATH
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
 
-# Download source code and apply patches
-git clone https://github.com/apache/mesos
-cd mesos/
-git checkout 1.5.0
 
-echo &quot;
-index 0b0b06c..075c406 100644
---- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-+++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-@@ -146,6 +146,14 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
- }
 
-+inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-+                                       Atomic64 old_value,
-+                                       Atomic64 new_value) {
-+  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
-+                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
-+  return old_value;
-+}
-+
- #endif // defined(__LP64__)
+export Apigility_home=$(pwd)
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update
+sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
+sudo -E apt-get install -y php
 
- }  // namespace internal&quot; &gt;&gt; 3rdparty/protobuf-3.5.0.patch
 
-# Build and install Mesos
-./bootstrap
-mkdir build
-sed -i &apos;134i \          \&lt;maxmemory&gt;512m&lt;/maxmemory&gt;&apos; src/java/mesos.pom.in
-cd build
-../configure
-make
-sudo make install
 
-# Start Master
-nohup sudo ./bin/mesos-master.sh --ip=127.0.0.1 --work_dir=/var/lib/mesos &amp;
+#Build Apigility
+cd $Apigility_home
+sudo rm -rf zf-apigility-skeleton 
+git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
+cd zf-apigility-skeleton 
+git checkout 1.4.2
+curl -s https://getcomposer.org/installer | php --
+./composer.phar -n update
+./composer.phar -n install
 
-sleep 50
+./vendor/bin/zf-development-mode enable
+sudo  apache2ctl start
+export IP=$(hostname -i)
+cd  $Apigility_home/zf-apigility-skeleton
+php -S $IP:8080 -t public -f public/index.php &amp;
 
-# Verification
-wget http://127.0.0.1:5050</command>
+ps -aef | grep php
+
+curl http://localhost:80 | grep works!
+curl http://$(hostname -i):8080/apigility/ui#/</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -86,11 +88,10 @@ wget http://127.0.0.1:5050</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -102,7 +103,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vkadam</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
