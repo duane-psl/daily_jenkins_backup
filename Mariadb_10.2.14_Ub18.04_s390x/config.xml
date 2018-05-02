@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -27,8 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
-package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+package_name=&quot;mariadb-client&quot;
+published_version=&quot;10.2.14&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -41,43 +41,81 @@ elif [ $ID == &quot;ubuntu&quot; ]; then
 fi
 
 
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
-
-
-
-export Apigility_home=$(pwd)
-export DEBIAN_FRONTEND=noninteractive
+###Install build dependencies
 sudo apt-get update
-sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
-sudo -E apt-get install -y php
+sudo apt-get install -y libssl-dev
+sudo apt-get install -y build-essential hostname libncurses-dev git wget cmake gcc make tar libpcre3-dev bison scons libboost-dev libboost-program-options-dev openssl dh-autoreconf libssl1.0-dev
 
+export SRC_ROOT=`pwd`
 
+##Get MariaDB code from Git
+cd $SRC_ROOT
+wget https://github.com/MariaDB/server/archive/mariadb-10.2.14.tar.gz
+tar xzf mariadb-10.2.14.tar.gz
+cd server-mariadb-10.2.14
 
-#Build Apigility
-cd $Apigility_home
-sudo rm -rf zf-apigility-skeleton 
-git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
-cd zf-apigility-skeleton 
-git checkout 1.4.2
-curl -s https://getcomposer.org/installer | php --
-./composer.phar -n update
-./composer.phar -n install
+#added
+cd $SRC_ROOT
+git clone git://github.com/MariaDB/mariadb-connector-c.git
+cd mariadb-connector-c
+git checkout v3.0.2
+cd ..
+cp -r mariadb-connector-c/* $SRC_ROOT/server-mariadb-10.2.14/libmariadb/
 
-./vendor/bin/zf-development-mode enable
-sudo  apache2ctl start
-export IP=$(hostname -i)
-cd  $Apigility_home/zf-apigility-skeleton
-php -S $IP:8080 -t public -f public/index.php &amp;
+sed -i &apos;231d&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_IN_TRANS_READONLY       8192&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_SESSION_STATE_CHANGED      16384&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
 
-ps -aef | grep php
-curl http://localhost:80 | grep works!
-curl http://$(hostname -i):8080/apigility/ui#/</command>
+##Build, configure, install and execute test cases
+cd $SRC_ROOT/server-mariadb-10.2.14
+BUILD/autorun.sh 
+./configure --WITH_SAFEMALLOC=ON --with-debug
+make
+sudo make install 
+sudo useradd mysql
+cd /usr/local/mysql		
+sudo chmod -R o+rwx .
+sudo scripts/mysql_install_db --user=mysql
+sleep 20s
+sudo cp support-files/mysql.server /etc/init.d/mysql
+sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+sleep 30s
+sudo bin/mysqladmin version --user=mysql
+
+cd $SRC_ROOT/server-mariadb-10.2.14
+make test 
+
+cd $SRC_ROOT
+wget http://ftp.gnu.org/gnu/texinfo/texinfo-5.0.tar.gz
+tar -xvf texinfo-5.0.tar.gz
+cd texinfo-5.0
+./configure --prefix=/usr
+make
+sudo make install
+	
+cd $SRC_ROOT
+sudo apt-get install libsubunit-dev libsubunit0 pkg-config 
+git clone https://github.com/libcheck/check
+cd check/
+git checkout 0.10.0
+autoreconf --install
+export LD_LIBRARY_PATH=/usr/lib/s390x-linux-gnu/openssl-1.0.0/engines:/usr/lib/s390x-linux-gnu/:/usr/local/lib/
+./configure
+make
+sudo make install
+	
+cd $SRC_ROOT
+git clone git://github.com/codership/galera.git
+cd galera
+git checkout release_25.3.21
+
+scons strict_build_flags=0 --config=force
+
+sudo cp garb/garbd /usr/local/sbin/ 
+sudo mkdir -p /usr/local/lib64/
+sudo cp libgalera_smm.so /usr/local/lib64/
+sudo /sbin/ldconfig -v</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -102,7 +140,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ajakhade</room>
+      <room>#loz-jenkins-build, @narang</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

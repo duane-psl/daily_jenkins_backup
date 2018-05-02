@@ -9,75 +9,58 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
-    <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
-    </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+      <command>source /home/test/.bashrc
+export WORK_DIR=`pwd`
+cat /etc/redhat-release
+#Install the Dependencies
+sudo yum install -y tar wget java-1.8.0-ibm-devel java-1.8.0-ibm
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+#Install Maven 3.3.9
+cd $WORK_DIR
+wget https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.3.9/apache-maven-3.3.9-bin.tar.gz
+tar -xvzf apache-maven-3.3.9-bin.tar.gz
+export M2_HOME=$WORK_DIR/apache-maven-3.3.9
+export PATH=$M2_HOME/bin:$PATH
+
+#Set environment variables
+export JAVA_HOME=/usr/lib/jvm/java-ibm/
+export MAVEN_OPTS=&quot;-Xmx1024m&quot;
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
+
+#Build and install Apache Camel 2.21.0
+cd $WORK_DIR
+wget https://github.com/apache/camel/archive/camel-2.21.0.tar.gz
+tar -xvzf camel-2.21.0.tar.gz
+mv camel-camel-2.21.0 camel
+cd camel/apache-camel
+mvn clean install -fn -B 
+
+
+exit_status=$?
+if [ $exit_status -eq 0 ]; then
+        echo &quot;Job Passed&quot;
+        exit 0
+else
+        echo &quot;Job Failed&quot;
+        exit 1
 fi
 
-
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
-
-
-
-export Apigility_home=$(pwd)
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update
-sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
-sudo -E apt-get install -y php
-
-
-
-#Build Apigility
-cd $Apigility_home
-sudo rm -rf zf-apigility-skeleton 
-git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
-cd zf-apigility-skeleton 
-git checkout 1.4.2
-curl -s https://getcomposer.org/installer | php --
-./composer.phar -n update
-./composer.phar -n install
-
-./vendor/bin/zf-development-mode enable
-sudo  apache2ctl start
-export IP=$(hostname -i)
-cd  $Apigility_home/zf-apigility-skeleton
-php -S $IP:8080 -t public -f public/index.php &amp;
-
-ps -aef | grep php
-curl http://localhost:80 | grep works!
-curl http://$(hostname -i):8080/apigility/ui#/</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -90,7 +73,8 @@ Jenkins.instance.slaves.each {
 if(it.name==x){
 it.getComputer().doDoDelete()
 }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -102,7 +86,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ajakhade</room>
+      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank </room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

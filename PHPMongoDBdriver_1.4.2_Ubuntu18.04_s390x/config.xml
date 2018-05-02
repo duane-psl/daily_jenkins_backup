@@ -26,7 +26,8 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo -E apt-get update -y
+      <command>export DEBIAN_FRONTEND=noninteractive
+sudo -E apt-get update -y
 sudo -E apt-get install -y gcc make autoconf pkg-config openssl php7.2 php7.2-json php7.2-dev 
 
 

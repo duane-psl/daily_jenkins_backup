@@ -9,26 +9,23 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 16 * * 3</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 1</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;docker-compose&quot;
+published_version=&quot;1.21.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -48,36 +45,20 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+# Install the following Dependencies
+		
+		sudo yum install -y python-setuptools
+        
+		sudo easy_install pip
 
-
-
-export Apigility_home=$(pwd)
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update
-sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
-sudo -E apt-get install -y php
-
-
-
-#Build Apigility
-cd $Apigility_home
-sudo rm -rf zf-apigility-skeleton 
-git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
-cd zf-apigility-skeleton 
-git checkout 1.4.2
-curl -s https://getcomposer.org/installer | php --
-./composer.phar -n update
-./composer.phar -n install
-
-./vendor/bin/zf-development-mode enable
-sudo  apache2ctl start
-export IP=$(hostname -i)
-cd  $Apigility_home/zf-apigility-skeleton
-php -S $IP:8080 -t public -f public/index.php &amp;
-
-ps -aef | grep php
-curl http://localhost:80 | grep works!
-curl http://$(hostname -i):8080/apigility/ui#/</command>
+       
+# Build and install        
+       
+        sudo pip install backports.ssl_match_hostname --upgrade
+        
+        sudo pip install docker-compose==1.21.0
+        
+        docker-compose version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -102,7 +83,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ajakhade</room>
+      <room>#loz-jenkins-build,@vitthalb</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

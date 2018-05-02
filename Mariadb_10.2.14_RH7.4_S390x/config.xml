@@ -9,26 +9,32 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
+    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.25.0">
+      <spec></spec>
+    </com.cloudbees.jenkins.GitHubPushTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;mariadb&quot;
+published_version=&quot;10.2.14&quot;
+
+cat /etc/redhat-release
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -40,44 +46,66 @@ elif [ $ID == &quot;ubuntu&quot; ]; then
 	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
+###Install build dependencies
+SOURCE_ROOT=`pwd`
 
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
+sudo yum install -y git wget cmake gcc gcc-c++ make ncurses-devel bison tar boost-devel check-devel openssl-devel perl-CPAN &apos;perl(Test::More)&apos;
+
+##Change the directory to server
+wget https://github.com/MariaDB/server/archive/mariadb-10.2.14.tar.gz
+tar xzf mariadb-10.2.14.tar.gz
+cd server-mariadb-10.2.14
+
+cd $SOURCE_ROOT
+git clone git://github.com/MariaDB/mariadb-connector-c.git
+cd mariadb-connector-c
+git checkout v3.0.2
+cd ..
+cp -r mariadb-connector-c/* server-mariadb-10.2.14/libmariadb/
+
+sed -i &apos;231d&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_IN_TRANS_READONLY       8192&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_SESSION_STATE_CHANGED      16384&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
 
 
+##Build, configure, install and execute test cases
+cd $SOURCE_ROOT/server-mariadb-10.2.14
+BUILD/autorun.sh 
+./configure
 
-export Apigility_home=$(pwd)
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update
-sudo apt-get install -y git apache2 curl openssl make wget tar gcc libssl-dev libxml2 libxml2-dev libxml-parser-perl pkg-config
-sudo -E apt-get install -y php
+make 
+sudo make install 
+
+sudo useradd mysql
+cd /usr/local/mysql  
+sudo chmod -R o+rwx .
 
 
+# Start Mysql server 
+sudo scripts/mysql_install_db --user=mysql
+sleep 20s
+sudo cp support-files/mysql.server /etc/init.d/mysql
+sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+sleep 30s
+sudo bin/mysqladmin version --user=mysql
 
-#Build Apigility
-cd $Apigility_home
-sudo rm -rf zf-apigility-skeleton 
-git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
-cd zf-apigility-skeleton 
-git checkout 1.4.2
-curl -s https://getcomposer.org/installer | php --
-./composer.phar -n update
-./composer.phar -n install
+cd $SOURCE_ROOT/server-mariadb-10.2.14
+make test 
 
-./vendor/bin/zf-development-mode enable
-sudo  apache2ctl start
-export IP=$(hostname -i)
-cd  $Apigility_home/zf-apigility-skeleton
-php -S $IP:8080 -t public -f public/index.php &amp;
 
-ps -aef | grep php
-curl http://localhost:80 | grep works!
-curl http://$(hostname -i):8080/apigility/ui#/</command>
+#Building the Galera wsrep provider
+
+cd $SOURCE_ROOT
+wget http://downloads.sourceforge.net/project/scons/scons/2.3.4/scons-2.3.4-1.noarch.rpm
+sudo rpm -i scons-2.3.4-1.noarch.rpm
+git clone git://github.com/codership/galera.git
+cd galera
+git checkout release_25.3.21
+scons strict_build_flags=0 --config=force
+sudo cp garb/garbd /usr/local/sbin/        
+sudo cp libgalera_smm.so /usr/local/lib64/
+sudo /sbin/ldconfig -v</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -102,7 +130,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ajakhade</room>
+      <room>#loz-jenkins-build, @narang</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
