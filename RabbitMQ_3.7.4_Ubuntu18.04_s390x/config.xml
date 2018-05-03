@@ -4,28 +4,37 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>6</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
       <weight>1</weight>
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 16 * * 3</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>
+
 #Set the below parameters manually
-package_name=&quot;docker-compose&quot;
-published_version=&quot;1.21.0&quot;
+package_name=&quot;rabbitmq-server&quot;
+published_version=&quot;3.7.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -34,7 +43,8 @@ if [ $ID == &quot;rhel&quot; ]; then
 elif [ $ID == &quot;sles&quot; ]; then
 	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+    sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
 
@@ -42,24 +52,53 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
-else	
+else
+   echo &quot;Availabel version in repo is $available_version&quot;
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-        
-# Install the following Dependencies
-		
-		sudo yum install -y python-setuptools
-        
-		sudo easy_install pip
 
-       
-# Build and install        
-       
-        sudo pip install backports.ssl_match_hostname --upgrade
-        
-        sudo pip install docker-compose==1.21.0
-        
-        docker-compose version</command>
+#--------------------------------------------------------------------------------------------
+sudo apt-get update -y
+sudo apt-get install -y openjdk-8-jdk erlang openssl wget tar xz-utils make python xsltproc rsync git zip
+
+#build and install elixir
+git clone https://github.com/elixir-lang/elixir
+cd elixir
+git checkout v1.6.1
+make
+sudo make install
+elixir --version
+
+#Install hex
+cd ..
+git clone https://github.com/hexpm/hex.git
+cd hex &amp;&amp;  git checkout v0.17.3
+mix install
+mix hex.info
+
+sudo apt-get install -y locales
+sudo locale-gen en_US.UTF-8
+export LANG=&quot;en_US.UTF-8&quot;
+export LC_ALL=&quot;en_US.UTF-8&quot; 
+
+# Build rabbitmq
+cd ..
+wget https://dl.bintray.com/rabbitmq/all/rabbitmq-server/3.7.4/rabbitmq-server-3.7.4.tar.xz
+tar -xf rabbitmq-server-3.7.4.tar.xz
+cd rabbitmq-server-3.7.4 
+sudo cp ../hex/_build/dev/lib/hex/ebin/*  deps/.mix/archives/hex-0.17.3/hex-0.17.3/ebin/
+make 
+sudo make install
+
+sudo mkdir -p /etc/rabbitmq
+echo &quot;[{rabbit, [{loopback_users, []}]}].&quot; | sudo tee /etc/rabbitmq/rabbitmq.config
+sudo ln -s $PWD/plugins deps/rabbit/plugins
+sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
+sudo deps/rabbit/scripts/rabbitmq-server -detached
+
+sleep 300
+curl http://localhost:15672
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -84,7 +123,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build, @cgopi</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

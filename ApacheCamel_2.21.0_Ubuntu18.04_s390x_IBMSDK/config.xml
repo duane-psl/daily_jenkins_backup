@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
+  <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
@@ -29,7 +30,7 @@ sudo apt-get update
 sudo apt-get install -y maven tar wget 
 
 # Set JAVA_HOME &amp; environment variables
-export JAVA_HOME=/opt/ibm/java
+export JAVA_HOME=/opt/ibm/java-s390x-80
 #export MAVEN_OPTS=&quot;-Xmx1024m&quot; 
 export MAVEN_OPTS=&quot;-Xmx2048m&quot;
 export PATH=$JAVA_HOME/bin:$PATH

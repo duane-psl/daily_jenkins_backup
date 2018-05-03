@@ -9,33 +9,30 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 14 * * 4</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 14 * * 4</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
+      <command>
+
+#Set the below parameters manually
 package_name=&quot;rabbitmq-server&quot;
-published_version=&quot;3.6.14&quot;
+published_version=&quot;3.7.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
 	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;sles&quot; ]; then
-    sudo zypper update -y
 	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;ubuntu&quot; ]; then
     sudo apt-get update
@@ -53,62 +50,64 @@ else
 fi
 
 #--------------------------------------------------------------------------------------------
-# Install Erlang (dependency for RabbitMQ) from source
-sudo zypper update -y
-sudo zypper install -y curl zip unzip libxslt xmlto patch subversion procps ant ant-junit java-1_7_1-ibm java-1_7_1-ibm-devel git-core \
-java-1.7.1-ibm java-1.7.1-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel
 export WORK_DIR=`pwd`
+export JAVA_HOME=/opt/ibm/java-s390x-80
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-# Download and untar erlang source
+sudo apt-get update -y
+sudo apt-get install -y openjdk-8-jdk erlang openssl wget tar xz-utils make python xsltproc rsync git zip
+
+#Install Erlang
+sudo apt-get install -y wget tar make perl openssl gcc g++ libncurses-dev libncurses5-dev unixodbc unixodbc-dev libssl-dev
 wget http://www.erlang.org/download/otp_src_20.0.tar.gz
 tar zxf otp_src_20.0.tar.gz
 cd otp_src_20.0
 export ERL_TOP=$(pwd)
-
-cd $ERL_TOP
 ./configure --prefix=/usr
 make
-sudo make install
-make release_tests
-cd release/tests/test_server
-$ERL_TOP/bin/erl -s ts install -s ts smoke_test batch -s init stop
-
-
-# Build rabbitmq
-cd ../
-# Dependencies for rabbitmq
-export JAVA_HOME=/usr/lib64/jvm/java
-export ANT_HOME=/usr/share/ant
-export PATH=$PATH:$ERL_TOP/bin:/usr/lib/erlang/lib/erl_interface-3.9/bin/:$JAVA_HOME/bin:$ANT_HOME
-
-#Build, Test and Install the RabbitMQ Server 3.6.14
-wget https://www.rabbitmq.com/releases/rabbitmq-server/v3.6.14/rabbitmq-server-3.6.14.tar.xz 
-tar xf rabbitmq-server-3.6.14.tar.xz
-cd rabbitmq-server-3.6.14
-make all
-sudo make tests
 sudo make install
 
 
 #build and install elixir
-cd ..
-git clone git://github.com/elixir-lang/elixir
+cd $WORK_DIR
+git clone https://github.com/elixir-lang/elixir
 cd elixir
-git checkout v1.5.2
+git checkout v1.6.1
 make
+sudo make install
+elixir --version
+
+#Install hex
+cd $WORK_DIR
+git clone https://github.com/hexpm/hex.git
+cd hex &amp;&amp;  git checkout v0.17.3
+mix install
+mix hex.info
+
+sudo apt-get install -y locales
+sudo locale-gen en_US.UTF-8
+export LANG=&quot;en_US.UTF-8&quot;
+export LC_ALL=&quot;en_US.UTF-8&quot; 
+
+# Build rabbitmq
+cd $WORK_DIR
+wget https://dl.bintray.com/rabbitmq/all/rabbitmq-server/3.7.4/rabbitmq-server-3.7.4.tar.xz
+tar -xf rabbitmq-server-3.7.4.tar.xz
+cd rabbitmq-server-3.7.4 
+sudo cp ../hex/_build/dev/lib/hex/ebin/*  deps/.mix/archives/hex-0.17.3/hex-0.17.3/ebin/
+make 
 sudo make install
 
 sudo mkdir -p /etc/rabbitmq
 echo &quot;[{rabbit, [{loopback_users, []}]}].&quot; | sudo tee /etc/rabbitmq/rabbitmq.config
-
-#start rabbitmq management server
-cd ../rabbitmq-server-3.6.14
-sudo rm -rf deps/rabbit/plugins
 sudo ln -s $PWD/plugins deps/rabbit/plugins
 sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
 sudo deps/rabbit/scripts/rabbitmq-server -detached
-sleep 4m
-curl http://localhost:15672</command>
+
+sleep 100
+curl http://localhost:15672
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

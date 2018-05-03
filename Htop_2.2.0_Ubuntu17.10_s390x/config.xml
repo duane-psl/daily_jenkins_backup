@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>Build HTOP 2.2.0</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,28 +9,22 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_ub17.10_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 21 * * 5</spec>
+      <spec>H 18 * * 3</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 21 * * 5</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-
-#Set the below parameters manually
-package_name=&quot;rabbitmq-server&quot;
-published_version=&quot;3.6.14&quot;
+      <command>#Set the below parameters manually
+package_name=&quot;htop&quot;
+published_version=&quot;2.2.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -39,8 +33,7 @@ if [ $ID == &quot;rhel&quot; ]; then
 elif [ $ID == &quot;sles&quot; ]; then
 	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;ubuntu&quot; ]; then
-    sudo apt-get update
-	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
 
@@ -48,80 +41,37 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
-else
-   echo &quot;Availabel version in repo is $available_version&quot;
+else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-#--------------------------------------------------------------------------------------------
-
-# Install Erlang (dependency for RabbitMQ) from source
-sudo yum install -y c gzip findutils zip unzip libxslt xmlto patch subversion ca-certificates ant ant-junit  xz xz-devel git wget tar make java-1.7.1-ibm java-1.7.1-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel curl
-
-sed --version
-
+# Install the dependencies
 export WORK_DIR=`pwd`
+sudo apt-get update -y
+sudo apt-get install -y gcc make wget tar libncursesw5 libcunit1-ncurses libncursesw5-dev python
+python -V
 
-#Install make 4.1
-wget http://infinity.kmeacollege.ac.in/gnu/make/make-4.1.tar.gz
-tar -xvf make-4.1.tar.gz
-cd make-4.1
-./configure 
-make &amp;&amp; sudo make install
-export PATH=/usr/local/bin/:$PATH
+#Download and unpack the htop 2.2.0 source code
+wget http://hisham.hm/htop/releases/2.2.0/htop-2.2.0.tar.gz
+tar xvzf htop-2.2.0.tar.gz
 
-# Download and untar erlang source
-wget http://www.erlang.org/download/otp_src_20.1.tar.gz
-tar zxf otp_src_20.1.tar.gz
-cd otp_src_20.1
-export ERL_TOP=$(pwd)
-
-cd $ERL_TOP
-./configure --prefix=/usr
+# Configure and build htop-2.2.0
+cd htop-2.2.0
+./configure
 make
-sudo make install
-make release_tests
-cd release/tests/test_server
-$ERL_TOP/bin/erl -s ts install -s ts smoke_test batch -s init stop
 
-# Build rabbitmq
-cd ../
-# Dependencies for rabbitmq
-export JAVA_HOME=/usr/lib/jvm/java
-export ANT_HOME=/usr/share/ant
-export PATH=$PATH:$ERL_TOP/bin:/usr/lib/erlang/lib/erl_interface-3.9/bin/:$JAVA_HOME/bin:$ANT_HOME
-java -version
+# Run test cases
+make check
 
-#Build, Test and Install the RabbitMQ Server 3.6.14
-wget https://www.rabbitmq.com/releases/rabbitmq-server/v3.6.14/rabbitmq-server-3.6.14.tar.xz 
-tar xf rabbitmq-server-3.6.14.tar.xz
-cd rabbitmq-server-3.6.14
-make all
-sudo make tests
-sudo make install
+# Install htop
+sudo  make install
+ 
+# Launch htop to monitor system 
+htop --version
+htop --version grep 2.2.0
 
 
-#build and install elixir
-cd ..
-git clone git://github.com/elixir-lang/elixir
-cd elixir
-git checkout v1.5.2
-make
-sudo make install
-
-sudo mkdir -p /etc/rabbitmq
-echo &quot;[{rabbit, [{loopback_users, []}]}].&quot; | sudo tee /etc/rabbitmq/rabbitmq.config
-
-#start rabbitmq management server
-cd ../rabbitmq-server-3.6.14
-sudo rm -rf deps/rabbit/plugins
-sudo ln -s $PWD/plugins deps/rabbit/plugins
-sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
-sudo deps/rabbit/scripts/rabbitmq-server -detached
-sleep 3m
-
-curl http://localhost:15672
-</command>
+htop --help</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -146,7 +96,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @cgopi</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

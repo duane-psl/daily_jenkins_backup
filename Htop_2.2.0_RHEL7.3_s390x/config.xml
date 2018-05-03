@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>Build HTOP 2.2.0</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3-8192MB</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -19,7 +19,7 @@
       <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 3   </spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,58 +27,55 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
-# Install dependencies
-sudo yum install -y wget tar curl
+#Set the below parameters manually
+package_name=&quot;htop&quot;
+published_version=&quot;2.2.0&quot;
 
-# Download and install AdoptOpenJDK 9  
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-
-# Download and Install ant 1.9.6
-wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.6-bin.tar.gz
-tar zxvf apache-ant-1.9.6-bin.tar.gz
-export PATH=`pwd`/apache-ant-1.9.6/bin:$PATH
-
-#  Download Apache Solr 7.2.1 source code
-wget http://archive.apache.org/dist/lucene/solr/7.2.1/solr-7.2.1-src.tgz
-tar zxvf solr-7.2.1-src.tgz
-
-# Set JAVA_HOME and PATH
-export JAVA_HOME=`pwd`/jdk-9+181
-export PATH=$JAVA_HOME/bin:$PATH
-java -version
-ant -version
-
-#  Configure and make
-cd solr-7.2.1/solr
-ant ivy-bootstrap
-ant compile
-ant server
-
-
-# Verification
-# Start Solr and create a core
-cd bin
-sudo chmod a+x solr
-./solr start
-sleep 120s
-echo &quot;Started&quot;
-
-./solr create -c samp | tee solr_output.txt
-cat solr_output.txt
-
-curl http://localhost:8983/solr/
-
-#verification of output 
-string=&quot;Created new core &apos;samp&apos;&quot;;
-if grep -i &quot;$string&quot;  solr_output.txt; then
-   ./solr stop
-else
-  exit 1
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
 
-./solr version | grep 7.2.1</command>
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+# Install the dependencies
+export WORK_DIR=`pwd`
+sudo yum install -y ncurses ncurses-devel gcc make wget tar python
+python -V
+
+#Download and unpack the htop 2.2.0 source code
+wget http://hisham.hm/htop/releases/2.2.0/htop-2.2.0.tar.gz
+tar xvzf htop-2.2.0.tar.gz
+
+# Configure and build htop-2.2.0
+cd htop-2.2.0
+./configure
+make
+
+# Run test cases
+make check
+
+# Install htop
+sudo  make install
+ 
+# Launch htop to monitor system 
+htop --version
+htop --version grep 2.2.0
+
+htop --help
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -103,7 +100,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @gsalgaon</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

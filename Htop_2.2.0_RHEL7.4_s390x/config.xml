@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Build HTOP 2.0.0 on SLES 12-SP1</description>
+  <description>Build HTOP 2.2.0</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,27 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp1_4096</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 18 * * 3</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 18 * * 3 
-</spec>
+      <spec>H 13 * * 3   </spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
 package_name=&quot;htop&quot;
-published_version=&quot;2.0.2&quot;
+published_version=&quot;2.2.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -52,16 +52,33 @@ fi
 
 
 
-sudo zypper install -y ncurses ncurses-devel gcc make wget tar
 
-wget http://hisham.hm/htop/releases/2.0.2/htop-2.0.2.tar.gz
-tar xvzf htop-2.0.2.tar.gz
+# Install the dependencies
+export WORK_DIR=`pwd`
+sudo yum install -y ncurses ncurses-devel gcc make wget tar python
+python -V
 
-cd htop-2.0.2/
+#Download and unpack the htop 2.2.0 source code
+wget http://hisham.hm/htop/releases/2.2.0/htop-2.2.0.tar.gz
+tar xvzf htop-2.2.0.tar.gz
+
+# Configure and build htop-2.2.0
+cd htop-2.2.0
 ./configure
 make
+
+# Run test cases
 make check
-sudo  make install</command>
+
+# Install htop
+sudo  make install
+ 
+# Launch htop to monitor system 
+htop --version
+htop --version grep 2.2.0
+
+htop --help
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

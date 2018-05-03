@@ -46,10 +46,11 @@ export WS=$PWD
 echo $PATH
 
 # Install dependencies
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update -y
 sudo apt-cache policy python
 sudo apt-cache policy beats* || true
-sudo apt-get install -y git make wget tar gcc python python-setuptools libcap-dev libpcap0.8-dev openssl libssh-dev python-openssl acl rsync golang-1.9 tzdata
+sudo -E apt-get install -y git make wget tar gcc python python-setuptools libcap-dev libpcap0.8-dev openssl libssh-dev python-openssl acl rsync golang-1.9 tzdata
 
 #Install required Python modules
 sudo python -m easy_install pip
