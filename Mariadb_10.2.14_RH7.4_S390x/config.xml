@@ -91,7 +91,7 @@ sleep 30s
 sudo bin/mysqladmin version --user=mysql
 
 cd $SOURCE_ROOT/server-mariadb-10.2.14
-make test 
+make test 2&gt;&amp;1 | tee test.log
 
 
 #Building the Galera wsrep provider

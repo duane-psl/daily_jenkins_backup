@@ -52,7 +52,7 @@ git clone https://github.com/apache/flume.git flume
 cd flume
 git checkout flume-1.8
 
-mvn install -fn -Drat.numUnapprovedLicenses=100 -DfailIFNoTests=false -Dtest.exclude.pattern=**/TestKafkaSource.java,**/TestLog.java 2&gt;&amp;1 |tee logs
+mvn install -DskipTests  -Drat.numUnapprovedLicenses=100
 
 
 # Verify Flume is installed correctly and working.

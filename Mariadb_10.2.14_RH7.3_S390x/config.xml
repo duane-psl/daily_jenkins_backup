@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_rh7.3_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -89,7 +89,7 @@ sudo bin/mysqladmin version --user=mysql
 
 
 cd $SOURCE_ROOT/server-mariadb-10.2.14
-make test 
+make test 2&gt;&amp;1 | test.log
 
 ###Build galara for clustering....
 cd $SOURCE_ROOT

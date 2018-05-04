@@ -52,7 +52,7 @@ git clone https://github.com/google/protobuf.git
 cd protobuf
 git checkout v3.5.1
 
-rm add_func.patch
+
 echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
 index 0b0b06c..95f2338 100644
 --- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h

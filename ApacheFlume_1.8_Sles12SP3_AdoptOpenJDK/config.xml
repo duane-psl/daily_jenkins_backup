@@ -103,7 +103,7 @@ git checkout flume-1.8
 export MAVEN_OPTS=&quot;-Xms1024m -Xmx1024m -XX:MaxPermSize=1024m&quot;
 ulimit -n 4096
 mvn install -DskipTests -Drat.numUnapprovedLicenses=100
-mvn install -Drat.numUnapprovedLicenses=100 -fn 2&gt;&amp;1 |tee testlogs
+#mvn install -Drat.numUnapprovedLicenses=100 -fn 2&gt;&amp;1 |tee testlogs
 
 # Verify Flume is installed correctly and working.
 cd $WORK_DIR/flume/flume-ng-dist/target/apache-flume-1.8.0-bin/apache-flume-1.8.0-bin

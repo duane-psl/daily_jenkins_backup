@@ -32,7 +32,7 @@ sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel tar wget ant git
 
 
 export WORK_DIR=`pwd`
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.161-0.b14.el7_4.s390x
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk/
 export M2_HOME=$WORK_DIR/apache-maven-3.5.2
 export PATH=$JAVA_HOME/bin:$PATH:$M2_HOME/bin
 java -version

@@ -117,7 +117,7 @@ if grep -q &quot;Apache Tomcat/8.5.29&quot;  &quot;index.html&quot;; then
   exit 0
 else
   exit 1
-</command>
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
