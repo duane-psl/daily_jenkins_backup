@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_ub||dc2_ub18.04_2048</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,7 +29,10 @@
       <command># Install Python MongoDB Driver and its dependencies
 sudo apt-get update
 sudo apt-get install -y git openssl libssh-dev python python-openssl python-setuptools python-dev gcc
-sudo easy_install pip
+
+
+#sudo /usr/local/bin/easy_install pip
+sudo apt-get install -y python-pip
 python -V 
 pip --version
 
@@ -38,13 +41,14 @@ cd pymongo
 git checkout 3.6.1
 sudo python setup.py install
 
+: &apos;
 # Install mongodb server 3.6.2
 sudo apt-get install -y wget
 wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.6/multiverse/binary-s390x/mongodb-enterprise-server_3.6.2_s390x.deb
 sudo dpkg -i --force-all mongodb-enterprise-server_3.6.2_s390x.deb
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f
-sudo chmod 777 /etc/timezone
-sudo echo -e &quot;Asia/Kolkata&quot; &gt;&gt; /etc/timezone 
+##sudo chmod 777 /etc/timezone
+##sudo echo -e &quot;Asia/Kolkata&quot; &gt;&gt; /etc/timezone 
 sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
@@ -112,7 +116,7 @@ if [ &quot;$?&quot; -eq 0 ]; then
 else
   exit 1
 fi
-</command>
+&apos;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

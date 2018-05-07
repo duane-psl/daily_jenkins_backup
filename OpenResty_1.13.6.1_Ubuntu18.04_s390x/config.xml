@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp2</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 21 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 21 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,8 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
-package_name=&quot;python&quot;
-published_version=&quot;2.7.14&quot;
+package_name=&quot;openresty&quot;
+published_version=&quot;1.13.6.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,60 +49,103 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-rm -rf ./*
-#Install dependencies
-sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar bzip2 zlib-devel xz readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_8-devel gdb awk netcfg libbz2-devel glibc-locale
+#Building OpenResty 1.11.2.5
+# Prerequisites:LuaJIT
+export WORK_DIR=`pwd`
+cd $WORK_DIR
 
-#Create symlinks
-sudo ln -sfv /usr/include/ncurses/* /usr/include/
 
-#Get source
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-tar -xvf Python-2.7.14.tar.xz
-cd Python-2.7.14
+cat /etc/os*
+sudo apt-get update
+sudo apt-get install -y git gcc make
+export WORK_DIR=`pwd`
+cd $WORK_DIR
+git clone https://github.com/linux-on-ibm-z/LuaJIT.git
+cd LuaJIT
+git checkout v2.1
+cd $WORK_DIR/LuaJIT/
+make
+sudo make install
+sudo rm -rf /usr/local/bin/luajit
+sudo ln -s luajit-2.1.0-beta3 /usr/local/bin/luajit
 
-#Apply patch to fix test_regrtest
-wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
-cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
+export DEBIAN_FRONTEND=noninteractive 
+#Install the dependencies
+sudo apt-get update
+sudo -E apt-get install -y git tar wget make gcc dos2unix hgview libreadline-dev patch libpcre3-dev libpcre3  libncursesada*-dev postgresql libpq-dev openssl1.0 libssl1.0-dev perl zlib1g zlib1g-dev 
+sudo ln -s make /usr/bin/gmake
+export PATH=$PATH:/sbin
 
-#Build and test
-./configure --prefix=/usr/local --exec-prefix=/usr/local
-make 
-make test 2&gt;&amp;1 | tee testlog
+#Download the source code
 
-#Store failed tests
-grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
+cd $WORK_DIR
 
-#Store tests expected to fail and intermittent tests
-echo &quot;test_bz2&quot; &gt;expected
+wget https://openresty.org/download/openresty-1.13.6.1.tar.gz
+tar -xvf openresty-1.13.6.1.tar.gz
 
-#Diff between expected and actual failures
-diff -u expected failures | tee diff_
+cd $WORK_DIR/openresty-1.13.6.1
+cp configure configure.ori
+sed -i &apos;641,680 s/^/#/&apos; configure
+diff -u configure.ori configure 2&gt;&amp;1 | tee changediff
 
-#Fail if any extra test failed apart from expected
-if grep -q &apos;+test&apos; diff_; then
-    exit 0
+
+sudo rm -vrf $WORK_DIR/openresty-1.13.6.1/bundle/LuaJIT-2.1-20171103/
+sudo cp -vrf $WORK_DIR/LuaJIT $WORK_DIR/openresty-1.13.6.1/bundle/LuaJIT-2.1-20171103/ 
+ 
+cd $WORK_DIR/openresty-1.13.6.1
+./configure --without-http_redis2_module --with-http_iconv_module --with-http_postgres_module  -j2 
+make -j2
+sudo make install
+cd $WORK_DIR/openresty-1.13.6.1/build/nginx-1.13.6
+./configure &amp;&amp; make &amp;&amp; sudo make install
+
+## Install cpan modules
+
+sudo cpan Cwd IPC::Run3 Test::Base Test::LongString
+
+## Download files to run sanity tests on Openresty 
+cd $WORK_DIR/openresty-1.13.6.1
+mkdir t
+cd $WORK_DIR/openresty-1.13.6.1/t
+wget https://raw.githubusercontent.com/openresty/openresty/v1.13.6.1/t/Config.pm
+wget https://raw.githubusercontent.com/openresty/openresty/v1.13.6.1/t/sanity.t
+
+sed -i &apos;23,26d&apos; Config.pm
+
+
+cd $WORK_DIR/openresty-1.13.6.1/t
+cp sanity.t sanity.t.orig
+sed -i &apos;1713d &apos; sanity.t
+sed -i &quot;1713i export LIBPQ_LIB=&apos;/usr/lib/s390x-linux-gnu&apos;&quot; sanity.t
+sed -i &apos;1714d &apos; sanity.t
+sed -i &quot;1714i export LIBPQ_INC=&apos;/usr/include/postgresql&apos;&quot; sanity.t
+sed -i &apos;1744d &apos; sanity.t
+sed -i &quot;1744i \  \--with-ld-opt=&apos;-Wl,-rpath,/usr/lib/s390x-linux-gnu:/usr/local/openresty/luajit/lib&apos; \\\\&quot; sanity.t
+
+
+sed -i &quot;/configure line 663/d&quot; sanity.t
+sed -i &quot;/INFO: found -msse4.2 in cc./d&quot; sanity.t
+sed -i &quot;/WARNING: -msse4.2/d&quot; sanity.t
+sed -i &quot;s/ XCFLAGS=&apos;-msse4.2&apos;//g&quot; sanity.t
+sed -i &quot;s/ -msse4.2//g&quot; sanity.t
+sed -i &quot;s/-msse4.2 -DLUAJIT_ENABLE_LUA52COMPAT/-DLUAJIT_ENABLE_LUA52COMPAT/g&quot; sanity.t
+
+export PERL5LIB=$WORK_DIR/openresty-1.13.6.1 
+cd $WORK_DIR/openresty-1.13.6.1
+## Run sanity tests
+
+prove -r t | tee oresty_test.log
+
+
+
+if grep -q &quot;All tests successful&quot; &quot;oresty_test.log&quot;; then
+   export PATH=/usr/local/openresty/bin:$PATH
+   resty -V  
+   exit 0
+else
+   exit 1
 fi
 
-#Run intermittent tests individually
-cd ./Lib/test
-../../python -m unittest test_bz2
-
-#Install
-cd ../../
-sudo make install
-
-python_version=$(python --version 2&gt;&amp;1)
-
-echo $python_version &gt; output.txt
-
-echo &apos;Python 2.7.14&apos; &gt; expected.txt
-result=`diff output.txt expected.txt`
-
-if [ -z &quot;$result&quot; ] ; then
-  exit 0
-else
-  exit 1
 fi
 </command>
     </hudson.tasks.Shell>
@@ -114,9 +157,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -129,7 +172,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@duaned</room>
+      <room>#loz-jenkins-build,@srajmane</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

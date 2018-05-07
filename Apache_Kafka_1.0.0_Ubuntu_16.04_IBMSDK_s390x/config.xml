@@ -27,7 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>export WORK_DIR=`pwd`
-
+cat /etc/os-release
+java -version ||true
 
 sudo apt-get update
 sudo apt-get install -y git wget unzip
@@ -86,7 +87,7 @@ cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11
 cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/421b44ad957a2b6cce5adedc204db551831b553d/
 
 cd $WORK_DIR/kafka
-gradle test --continue 2&gt;&amp;1 | tee testlog.log 
+#gradle test --continue 2&gt;&amp;1 | tee testlog.log 
 
 
 sed -i &apos;s/-XX:+UseG1GC//&apos; bin/kafka-run-class.sh
@@ -146,7 +147,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room></room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

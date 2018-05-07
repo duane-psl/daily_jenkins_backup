@@ -28,7 +28,7 @@
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
     </extensions>
   </scm>
-  <assignedNode>ravi_ub16.04</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
