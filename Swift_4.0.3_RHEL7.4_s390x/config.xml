@@ -103,11 +103,11 @@ export PATH=/opt/curl/bin:$PATH
 export LD_LIBRARY_PATH=/opt/curl/lib:$LD_LIBRARY_PATH
 export CPATH=/opt/curl/include:$CPATH
 
-wget http://repos.opensuse.org/repositories/server:/mail/CentOS_6/src/libbsd-0.7.0-2.1.src.rpm
+wget http://rpm.pbone.net/index.php3/stat/3/srodzaj/2/search/libbsd-0.7.0-2.1.src.rpm
 rpmbuild --rebuild libbsd-0.7.0-2.1.src.rpm
 cd $HOME/rpmbuild/RPMS/s390x/
-sudo rpm -i libbsd0-0.7.0-2.1.s390x.rpm \
-            libbsd-devel-0.7.0-2.1.s390x.rpm
+sudo rpm -i libbsd-0.7.0-2.1.src.rpm \
+            libbsd-devel-0.7.0-2.1.src.rpm
 cd $HOME
 sudo cp /usr/include/unistd.h /usr/include/unistd.h.orig
 
