@@ -57,7 +57,7 @@ cd flume
 git checkout flume-1.8
 
 mvn install -DskipTests  -Drat.numUnapprovedLicenses=100
-mvn install -Drat.numUnapprovedLicenses=100 -fn 2&gt;&amp;1 |tee testlogs
+#mvn install -Drat.numUnapprovedLicenses=100 -fn 2&gt;&amp;1 |tee testlogs
 
 # Verify Flume is installed correctly and working.
 sudo apt-get install -y python

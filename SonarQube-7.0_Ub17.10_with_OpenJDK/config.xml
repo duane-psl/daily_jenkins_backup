@@ -82,8 +82,6 @@ curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill ||true
 
-
-
 </command>
     </hudson.tasks.Shell>
   </builders>

@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>&#xd;
+</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,90 +10,38 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu17.10</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 21 * * 4</spec>
+      <spec>H 13 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 21 * * 4</spec>
+      <spec>H 13 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
-#Set the below parameters manually
-package_name=&quot;nginx-ingress-controller&quot;
-published_version=&quot;0.13.0&quot;
+      <command>source /home/test/.bashrc
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
-fi
+sudo apt-get install -y gcc tar git wget libncurses5-dev libncurses5 make
 
+wget ftp://iptraf.seul.org/pub/iptraf/iptraf-3.0.0.tar.gz
+tar zxvf iptraf-3.0.0.tar.gz
 
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
-cat /etc/os-release
-#Install dependency
-sudo apt-get update
-sudo apt-get install -y git make golang-1.10
-export PATH=/usr/lib/go-1.10/bin:$PATH 
-go version
-cat /etc/os*
+cd iptraf-3.0.0
 
-#Build
-export WORK_DIR=`pwd`
-export GOPATH=$WORK_DIR
-export DOCKER=docker
-mkdir -p $GOPATH/src/k8s.io/
-cd $GOPATH/src/k8s.io/
-git clone https://github.com/kubernetes/ingress-nginx.git
-cd ingress-nginx/
-git checkout nginx-0.13.0
-make build
+sudo cp /usr/include/netinet/if_tr.h /usr/include/linux/
+sudo ./Setup
 
-#Test
-sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/ingress-nginx/Makefile
+export PATH=$PATH:/usr/local/bin
 
-git diff
-
-cd $GOPATH/src/k8s.io/ingress-nginx/
-make test 2&gt;&amp;1 | tee test_logs
-grep FAIL: test_logs 2&gt;&amp;1 | tee failed_logs
-
-echo &quot;--- FAIL: TestCreateApiserverClient (0.00s)
---- FAIL: TestHandleSigterm (0.00s)
---- FAIL: TestStore (0.00s)
-&quot; &gt;&gt; Expectedfailed_logs
-
-diff -u --ignore-all-space -B &lt;(sort Expectedfailed_logs) &lt;(sort failed_logs)
-
-
-
-
-
-
-
-
-
-</command>
+#sudo /usr/local/bin/iptraf</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -102,10 +51,11 @@ diff -u --ignore-all-space -B &lt;(sort Expectedfailed_logs) &lt;(sort failed_lo
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -117,7 +67,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@prajyot.parab</room>
+      <room> #loz-jenkins-build,@abhays</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

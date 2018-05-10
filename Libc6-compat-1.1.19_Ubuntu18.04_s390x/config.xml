@@ -9,87 +9,69 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_4096</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 21 * * 4</spec>
+      <spec>H 23 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 21 * * 4</spec>
+      <spec>H 23 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
-#Set the below parameters manually
-package_name=&quot;nginx-ingress-controller&quot;
-published_version=&quot;0.13.0&quot;
-
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
-fi
-
-
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
-cat /etc/os-release
-#Install dependency
+      <command>#rm -rf ./* 
+#Install dependencies
 sudo apt-get update
-sudo apt-get install -y git make golang-1.10
-export PATH=/usr/lib/go-1.10/bin:$PATH 
-go version
-cat /etc/os*
+sudo apt-get install -y tar wget make cmake gcc g++ bzip2 zlib1g-dev g++-multilib
+#xz bzip2-devel zlib-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_8-devel gdb awk netcfg libbz2-devel glibc-locale
 
-#Build
-export WORK_DIR=`pwd`
-export GOPATH=$WORK_DIR
-export DOCKER=docker
-mkdir -p $GOPATH/src/k8s.io/
-cd $GOPATH/src/k8s.io/
-git clone https://github.com/kubernetes/ingress-nginx.git
-cd ingress-nginx/
-git checkout nginx-0.13.0
-make build
+#install gcc 6.3.0
+wget ftp://gcc.gnu.org/pub/gcc/releases/gcc-6.3.0/gcc-6.3.0.tar.gz  
+tar -xvzf gcc-6.3.0.tar.gz
+cd gcc-6.3.0
+./contrib/download_prerequisites
+mkdir -p ../gccbuild
+cd ../gccbuild
 
-#Test
-sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/ingress-nginx/Makefile
-
-git diff
-
-cd $GOPATH/src/k8s.io/ingress-nginx/
-make test 2&gt;&amp;1 | tee test_logs
-grep FAIL: test_logs 2&gt;&amp;1 | tee failed_logs
-
-echo &quot;--- FAIL: TestCreateApiserverClient (0.00s)
---- FAIL: TestHandleSigterm (0.00s)
---- FAIL: TestStore (0.00s)
-&quot; &gt;&gt; Expectedfailed_logs
-
-diff -u --ignore-all-space -B &lt;(sort Expectedfailed_logs) &lt;(sort failed_logs)
+../gcc-6.3.0/configure \
+--prefix=&quot;/opt/gcc&quot; \
+--enable-shared --with-system-zlib --enable-threads=posix \
+--enable-__cxa_atexit --enable-checking --enable-gnu-indirect-function \
+--enable-languages=&quot;c,c++&quot; --disable-bootstrap
+make
+sudo make install
+export PATH=/opt/gcc/bin:$PATH
+export LD_LIBRARY_PATH=&apos;/opt/gcc/$LIB&apos;
 
 
+#Get source
+cd ..
+wget http://git.musl-libc.org/cgit/musl/snapshot/musl-1.1.19.tar.gz
+tar -xvf musl-1.1.19.tar.gz
+cd musl-1.1.19
 
+#Build and test
+./configure 
+make 
 
+#Install
+sudo make install
 
-
-
+echo &apos;#include &lt;stdio.h&gt;
+int main()
+{
+        printf(&quot;hello, world!&quot;);
+        return 0;
+}&apos; &gt; hello.c
+/usr/local/musl/bin/musl-gcc hello.c
+./a.out
 
 
 </command>

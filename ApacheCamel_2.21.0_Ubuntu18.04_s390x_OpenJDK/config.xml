@@ -29,14 +29,14 @@ sudo apt-get install -y maven tar wget openjdk-8-jdk
 
 # Set JAVA_HOME &amp; environment variables
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-s390x
-export MAVEN_OPTS=&quot;-Xmx2048m&quot;
+#export MAVEN_OPTS=&quot;-Xmx2048m&quot;
+export MAVEN_OPTS=&quot;-Xms1024m&quot;
 export PATH=$JAVA_HOME/bin:$PATH
 
 # Build and install Apache Camel 2.21.0
 cd /home/test
 wget https://github.com/apache/camel/archive/camel-2.21.0.tar.gz
 tar -xvzf camel-2.21.0.tar.gz
-sudo rm -rf camel
 mv camel-camel-2.21.0 camel
 cd camel
 mv .mvn .mvn-copy
