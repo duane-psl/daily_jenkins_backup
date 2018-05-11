@@ -89,7 +89,7 @@ sudo -E make test-unit ARCH=s390x
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>@preeti.khorjuvenkar,@ketank</room>
+      <room>@vibhuti.sawant</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

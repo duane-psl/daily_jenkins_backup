@@ -64,10 +64,19 @@ export PATH=/usr/local/bin/:$PATH
 export SRC_DIR=`pwd`
 sudo zypper update -y
 cat /etc/os*
-sudo zypper install -y awk git-core wget-openssl1 gcc zlib-devel xz tar findutils ncurses-devel openssl-devel libbz2-devel libffi-devel make network-autoconfig sysconfig libtool autoconf automake bzip2 cyrus-sasl-devel flex freetype2-devel gcc-c++ gdbm-devel gmp-devel groff libdb-4_5-devel libjpeg-devel libpng-devel libxml2-devel libxslt-devel pkg-config pcre-devel readline-devel unixODBC-devel vim xorg-x11-libXpm-devel 
+sudo zypper install -y awk git-core wget-openssl1 gcc zlib-devel xz tar findutils ncurses-devel libbz2-devel libffi-devel make network-autoconfig sysconfig libtool autoconf automake bzip2 cyrus-sasl-devel flex freetype2-devel gcc-c++ gdbm-devel gmp-devel groff libdb-4_5-devel libjpeg-devel libpng-devel libxml2-devel libxslt-devel pkg-config pcre-devel readline-devel unixODBC-devel vim xorg-x11-libXpm-devel 
 
-# Install deps for python build
 
+# Install openssl
+cd $SRC_DIR/
+git clone git://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_1_0
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make
+sudo make install
+  
+# Install deps for python build &amp; then build python
 sudo zypper install -y gcc gcc-c++ make ncurses patch zlib zlib-devel wget tar xz awk netcfg
 
 cd $SRC_DIR/
@@ -104,7 +113,7 @@ sudo pip install --trusted-host pypi.python.org -r requirements.txt
 
 # Tests 
 sudo pip install linecache2 unittest2
-#python setup.py test
+python setup.py test
 echo &quot;All tests passed&quot;
 
 sudo /usr/local/bin/python2.7 setup.py install

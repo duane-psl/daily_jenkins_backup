@@ -9,83 +9,39 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp3_8192</assignedNode>
+  <assignedNode>dockercloud_rhel7.3</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 5</spec>
+      <spec>H 15 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5</spec>
+      <spec>H 15 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
-sudo zypper up -y
-###Install build dependencies
-sudo zypper install -y git wget tar cmake gcc gcc-c++ make ncurses-devel boost-devel check-devel libopenssl-devel bison scons glibc-locale gawk net-tools
-##Change the directory to server
+      <command>source /home/test/.bashrc
+# Install dependencies
+sudo yum install -y git java-1.8.0-ibm-devel.s390x 
+# Set environment variables
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
+export PATH=/usr/lib/jvm/java-1.8.0-ibm/bin:$PATH
 
-SOURCE_ROOT=`pwd`
-
-cd $SOURCE_ROOT
-wget https://github.com/MariaDB/server/archive/mariadb-10.2.14.tar.gz
-tar xzf mariadb-10.2.14.tar.gz
-cd server-mariadb-10.2.14
-
-#added
-cd $SOURCE_ROOT
-git clone git://github.com/MariaDB/mariadb-connector-c.git
-cd mariadb-connector-c
-git checkout v3.0.2
-cd ..
-cp -r mariadb-connector-c/* server-mariadb-10.2.14/libmariadb/
-
-sed -i &apos;231d&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_STATUS_IN_TRANS_READONLY       8192&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_SESSION_STATE_CHANGED      16384&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-
-##Build, configure, install and execute test cases
-cd $SOURCE_ROOT/server-mariadb-10.2.14
-BUILD/autorun.sh
-./configure 
-make 
-sudo make install
+# Download source code
+git clone  https://github.com/microclimate-devops/xml-language-server.git
+cd xml-language-server/server/xml-server
 
 
-sudo useradd mysql
-sudo groupadd mysql
-cd /usr/local/mysql		
-sudo chmod -R o+rwx .
- 
-sudo scripts/mysql_install_db --user=mysql
-sleep 20s 
-sudo cp support-files/mysql.server /etc/init.d/mysql
+# Configure, build and Install XML LAnguage Server
+./mvnw clean package
 
-sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
-sleep 30s
-sudo bin/mysqladmin version --user=mysql
-
-cd $SOURCE_ROOT/server-mariadb-10.2.14
-make test 2&gt;&amp;1 | tee test.log
-  
-cd $SOURCE_ROOT
-git clone git://github.com/codership/galera.git
-cd galera
-git checkout release_25.3.21
-   
-scons strict_build_flags=0 --config=force
-
-sudo cp garb/garbd /usr/local/sbin/        
-sudo cp libgalera_smm.so /usr/local/lib64/
-sudo /sbin/ldconfig -v</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -98,7 +54,8 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -110,7 +67,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room></room>
+      <room>#loz-jenkins-build,@Vibhuti.Sawant</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
@@ -119,7 +76,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>false</notifyRepeatedFailure>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>
