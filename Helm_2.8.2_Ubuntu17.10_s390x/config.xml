@@ -50,12 +50,12 @@ export WORK_DIR=`pwd`
 
 #Install dependencies
 sudo apt-get update
-sudo apt-get install -y git make mercurial wget golang-1.9
+sudo apt-get install -y git make mercurial wget golang-1.10
 cat /etc/os*
 
 export GOPATH=$WORK_DIR
 export PATH=$GOPATH/bin:$PATH
-export PATH=/usr/lib/go-1.9/bin:$PATH 
+export PATH=/usr/lib/go-1.10/bin:$PATH 
 go version
 
 #Install glide

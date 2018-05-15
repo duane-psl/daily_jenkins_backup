@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,10 +26,13 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>
+
+source /home/test/.bashrc
+sudo ulimit -n unlimited ||true
 #Set the below parameters manually
 package_name=&quot;keystone&quot;
-published_version=&quot;11.0.3&quot;
+published_version=&quot;13.0.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -78,9 +81,9 @@ mysql -u root -h 127.0.0.1 &quot;-proot&quot; &lt; keystone_conf.sql
 cd ~
 git clone https://github.com/openstack/keystone.git
 cd keystone/
-git checkout 11.0.3
-sudo pip install -r requirements.txt
-sudo pip install -r test-requirements.txt 
+git checkout 13.0.0
+sudo pip install --ignore-installed -r requirements.txt
+sudo pip install --ignore-installed -r test-requirements.txt 
 sudo python setup.py install
 
 sudo cp -r etc/ /etc/keystone
@@ -235,7 +238,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @faizakht</room>
+      <room>#loz-jenkins-build, @Aditi.Jadhav</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
@@ -244,7 +247,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <notifyRepeatedFailure>false</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>

@@ -8,19 +8,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.5_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 13 * * 2</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 2</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;keystone&quot;
-published_version=&quot;11.0.3&quot;
+published_version=&quot;13.0.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -69,7 +77,7 @@ mysql -u root -h 127.0.0.1 &quot;-proot&quot; &lt; keystone_conf.sql
 cd ~
 git clone https://github.com/openstack/keystone.git
 cd keystone/
-git checkout 11.0.3
+git checkout 13.0.0
 sudo pip install --ignore-installed -r requirements.txt
 sudo pip install --ignore-installed -r test-requirements.txt 
 sudo python setup.py install
@@ -185,7 +193,7 @@ sudo cp ~/wsgi-keystone.conf .
 sudo ln -s /etc/httpd/sites-available/wsgi-keystone.conf /etc/httpd/sites-enabled
 
 sudo /usr/sbin/httpd
-export no_proxy=127.0.0.1
+
 export OS_USERNAME=admin 
 export OS_PASSWORD=ADMIN_PASS 
 export OS_PROJECT_NAME=admin
@@ -193,7 +201,7 @@ export OS_USER_DOMAIN_NAME=Default
 export OS_PROJECT_DOMAIN_NAME=Default 
 export OS_AUTH_URL=http://127.0.0.1:35357/v3 
 export OS_IDENTITY_API_VERSION=3
-export no_proxy=127.0.0.1
+
 sleep 30s
 
 openstack service list

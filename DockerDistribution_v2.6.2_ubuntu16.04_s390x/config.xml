@@ -10,7 +10,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>ravi_ub16.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -25,10 +25,21 @@
     <hudson.tasks.Shell>
       <command>export workdir=$(pwd)
 sudo apt-get update
-sudo apt-get install -y git make golang
-sudo rm -rf source_root/src/github.com/docker
-mkdir -p source_root/src/github.com/docker
-cd source_root/src/github.com/docker
+sudo apt-get install -y git make 
+
+cd $workdir
+sudo apt-get install -y tar wget gcc
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+#cd /usr/bin
+#sudo ln gcc s390x-linux-gnu-gcc
+go version
+
+sudo rm -rf $workdir/source_root/src/github.com/docker
+mkdir -p $workdir/source_root/src/github.com/docker
+cd $workdir/source_root/src/github.com/docker
 git clone https://github.com/docker/distribution.git
 cd distribution
 git checkout v2.6.2
