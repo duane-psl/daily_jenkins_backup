@@ -55,9 +55,9 @@ sudo zypper update -y
 sudo zypper install -y tar wget gcc
 cat /etc/os*
 cd $WORK_DIR
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
+chmod ugo+r go1.9.2.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 cd /usr/bin
 sudo ln gcc s390x-linux-gnu-gcc
@@ -75,7 +75,7 @@ cd $GOPATH
 wget https://github.com/Masterminds/glide/releases/download/v0.13.0/glide-v0.13.0-linux-s390x.tar.gz
 tar -xzf glide-v0.13.0-linux-s390x.tar.gz
 export PATH=$GOPATH/linux-s390x:$PATH
-glide --version
+glide --version 
 
 #Download Helm source code
 mkdir -p $GOPATH/src/k8s.io
@@ -105,8 +105,10 @@ export HELM_HOST=localhost:44134
 helm version
  
 sleep 20s
-pgrep -d&quot; &quot; -f &quot;tiller&quot; | sudo xargs kill || true 
+grep -d&quot; &quot; -f &quot;tiller&quot; | sudo xargs kill || true 
 sleep 20s 
+ 
+ 
  
  </command>
     </hudson.tasks.Shell>

@@ -8,82 +8,90 @@
       <weight>1</weight>
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
-  <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.04_4096</assignedNode>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.0.1">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>git://github.com/ariya/phantomjs.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>2.1.1</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>phantomjs</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+    </extensions>
+  </scm>
+  <assignedNode>dc2_rh7.5_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 6 * * 4</spec>
+      <spec>H 4 * * 1</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
-homedir=`pwd`
-echo $homedir
+      <command>source /home/test/.bashrc 
+#Install dependencies
 
-# Install build dependencies
-sudo apt-get update -y
-sudo apt-get install -y git wget tar make bzip2 unzip gcc python python-dev python-setuptools python-lxml python-ldap libxslt1-dev libffi-dev openssl libtool g++ libssl-dev
-sudo easy_install pip
+export phantomjs_home=`pwd`
 
-#Install required packages using pip	
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto msgpack-python jinja2 psutil futures tornado
+#Install PhantomJS dependencies
+sudo yum -y install gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel
+sudo yum install -y libXfont.s390x libXfont-devel.s390x xorg-x11-utils.s390x xorg-x11-font-utils.s390x tzdata.noarch tzdata-java.noarch xorg-x11-fonts-Type1.noarch  xorg-x11-font-utils.s390x
+sudo yum install -y python-setuptools
 
 
-# Download source code
-git clone git://github.com/saltstack/salt
-cd salt        
-git checkout v2017.7.2
-   
-    
-# Install saltstack and check version
+#Install python	
+sudo yum install -y gcc make ncurses patch bzip2-devel wget tar openssl-devel 
+wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tar.xz
+tar -xvf Python-2.7.9.tar.xz
+cd Python-2.7.9
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make &amp;&amp; sudo make install
 
-sudo pip install -e .
-salt --version
+python --version
 
-# Configure Salt master and minion
-cd $homedir
-mkdir -p etc/salt/
-cp ./salt/conf/master ./salt/conf/minion etc/salt/
-cd etc/salt/ 
-
-# Edit config file master as shown below
-sed -i &apos;s/#user: root/user: root/g&apos; master
-sed -i &apos;s,#root_dir: /,&apos;&quot;root_dir: $homedir&quot;&apos;,&apos; master
-
-# Edit config file minion as shown below
-sed -i &apos;s/#master: salt/master: localhost/g&apos; minion
-sed -i &apos;s/#user: root/user: root/g&apos; minion
-sed -i &apos;s,#root_dir: /,&apos;&quot;root_dir: $homedir&quot;&apos;,&apos; minion
-
-cd $homedir
-sudo salt-master -c ./etc/salt -d 
-sleep 60
-sudo salt-minion -c ./etc/salt -d 
-sleep 5m
-sudo salt-key -c ./etc/salt -L 
-sleep 30
-sudo salt-key -c ./etc/salt -A  -y
-sleep 30
-sudo salt -c ./etc/salt &apos;*&apos; test.ping || true
-
-# Check master, minion process
-ps -ef | grep salt
-
-# Unit and integration tests (optional)
-#cd $homedir/salt
-#sudo pip install git+https://github.com/saltstack/salt-testing.git#egg=SaltTesting
-#sudo pip install -r requirements/dev_python27.txt 
-#sudo ./setup.py test
+#Install python module
+sudo easy_install argparse
 
 
-# **Note:** Test failures seen in the following modules can be ignore as these are not related to IBM z Systems:_ 
-#           _Module Tests, State Tests, Shell Tests, NetAPI Tests, Salt Unit Test</command>
+cd $phantomjs_home
+cd phantomjs
+
+
+#Compile and Link
+python build.py
+
+cd $phantomjs_home
+cd phantomjs
+#Testing
+cd test
+python run-tests.py 2&gt;&amp;1 | tee testlogs &amp;&amp; tail -4 testlogs &gt; generated_failures
+
+echo &quot;  203 passed
+    4 passed unexpectedly
+   12 failed as expected
+    2 skipped&quot; &gt; expected_failures
+
+diff -u  --ignore-all-space generated_failures expected_failures
+
+#Check the version
+cd $phantomjs_home
+cd phantomjs
+bin/phantomjs --version
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -96,7 +104,8 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -108,7 +117,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @gsalgaon</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
