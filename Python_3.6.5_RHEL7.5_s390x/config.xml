@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_4096</assignedNode>
+  <assignedNode>dc2_rh7.5_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,9 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command> #Set the below parameters manually
+      <command>source /home/test/.bashrc 
+#Set the below parameters manually
 package_name=&quot;python3&quot;
-published_version=&quot;3.6.4&quot;
+published_version=&quot;3.6.5&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,23 +51,23 @@ else
 fi
 #------------------------------------------------------------------------------------
 
-sudo apt-get update
-sudo apt-get install -y gcc g++ make libncurses5-dev libreadline6-dev libssl-dev libgdbm-dev libc6-dev libsqlite3-dev libbz2-dev xz-utils patch wget tar 
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar zlib zlib-devel
 
-wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
-tar -xvf Python-3.6.4.tar.xz
-cd Python-3.6.4
+wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tar.xz
+tar -xvf Python-3.6.5.tar.xz
+cd Python-3.6.5
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 make
+
 sudo make install
 
+make test 2&gt;&amp;1 | tee test.log
 
-make test
 python_version=$(python3 --version 2&gt;&amp;1)
 
 echo $python_version &gt; output.txt
 
-echo &apos;Python 3.6.4&apos; &gt; expected.txt
+echo &apos;Python 3.6.5&apos; &gt; expected.txt
 result=`diff output.txt expected.txt`
 
 if [ -z &quot;$result&quot; ] ; then
@@ -92,36 +93,28 @@ it.getComputer().doDoDelete()
       <behavior>0</behavior>
       <runForMatrixParent>false</runForMatrixParent>
     </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
-    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.53">
-      <recipientList>$DEFAULT_RECIPIENTS</recipientList>
-      <configuredTriggers>
-        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
-          <email>
-            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
-            <body>$PROJECT_DEFAULT_CONTENT</body>
-            <recipientProviders>
-              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
-            </recipientProviders>
-            <attachmentsPattern></attachmentsPattern>
-            <attachBuildLog>false</attachBuildLog>
-            <compressBuildLog>false</compressBuildLog>
-            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
-            <contentType>project</contentType>
-          </email>
-        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
-      </configuredTriggers>
-      <contentType>default</contentType>
-      <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
-      <defaultContent>$DEFAULT_CONTENT</defaultContent>
-      <attachmentsPattern></attachmentsPattern>
-      <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
-      <postsendScript></postsendScript>
-      <attachBuildLog>true</attachBuildLog>
-      <compressBuildLog>false</compressBuildLog>
-      <replyTo>$DEFAULT_REPLYTO</replyTo>
-      <saveOutput>false</saveOutput>
-      <disabled>false</disabled>
-    </hudson.plugins.emailext.ExtendedEmailPublisher>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build,@duaned</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
   </publishers>
   <buildWrappers/>
 </project>

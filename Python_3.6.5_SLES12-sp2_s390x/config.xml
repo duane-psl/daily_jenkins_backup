@@ -44,22 +44,23 @@ fi
 sudo zypper up -y
 sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar zlib-devel
 
-export PATH=/usr/local/bin:$PATH
+export PATH=$PATH:/usr/local/bin
 
-wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
-tar -xvf Python-3.6.4.tar.xz
-cd Python-3.6.4
+wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tar.xz
+tar -xvf Python-3.6.5.tar.xz
+cd Python-3.6.5
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 make
 
-make test
 sudo make install
+
+make test 2&gt;&amp;1 | tee test.log
 
 python_version=$(python3 --version 2&gt;&amp;1)
 
 echo $python_version &gt; output.txt
 
-echo &apos;Python 3.6.4&apos; &gt; expected.txt
+echo &apos;Python 3.6.5&apos; &gt; expected.txt
 result=`diff output.txt expected.txt`
 
 if [ -z &quot;$result&quot; ] ; then

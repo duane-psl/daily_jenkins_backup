@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>dc2_sl11-SP4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,10 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc 
-#Set the below parameters manually
+      <command>
+ #Set the below parameters manually
 package_name=&quot;python3&quot;
-published_version=&quot;3.6.3&quot;
+published_version=&quot;3.6.5&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,24 +49,72 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-#------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+sudo zypper update -y
+sudo zypper install -y -C gcc gcc-c++ make libopenssl-devel openssl ncurses patch wget wget-openssl1 curl-openssl1 tar zlib-devel xz awk netcfg libtool automake autoconf
 
-sudo yum install -y gcc gcc-c++ make ncurses patch wget tar zlib zlib-devel
 
-wget https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz
-tar -xvf Python-3.6.4.tar.xz
-cd Python-3.6.4
+#Build openssl
+cd $homedir
+sudo rm -rf openssl
+git clone git://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_0_2l	 
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make
+sudo make install
+openssl version
+
+
+export PATH=/usr/local/bin:$PATH
+#export LDFLAGS=&quot;-L/usr/local/lib/&quot;
+#export LD_LIBRARY_PATH=&quot;/usr/local/lib/&quot;
+#export CPPFLAGS=&quot;-I/usr/local/include -I/usr/local/include/openssl&quot;
+cat /etc/services
+
+#Build curl
+cd $homedir
+sudo rm -rf curl
+git clone git://github.com/curl/curl.git
+cd curl
+git checkout curl-7_52_1
+./buildconf 
+./configure --prefix=/usr/local --with-ssl --disable-shared
+make &amp;&amp; sudo make install
+
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
+export PATH=/usr/local/bin:$PATH
+
+#Generate ca-bundle.crt for curl
+
+echo insecure &gt;&gt; $HOME/.curlrc
+wget --no-check-certificate https://raw.githubusercontent.com/curl/curl/curl-7_53_0/lib/mk-ca-bundle.pl
+perl mk-ca-bundle.pl -k
+
+export SSL_CERT_FILE=`pwd`/ca-bundle.crt
+rm  $HOME/.curlrc
+
+export LDFLAGS=&quot;-L/usr/local/lib/&quot;
+export LD_LIBRARY_PATH=&quot;/usr/local/lib/&quot;
+export CPPFLAGS=&quot;-I/usr/local/include -I/usr/local/include/openssl&quot;
+
+
+wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tar.xz
+tar -xvf Python-3.6.5.tar.xz
+cd Python-3.6.5
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 make
 
-make test
 sudo make install
+
+make test 2&gt;&amp;1 | tee test.log
 
 python_version=$(python3 --version 2&gt;&amp;1)
 
 echo $python_version &gt; output.txt
 
-echo &apos;Python 3.6.4&apos; &gt; expected.txt
+echo &apos;Python 3.6.5&apos; &gt; expected.txt
 result=`diff output.txt expected.txt`
 
 if [ -z &quot;$result&quot; ] ; then
