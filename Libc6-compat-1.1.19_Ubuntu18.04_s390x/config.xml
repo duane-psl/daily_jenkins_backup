@@ -33,6 +33,8 @@ sudo apt-get install -y tar wget make cmake gcc g++ bzip2 zlib1g-dev g++-multili
 #xz bzip2-devel zlib-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_8-devel gdb awk netcfg libbz2-devel glibc-locale
 
 #install gcc 6.3.0
+export WK_DIR=`pwd`
+cd $WK_DIR
 wget ftp://gcc.gnu.org/pub/gcc/releases/gcc-6.3.0/gcc-6.3.0.tar.gz  
 tar -xvzf gcc-6.3.0.tar.gz
 cd gcc-6.3.0
@@ -45,6 +47,7 @@ cd ../gccbuild
 --enable-shared --with-system-zlib --enable-threads=posix \
 --enable-__cxa_atexit --enable-checking --enable-gnu-indirect-function \
 --enable-languages=&quot;c,c++&quot; --disable-bootstrap
+sed -i &quot;s/xloc.file == &apos;\\\0&apos;/xloc.file[0] == &apos;\\\0&apos;/&quot; $WK_DIR/gcc-6.3.0/gcc/ubsan.c
 make
 sudo make install
 export PATH=/opt/gcc/bin:$PATH
@@ -56,6 +59,7 @@ cd ..
 wget http://git.musl-libc.org/cgit/musl/snapshot/musl-1.1.19.tar.gz
 tar -xvf musl-1.1.19.tar.gz
 cd musl-1.1.19
+
 
 #Build and test
 ./configure 

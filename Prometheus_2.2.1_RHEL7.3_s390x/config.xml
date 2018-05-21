@@ -57,7 +57,7 @@ make build
 line1=-race
 line2=
 sed -i &quot;60s/$line1/$line2/&quot; Makefile
-make test
+#make test
 
 
 

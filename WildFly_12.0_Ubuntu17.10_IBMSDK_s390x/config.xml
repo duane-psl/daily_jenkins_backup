@@ -45,7 +45,7 @@ export MAVEN_OPTS=&quot;-Xmx1024m&quot;
 export JBOSS_HOME=$PWD/build/target/wildfly-12.0.0.Final
 
 # Build the Source
-mvn install
+mvn install -DskipTests
 #mvn -DsomeModule.test.excludes=&quot;**/*JmsClientTestCase.java&quot; test -fn
 
 #Verification
@@ -55,7 +55,7 @@ sleep 60s
 curl http://localhost:8080 
 sleep 60s
 
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | xargs kill;
+pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;
 
 sleep 20s
 # Start server in domain mode
@@ -65,7 +65,7 @@ sleep 60s
 sleep 60s
 # Check server response
 curl http://localhost:8080 
-</command>
+pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
