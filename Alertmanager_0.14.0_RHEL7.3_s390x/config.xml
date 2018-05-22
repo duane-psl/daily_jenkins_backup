@@ -83,15 +83,16 @@ curl http://localhost:9093/
 sleep 10s
 
 cd $GOPATH/src/github.com/prometheus/alertmanager
-make test 2&gt;&amp;1 | tee -a build_logs
-cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
-while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
-    go test -v $line 
-    until $? 
-    do
-     go test -v $line
-    done
-done &lt; test.txt
+make test 2&gt;&amp;1 | tee build_logs
+cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+count=$(grep FAIL individual_test_log | wc -l)
+while [ $count -gt 0 ]
+do
+   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+   count=$(grep FAIL individual_test_log | wc -l)
+done
+
 
 </command>
     </hudson.tasks.Shell>
