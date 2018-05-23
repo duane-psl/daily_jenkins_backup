@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>service_cat_ub16.04</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -34,7 +34,7 @@ sudo apt-get install -y docker-ce
 sudo service docker start
 sleep 20s
 sudo service docker status
-
+sudo docker ps 
 #Service catalog
 sudo apt-get update
 sudo apt-get install -y git make 
@@ -64,7 +64,7 @@ sed -i &apos;30i \	\&amp;&amp; ./build \\&apos; $GOPATH/src/github.com/kubernete
 sed -i &apos;31i \	\&amp;&amp; cd bin &amp;&amp; cp -rf etcd etcdctl /usr/bin/&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;42d&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;42i \	\RUN apt-get update &amp;&amp; apt-get install -y python-pip libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev libssl-dev &amp;&amp; \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
-
+sudo service docker status
 git diff
 cd $GOPATH/src/github.com/kubernetes-incubator/service-catalog
 sudo -E make build ARCH=s390x 
@@ -85,6 +85,22 @@ sudo -E make test-unit ARCH=s390x
     </hudson.tasks.Shell>
   </builders>
   <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+if(it.name==x){
+it.getComputer().doDoDelete()
+}
+}
+</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

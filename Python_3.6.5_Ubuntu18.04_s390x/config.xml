@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>This job is configured to be run daily on ecos0041.</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_ub_16.04_Helm||dockercloud_ubuntu16.04</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,9 +26,9 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;helm&quot;
-published_version=&quot;2.8.2&quot;
+      <command> #Set the below parameters manually
+package_name=&quot;python3&quot;
+published_version=&quot;3.6.5&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -48,56 +48,30 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-export WORK_DIR=`pwd`
+#------------------------------------------------------------------------------------
 
-#Install dependencies
 sudo apt-get update
-sudo apt-get install -y git make mercurial wget golang-1.9
-cat /etc/os*
+sudo apt-get install -y gcc g++ make libncurses5-dev libreadline6-dev libssl-dev libgdbm-dev libc6-dev libsqlite3-dev libbz2-dev xz-utils patch wget tar zlib1g-dev
 
-export GOPATH=$WORK_DIR
-export PATH=$GOPATH/bin:$PATH
-export PATH=/usr/lib/go-1.9/bin:$PATH 
-go version
+wget https://www.python.org/ftp/python/3.6.5/Python-3.6.5.tar.xz
+tar -xvf Python-3.6.5.tar.xz
+cd Python-3.6.5
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make
+sudo make install
+make test 2&gt;&amp;1 | tee test.log
+python_version=$(python3 --version 2&gt;&amp;1)
 
-#Install glide
-cd $GOPATH
-wget https://github.com/Masterminds/glide/releases/download/v0.13.0/glide-v0.13.0-linux-s390x.tar.gz
-tar -xzf glide-v0.13.0-linux-s390x.tar.gz
-export PATH=$GOPATH/linux-s390x:$PATH
-glide --version
+echo $python_version &gt; output.txt
 
-#Download Helm source code
-mkdir -p $GOPATH/src/k8s.io
-cd $GOPATH/src/k8s.io
-git clone https://github.com/kubernetes/helm.git
-cd helm
-git checkout v2.8.2
- 
-#Build Helm
+echo &apos;Python 3.6.5&apos; &gt; expected.txt
+result=`diff output.txt expected.txt`
 
-cd $GOPATH/src/k8s.io/helm
-make bootstrap build
-export PATH=$GOPATH/src/k8s.io/helm/bin:$PATH
-  
-sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/helm/Makefile
-
-git diff
-
-#Run test cases
-cd $GOPATH/src/k8s.io/helm/
-make test
-
-
-cd $GOPATH/src/k8s.io/helm
-bin/tiller &amp;
-sleep 20s
-export HELM_HOST=localhost:44134
-helm version
- 
-sleep 20s
-pgrep -d&quot; &quot; -f &quot;tiller&quot; | sudo xargs kill || true 
-sleep 20s</command>
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -107,37 +81,45 @@ sleep 20s</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
       <runForMatrixParent>false</runForMatrixParent>
     </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
-    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
-      <baseUrl></baseUrl>
-      <teamDomain></teamDomain>
-      <authToken></authToken>
-      <authTokenCredentialId></authTokenCredentialId>
-      <botUser>false</botUser>
-      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank</room>
-      <startNotification>false</startNotification>
-      <notifySuccess>false</notifySuccess>
-      <notifyAborted>false</notifyAborted>
-      <notifyNotBuilt>false</notifyNotBuilt>
-      <notifyUnstable>false</notifyUnstable>
-      <notifyRegression>false</notifyRegression>
-      <notifyFailure>true</notifyFailure>
-      <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
-      <includeTestSummary>false</includeTestSummary>
-      <includeFailedTests>false</includeFailedTests>
-      <commitInfoChoice>NONE</commitInfoChoice>
-      <includeCustomMessage>false</includeCustomMessage>
-      <customMessage></customMessage>
-    </jenkins.plugins.slack.SlackNotifier>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.53">
+      <recipientList>$DEFAULT_RECIPIENTS</recipientList>
+      <configuredTriggers>
+        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+          <email>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT</body>
+            <recipientProviders>
+              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+            </recipientProviders>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+      </configuredTriggers>
+      <contentType>default</contentType>
+      <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
+      <defaultContent>$DEFAULT_CONTENT</defaultContent>
+      <attachmentsPattern></attachmentsPattern>
+      <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
+      <postsendScript></postsendScript>
+      <attachBuildLog>true</attachBuildLog>
+      <compressBuildLog>false</compressBuildLog>
+      <replyTo>$DEFAULT_REPLYTO</replyTo>
+      <saveOutput>false</saveOutput>
+      <disabled>false</disabled>
+    </hudson.plugins.emailext.ExtendedEmailPublisher>
   </publishers>
   <buildWrappers/>
 </project>

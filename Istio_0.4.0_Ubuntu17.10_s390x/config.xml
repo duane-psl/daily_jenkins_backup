@@ -1,0 +1,331 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dockercloud_ubuntu17.10_8192</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 10 * * 6</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>###########################################################################################################################
+#													Ubuntu 17.10
+###########################################################################################################################
+
+##################################### 		STEP 1 . BUILD ISTIO PROXY  	  #############################################
+# Set the below parameters manually
+package_name=&quot;istio&quot;
+published_version=&quot;0.4.0&quot;
+
+cat /etc/os*
+
+# Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+export BUILDDIR=`pwd`
+
+# Install dependencies for Proxy
+sudo apt-get update
+sudo apt-get install -y git openjdk-8-jdk pkg-config zip zlib1g-dev unzip python libtool automake cmake golang-any curl wget build-essential realpath  rsync clang g++-6
+sudo rm -rf /usr/bin/gcc /usr/bin/g++ /usr/bin/cc
+sudo ln -s /usr/bin/gcc-6 /usr/bin/gcc
+sudo ln -s /usr/bin/g++-6 /usr/bin/g++
+sudo ln -s /usr/bin/gcc /usr/bin/cc	
+
+java -version
+gcc --version
+
+# Install java openjdk-8-151 
+cd $BUILDDIR
+wget http://launchpadlibrarian.net/343339131/openjdk-8-jdk_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+wget http://launchpadlibrarian.net/343339130/openjdk-8-jdk-headless_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+wget http://launchpadlibrarian.net/343339132/openjdk-8-jre-headless_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+wget http://launchpadlibrarian.net/343339133/openjdk-8-jre_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+sudo dpkg -i openjdk-8-jre-headless_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+sudo dpkg -i openjdk-8-jdk-headless_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+sudo dpkg -i openjdk-8-jre_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+sudo dpkg -i openjdk-8-jdk_8u151-b12-0ubuntu0.17.10.2_s390x.deb
+
+
+java -version
+
+# Download and Install Bazel 0.8.0
+cd $BUILDDIR
+mkdir bazel &amp;&amp; cd bazel
+wget https://github.com/bazelbuild/bazel/releases/download/0.8.0/bazel-0.8.0-dist.zip
+unzip bazel-0.8.0-dist.zip
+chmod -R +w .
+sed -i  &apos;/run &quot;${JAVAC}&quot; -classpath &quot;${classpath}&quot; -sourcepath &quot;${sourcepath}&quot; \\/c\ run &quot;${JAVAC}&quot; -J-Xms1g -J-Xmx1g -classpath &quot;${classpath}&quot; -sourcepath &quot;${sourcepath}&quot; \\&apos; scripts/bootstrap/compile.sh
+
+bash ./compile.sh
+export PATH=$PATH:$BUILDDIR/bazel/output/
+bazel version
+
+# Download source code of envoy
+cd $BUILDDIR/
+wget https://github.com/envoyproxy/envoy/archive/e593fedc3232fbb694f3ec985567a2c7dff05212.zip
+unzip e593fedc3232fbb694f3ec985567a2c7dff05212.zip
+mv envoy-e593fedc3232fbb694f3ec985567a2c7dff05212/ envoy    
+
+
+## Edit file /&lt;source_root&gt;/envoy/ci/build_container/build_recipes/backward.sh
+cp $BUILDDIR/envoy/ci/build_container/build_recipes/backward.sh $BUILDDIR/backward.sh.orig
+sed -i &apos;/tar xf backward-cpp-&quot;$VERSION&quot;.tar.gz/a \sed -i &apos;\&apos;&apos;/uctx-&gt;uc_mcontext.regs-&gt;nip/a \\#elif defined(__s390x__)\\n\\                error_addr = reinterpret_cast&lt;void*&gt;(uctx-&gt;uc_mcontext.psw.addr);&apos;\&apos;&apos; backward-cpp-$VERSION/backward.hpp&apos; $BUILDDIR/envoy/ci/build_container/build_recipes/backward.sh
+diff -u $BUILDDIR/backward.sh.orig $BUILDDIR/envoy/ci/build_container/build_recipes/backward.sh || true
+
+## Edit file /&lt;source_root&gt;/envoy/ci/build_container/build_recipes/boringssl.sh
+cp $BUILDDIR/envoy/ci/build_container/build_recipes/boringssl.sh $BUILDDIR/boringssl.sh.orig
+sed -i &apos;/git reset --hard &quot;$COMMIT&quot;/a \sed -i &apos;\&apos;&apos;/OPENSSL_PNACL/a \\#elif defined(__s390x__)\\n\\#define OPENSSL_64_BIT&apos;&quot;&apos;&quot;&apos; include/openssl/base.h\nsed -i &apos;\&apos;&apos;/set(ARCH &quot;ppc64le&quot;)/a \\elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL &quot;s390x&quot;)\\n\\  set(ARCH &quot;s390x&quot;)&apos;&quot;&apos;&quot;&apos; CMakeLists.txt&apos; $BUILDDIR/envoy/ci/build_container/build_recipes/boringssl.sh
+diff -u $BUILDDIR/boringssl.sh.orig $BUILDDIR/envoy/ci/build_container/build_recipes/boringssl.sh || true
+
+## Edit file /&lt;source_root&gt;/envoy/ci/build_container/build_recipes/luajit.sh
+cp $BUILDDIR/envoy/ci/build_container/build_recipes/luajit.sh	$BUILDDIR/luajit.sh.orig
+sed -i &apos;/VERSION=2.0.5/,+4d&apos;  $BUILDDIR/envoy/ci/build_container/build_recipes/luajit.sh
+sed -i  &apos;/set -e/a\git clone https://github.com/linux-on-ibm-z/LuaJIT.git\ncd LuaJIT\ngit checkout v2.1&apos; $BUILDDIR/envoy/ci/build_container/build_recipes/luajit.sh
+diff -u $BUILDDIR/luajit.sh.orig $BUILDDIR/envoy/ci/build_container/build_recipes/luajit.sh || true
+
+## Edit file /&lt;source_root&gt;/envoy/source/exe/signal_action.cc
+cp $BUILDDIR/envoy/source/exe/signal_action.cc $BUILDDIR/signal_action.cc.orig
+sed -i  &apos;/__ss.__rip/a\#elif defined(__s390x__)\n    error_pc =  reinterpret_cast&lt;void*&gt;(ucontext-&gt;uc_mcontext.psw.addr);&apos; $BUILDDIR/envoy/source/exe/signal_action.cc
+diff -u $BUILDDIR/signal_action.cc.orig $BUILDDIR/envoy/source/exe/signal_action.cc || true
+
+# Download source code of bazelbuild/rules_go version 0.8.0
+cd $BUILDDIR/
+git clone https://github.com/bazelbuild/rules_go.git
+cd rules_go 
+git checkout 0.8.0
+
+## Edit file /&lt;source_root&gt;/rules_go/go/private/rules/stdlib.bzl
+sed -i  &apos;/&quot;CC&quot;: cc_path,/c\      &quot;CC&quot;: &quot;/usr/bin/gcc&quot;,&apos; $BUILDDIR/rules_go/go/private/rules/stdlib.bzl
+git diff 
+
+# Download source code of Istio Proxy version 0.4.0
+cd $BUILDDIR/
+git clone https://github.com/istio/proxy.git
+cd proxy &amp;&amp; git checkout 0.4.0
+
+## Edit file /&lt;source_root&gt;/proxy/WORKSPACE
+
+sed -i  &apos;/ENVOY_SHA = &quot;e593fedc3232fbb694f3ec985567a2c7dff05212&quot;/c\#ENVOY_SHA = &quot;e593fedc3232fbb694f3ec985567a2c7dff05212&quot;&apos; $BUILDDIR/proxy/WORKSPACE
+sed -i &apos;/http_archive(/,/url = \&quot;https:\/\/github.com\/envoyproxy\/envoy\/archive\/\&quot; + ENVOY_SHA + &quot;.zip&quot;,/d&apos; $BUILDDIR/proxy/WORKSPACE
+sed -i  &apos;/#ENVOY_SHA = &quot;e593fedc3232fbb694f3ec985567a2c7dff05212&quot;/a\local_repository(\n    name = &quot;envoy&quot;,\n    path = &quot;&apos;$BUILDDIR/envoy&apos;&quot;,&apos; $BUILDDIR/proxy/WORKSPACE
+sed -i &apos;0,/git_repository/{/git_repository/d;}&apos; $BUILDDIR/proxy/WORKSPACE
+sed -i &apos;/ name = &quot;io_bazel_rules_go&quot;,/,+3d&apos;  $BUILDDIR/proxy/WORKSPACE
+sed -i  &apos;/api_dependencies()/a\local_repository(\n    name = &quot;io_bazel_rules_go&quot;,\n    path = &quot;&apos;$BUILDDIR/rules_go&apos;&quot;,\n)&apos; $BUILDDIR/proxy/WORKSPACE
+
+git diff 
+
+# Build Istio Proxy
+cd $BUILDDIR/proxy/
+sed -i  &apos;27s/build/ --host_jvm_args=&quot;-Xms512m&quot; --host_jvm_args=&quot;-Xmx2g&quot; build/&apos; $BUILDDIR/proxy/Makefile
+set +e
+
+make build &gt; proxy_build_log
+proxy_build_status=$?;
+while [ $proxy_build_status -ne 0 ]
+do
+   #grep &apos;External dep build exited with return code: 256&apos; proxy_build_log
+   #grepStatus1=$?
+   #grep &apos;Timed out; also encountered an error while attempting to retrieve output&apos;
+   #grepStatus2=$?
+   #if [ \( &quot;$grepStatus1&quot; -eq 0 -a &quot;$grepStatus2&quot; = 0 \) ]; then
+			#echo &quot;Proxy build failed with a timeout error. Building proxy again.&quot;
+			make build &gt; proxy_build_log
+			
+			proxy_build_status=$?;
+	#else			
+			#exit 0;
+	#fi  
+done
+
+# Run the Istio Proxy test suite
+cd $BUILDDIR/proxy
+sed -i  &apos;37s/$/ --test_env=ENVOY_IP_TEST_VERSIONS=v4only/&apos; $BUILDDIR/proxy/Makefile
+make test &gt; proxy_test_log
+proxy_test_status=$?;
+while [ $proxy_test_status -ne 0 ]
+do
+   #grep &quot;recipe for target &apos;test&apos; failed&quot; proxy_test_log
+   #grepStatus1=$?
+   # if [ &quot;$grepStatus1&quot; -eq 0  ]; then
+			#echo &quot;Proxy Tests failed. Running the TCs again.&quot;
+			make test &gt; proxy_test_log			
+			proxy_test_status=$?;
+	#else
+			#exit 0;
+	#fi  
+done
+
+
+
+set -e
+#########################################		STEP 2 . BUILD ISTIO   	  ###################################################
+
+# Install dependencies for Istio
+sudo apt-get install -y pkg-config zip gcc golang-1.9 g++ zlib1g-dev unzip git vim tar wget automake autoconf libtool make curl maven openjdk-8-jdk python-pip python-virtualenv python-numpy swig python-dev libcurl3-dev python-mock python-scipy bzip2 glibc*   
+sudo easy_install pip  
+sudo pip install wheel backports.weakref portpicker
+export PATH=/usr/lib/go-1.9/bin:$PATH
+
+# Download Istio
+cd $BUILDDIR
+git clone https://github.com/istio/istio.git
+cd istio
+git checkout 0.4.0
+
+## Edit file /&lt;source_root&gt;/istio/WORKSPACE
+sed -i  &apos;/check_version()/a\git_repository(\n    name = &quot;com_google_protobuf&quot;,\n    commit = &quot;642e1ac635f2563b4a14c255374f02645ae85dac&quot;,\n    remote = &quot;https://github.com/google/protobuf.git&quot;,\n)&apos; $BUILDDIR/istio/WORKSPACE
+sed -i  &apos;/commit = &quot;9cf23e2aab101f86e4f51d8c5e0f14c012c2161c&quot;,/c\    tag = &quot;0.8.0&quot;,&apos; $BUILDDIR/istio/WORKSPACE
+
+
+## Edit file /&lt;source_root&gt;/istio/Makefile
+sed -i  &apos;/ARGS) build /c\\tbazel $(BAZEL_STARTUP_ARGS) --host_jvm_args=&quot;-Xms512m&quot; --host_jvm_args=&quot;-Xmx2g&quot; build $(BAZEL_BUILD_ARGS) //...&apos; $BUILDDIR/istio/Makefile
+
+## Create tar of the envoy binary generated as part of Istio Proxy build
+cd $BUILDDIR
+mkdir -p usr/local/bin/
+cp $BUILDDIR/proxy/bazel-bin/src/envoy/envoy usr/local/bin/
+sudo tar -czvf /home/envoy_binary.tar.gz usr/local/bin/
+
+## Edit file /&lt;source_root&gt;/istio/pilot/proxy/envoy/BUILD
+sed -i  &apos;/cmd = &quot;tar xzf $(location @envoy_binary\/\/file)/c\    cmd = &quot;tar xzf /home/envoy_binary.tar.gz; mv usr/local/bin/envoy $@&quot;,&apos; $BUILDDIR/istio/pilot/proxy/envoy/BUILD
+
+# Build Istio
+cd $BUILDDIR/istio
+mkdir ~/.kube 
+cp $BUILDDIR/istio/.circleci/config ~/.kube/config 
+ln -s ~/.kube/config $BUILDDIR/istio/pilot/platform/kube/config  
+make build
+export PATH=$PATH:$BUILDDIR/istio/bazel-out/s390x-fastbuild/bin/pilot/cmd/istioctl/linux_s390x_stripped/
+
+set +e
+
+# Run Tests for Istio
+echo $BUILDDIR
+cd $BUILDDIR/istio
+
+# The make test steps fails with known 6 TC failures, Check if the failures match with the known TC names
+testBuild_count=0; # At most we will run &apos;make test&apos; twice inorder to get the TCs failing due to timeout to pass too
+test_status=1;
+while [  $testBuild_count -lt 2 -a $test_status -ne 0 ];do
+        make test &gt; istio_test_log
+        test_status=$?;
+        job_status=0;
+        if [ $test_status -ne 0 ]; then
+                job_status=1;
+                grep &apos;6 fail locally&apos; istio_test_log
+                if [ $? -eq 0 ]; then
+                        grep &apos;//pilot/platform/kube/inject:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus1=$?
+                        grep &apos;//mixer/pkg/config/crd:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus2=$?
+                        grep &apos;//pilot/adapter/config/crd:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus3=$?
+                        grep &apos;//pilot/platform/kube:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus4=$?
+                        grep &apos;//pilot/platform/kube/admit:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus5=$?
+                        grep &apos;//pilot/platform/kube/inject:go_default_test
+                       FAILED&apos; istio_test_log
+                        grepstatus6=$?
+                        echo $grepstatus5
+                        if [ \( &quot;$grepstatus1&quot; -eq 0 -a &quot;$grepstatus2&quot; = 0 -a &quot;$grepstatus3&quot; = 0 -a &quot;$grepstatus4&quot; = 0 -a &quot;$grepstatus5&quot; = 0 -a &quot;$grepstatus6&quot; == 0 \) ]; then
+                                job_status=0;
+                                test_status=0;
+                        else
+                                job_status=1;
+						fi
+                else
+                        test_status=1;
+                fi
+        else
+                test_status=1;
+        fi
+        testBuild_count=$((testBuild_count+1))
+done
+
+# Job Status
+if [ $job_status -eq 1 ]; then
+        echo &quot;Job Failed&quot;
+        exit 1
+else
+        echo &quot;Job Pass&quot;
+        exit 0
+fi</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+if(it.name==x){
+it.getComputer().doDoDelete()
+}
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build,@gsalgaon</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

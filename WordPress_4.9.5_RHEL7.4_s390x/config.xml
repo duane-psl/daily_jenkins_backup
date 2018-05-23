@@ -23,6 +23,7 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc 
+
 #Set the below parameters manually
 package_name=&quot;wordpress&quot;
 published_version=&quot;4.9.5&quot;

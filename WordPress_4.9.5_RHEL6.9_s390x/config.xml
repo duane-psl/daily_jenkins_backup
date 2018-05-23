@@ -27,6 +27,21 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc 
+#Set the below parameters manually
+package_name=&quot;wordpress&quot;
+published_version=&quot;4.9.5&quot;
+
+available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
 # Install dependencies
 sudo yum install -y httpd php php-mysql git mysql mysql-server sed 
 

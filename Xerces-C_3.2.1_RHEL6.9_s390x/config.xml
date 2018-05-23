@@ -23,6 +23,22 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc 
+#Set the below parameters manually
+package_name=&quot;xerces-c&quot;
+published_version=&quot;3.2.1&quot;
+
+available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+
 # Build Dependencies
 sudo yum install -y git automake libtool make gcc-c++ tar
 
