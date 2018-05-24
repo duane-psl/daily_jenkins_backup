@@ -47,7 +47,7 @@ git checkout 12.0.0.Final
 
 
 # Build the Source
-mvn install
+mvn install -DskipTests
 #mvn -DsomeModule.test.excludes=&quot;**/*JmsClientTestCase.java&quot; test -fn
 
 #Verification
@@ -57,7 +57,7 @@ sleep 60s
 curl http://localhost:8080 
 sleep 60s
 
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | xargs kill;
+pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill || true
 
 sleep 20s
 # Start server in domain mode
@@ -67,6 +67,7 @@ sleep 60s
 sleep 60s
 # Check server response
 curl http://localhost:8080 
+pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill || true
 </command>
     </hudson.tasks.Shell>
   </builders>

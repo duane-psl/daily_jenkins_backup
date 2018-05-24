@@ -9,32 +9,26 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 5</spec>
+      <spec>H 20 * * 3</spec>
     </hudson.triggers.TimerTrigger>
-    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.25.0">
-      <spec></spec>
-    </com.cloudbees.jenkins.GitHubPushTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5</spec>
+      <spec>H 20 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Set the below parameters manually
-package_name=&quot;mariadb&quot;
-published_version=&quot;10.2.14&quot;
-
-cat /etc/redhat-release
+      <command>#Set the below parameters manually
+package_name=&quot;hbase&quot;
+published_version=&quot;1.2.6&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -46,62 +40,79 @@ elif [ $ID == &quot;ubuntu&quot; ]; then
 	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
-
-SOURCE_ROOT=`pwd`
-source /home/test/.bashrc
-sudo yum install -y git wget cmake gcc gcc-c++ hostname make ncurses-devel bison tar boost-devel check-devel openssl-devel perl-CPAN &apos;perl(Test::More)&apos;
-wget https://github.com/MariaDB/server/archive/mariadb-10.2.14.tar.gz
-tar xzf mariadb-10.2.14.tar.gz
-
-
-cd $SOURCE_ROOT
-git clone git://github.com/MariaDB/mariadb-connector-c.git
-cd mariadb-connector-c
-git checkout v3.0.2
-cd ..
-cp -r mariadb-connector-c/* server-mariadb-10.2.14/libmariadb/
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
 
 
-sed -i &apos;231d&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_STATUS_IN_TRANS_READONLY       8192&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_SESSION_STATE_CHANGED      16384&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-mariadb-10.2.14/libmariadb/include/mariadb_com.h
-
-##Build, configure, install and execute test cases
-cd $SOURCE_ROOT/server-mariadb-10.2.14
-BUILD/autorun.sh 
-./configure
-make 
-sudo make install 
+#Install the dependencies
+sudo apt-get update
+sudo apt-get install -y git openjdk-8-jdk wget maven tar make gcc ant patch
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-s390x/
+export PATH=$JAVA_HOME/bin:$PATH:
+java -version
 
 
-sudo useradd mysql
-cd /usr/local/mysql		
-sudo chmod -R o+rwx .
-
-# Start Mysql server
-sudo scripts/mysql_install_db --user=mysql
-sleep 20s
-sudo cp support-files/mysql.server /etc/init.d/mysql
-sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
-sleep 30s
-sudo bin/mysqladmin version --user=mysql
+#Set Environmental variables
+export hibernate_home=$(pwd)
+#export HADOOP_USER_NAME=&quot;hadoop&quot;
+export hbase_dir=$(pwd)
 
 
-cd $SOURCE_ROOT/server-mariadb-10.2.14
-make test 2&gt;&amp;1 | tee test.log
+cd $hibernate_home
+#Download the source code
+git clone git://github.com/apache/hbase.git
+cd hbase/
+git checkout rel/1.2.6
+wget https://issues.apache.org/jira/secure/attachment/12899868/HBASE-19188.branch-1.2.002.patch
+patch -p1 -i HBASE-19188.branch-1.2.002.patch
+mvn package -DskipTests &amp;&amp; mvn test -fn
 
-###Build galara for clustering....
-cd $SOURCE_ROOT
-wget http://downloads.sourceforge.net/project/scons/scons/2.3.4/scons-2.3.4-1.noarch.rpm
-sudo rpm -i scons-2.3.4-1.noarch.rpm
-git clone git://github.com/codership/galera.git
-cd galera
-git checkout release_25.3.21
-scons strict_build_flags=0 --config=force
-sudo cp garb/garbd /usr/local/sbin/        
-sudo cp libgalera_smm.so /usr/local/lib64/
-sudo /sbin/ldconfig -v</command>
+cd $hbase_dir
+wget https://github.com/jnr/jffi/archive/1.0.0.tar.gz
+tar -xvf 1.0.0.tar.gz
+cd jffi-1.0.0/
+
+
+#Edit the files
+cp $hbase_dir/jffi-1.0.0/jni/GNUmakefile $hbase_dir/jffi-1.0.0/jni/GNUmakefile.org
+sed -i &apos;68d &apos; $hbase_dir/jffi-1.0.0/jni/GNUmakefile
+sed -i &apos;68 i WFLAGS += -W -Wall -Wno-unused -Wno-parentheses -Wundef -Wno-unused-parameter&apos; $hbase_dir/jffi-1.0.0/jni/GNUmakefile 
+
+sed -i &apos;159d &apos; $hbase_dir/jffi-1.0.0/jni/GNUmakefile
+sed -i &apos;159 i SOFLAGS = -shared -static-libgcc -Wl,-soname,$(@F) -Wl,-O1 &apos; $hbase_dir/jffi-1.0.0/jni/GNUmakefile
+
+cp $hbase_dir/jffi-1.0.0/libtest/GNUmakefile $hbase_dir/jffi-1.0.0/libtest/GNUmakefile.org
+
+sed -i &apos;48d &apos; $hbase_dir/jffi-1.0.0/libtest/GNUmakefile
+sed -i &apos;48 i WFLAGS = -W -Werror -Wall -Wno-unused -Wno-parentheses -Wno-unused-parameter&apos; $hbase_dir/jffi-1.0.0/libtest/GNUmakefile
+
+sed -i &apos;50d &apos; $hbase_dir/jffi-1.0.0/libtest/GNUmakefile
+sed -i &apos;50 i SOFLAGS = -shared -Wl,-O1&apos; $hbase_dir/jffi-1.0.0/libtest/GNUmakefile
+ 
+
+
+ant 2&gt;&amp;1 | tee logs
+
+
+mkdir $hbase_dir/jar_tmp
+cp ~/.m2/repository/org/jruby/jruby-complete/1.6.8/jruby-complete-1.6.8.jar $hbase_dir/jar_tmp
+cd $hbase_dir/jar_tmp
+jar xf jruby-complete-1.6.8.jar
+mkdir jni/s390x-Linux
+cp $hbase_dir/jffi-1.0.0/build/jni/libjffi-1.0.so jni/s390x-Linux
+jar uf jruby-complete-1.6.8.jar jni/s390x-Linux/libjffi-1.0.so
+mv jruby-complete-1.6.8.jar ~/.m2/repository/org/jruby/jruby-complete/1.6.8/jruby-complete-1.6.8.jar
+
+#Start hbase shell
+cd $hbase_dir/hbase
+bin/start-hbase.sh
+bin/hbase shell
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -126,7 +137,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @narang</room>
+      <room>#loz-jenkins-build,@aditya.pawaskar</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

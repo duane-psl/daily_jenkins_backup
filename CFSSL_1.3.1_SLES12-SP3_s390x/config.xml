@@ -4,78 +4,69 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <jenkins.model.BuildDiscarderProperty>
-      <strategy class="hudson.tasks.LogRotator">
-        <daysToKeep>-1</daysToKeep>
-        <numToKeep>6</numToKeep>
-        <artifactDaysToKeep>-1</artifactDaysToKeep>
-        <artifactNumToKeep>-1</artifactNumToKeep>
-      </strategy>
-    </jenkins.model.BuildDiscarderProperty>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
       <weight>1</weight>
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 13 * * 3</spec>
+    </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#WildFly 12.0
-source /home/test/.bashrc
-sudo yum install -y git wget tar java-1.8.0-ibm-devel.s390x java-1.8.0-ibm.s390x curl
-export WORK_DIR=`pwd`
-cd $WORK_DIR
+      <command>cat /etc/os*
 
-#Install Maven
-wget https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar -xvzf apache-maven-3.3.9-bin.tar.gz
+#Install dependencies
+sudo zypper install -y git gcc wget tar
 
-#Set the environment variables
-export M2_HOME=$WORK_DIR/apache-maven-3.3.9
-export MAVEN_OPTS=&quot;-Xmx512m -XX:MaxPermSize=1024m&quot;
-export JBOSS_HOME=$WORK_DIR/wildfly/build/target/wildfly-12.0.0.Final/
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm					
-export PATH=$M2_HOME/bin:$JAVA_HOME/bin:$WORK_DIR/wildfly/build/target/wildfly-12.0.0.Final/bin:$PATH
-java -version
+#Build and install CFSSL
+#Setup Environment variable and source folder to build the package
+export WK_DIR=`pwd`
+cd $WK_DIR
+mkdir -p $WK_DIR/src/github.com/cloudflare/
 
+# Install GO
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+export GOPATH=$WK_DIR/
+export PATH=$GOPATH/bin:$PATH
+go version
 
-#Get WildFly Source Code 
-cd $WORK_DIR
-git clone https://github.com/wildfly/wildfly.git
-cd wildfly
-git checkout 12.0.0.Final
+#Download CFSSL source code
+cd $WK_DIR/src/github.com/cloudflare/
+git clone https://github.com/cloudflare/cfssl.git
+cd cfssl
+git checkout tags/1.3.1
 
-mvn install -DskipTests 
+#Build CFSSL
+cd $WK_DIR/src/github.com/cloudflare/cfssl
+go install ./cmd/cfssl
+go install ./cmd/cfssljson
 
-#Verification
-# Start server in stand alone mode
-nohup sh ./dist/target/wildfly-12.0.0.Final/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0 &amp;
-sleep 60s
-curl http://localhost:8080 
-sleep 60s
-
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;
-
-sleep 20s
-# Start server in domain mode
-nohup sh ./dist/target/wildfly-12.0.0.Final/bin/domain.sh -b 0.0.0.0 -bmanagement 0.0.0.0 &amp;
-sleep 60s
-
-sleep 60s
-# Check server response
-curl http://localhost:8080
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;</command>
+#Run test cases
+cd $WK_DIR/src/github.com/cloudflare/cfssl
+sed -i &apos;/REPO_PATH=&quot;${ORG_PATH}\/cfssl&quot;/ a\ARCH=&quot;$(uname -m)&quot; \&apos; test.sh
+sed -i &apos;/go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package/ c\    if [ $ARCH = &apos;x86_64&apos;  ]; then\n\        go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    else\n\        go test -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    fi&apos; test.sh
+./test.sh 2&gt;&amp;1 | tee testlogg
+grep &apos;FAIL\s\github.com&apos; testlogg
+count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)
+if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit 1; fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -85,11 +76,10 @@ pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -101,7 +91,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @agautam</room>
+      <room>#loz-jenkins-build,@prajyot.parab</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

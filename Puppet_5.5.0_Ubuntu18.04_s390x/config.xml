@@ -197,7 +197,6 @@ rspec ./spec/unit/type/file/source_spec.rb:45 # Puppet::Type::File::ParameterSou
 grep &quot;Failed examples:&quot; root_tests.log -A 3 | tee root_actual_failures.log
 if diff -u --ignore-all-space root_expected_failures.log root_actual_failures.log ; then
 	echo &quot;No Unexpected failures found!&quot;
-    exit 0
 else
 	exit 1
 fi
