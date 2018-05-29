@@ -90,7 +90,7 @@ cd $WORK_DIR
 sudo rm -rf jenkins
 git clone git://github.com/jenkinsci/jenkins.git
 cd $WORK_DIR/jenkins
-git checkout jenkins-2.89.2
+git checkout jenkins-2.107.3
 
 
 
@@ -106,11 +106,12 @@ cd $WORK_DIR/jenkins
 cat -n war/pom.xml
 cd $WORK_DIR/jenkins/war
 
-sed -i &apos;564i &lt;!--&apos; pom.xml
-sed -i &apos;589d&apos; pom.xml
-sed -i &apos;612d&apos; pom.xml
-sed -i &apos;622,624d&apos; pom.xml
-sed -i &apos;685i --&gt;&apos;  pom.xml
+sed -i &apos;565i &lt;!--&apos; pom.xml
+sed -i &apos;591d&apos; pom.xml
+sed -i &apos;614d&apos; pom.xml
+sed -i &apos;624,625d&apos; pom.xml
+sed -i &apos;624d&apos; pom.xml
+sed -i &apos;687i --&gt;&apos;  pom.xml
 
 cd $WORK_DIR/jenkins/
 export _JAVA_OPTIONS=&quot;-Xmx2g&quot;
@@ -277,8 +278,8 @@ cd $WORK_DIR/tomcat85/output/build/webapps
 
 
 rm -f index.html
-rm -f index.html
-wget localhost:8080
+curl http://localhost:8080/ --output index.html
+sleep 4m
 if grep -q Dashboard &quot;index.html&quot;; then
    whoami
    ps -aef

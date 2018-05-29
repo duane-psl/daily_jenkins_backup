@@ -30,6 +30,7 @@ sudo yum install -y make git tar wget java-1.8.0-openjdk-devel gcc gcc-c++ patch
 # Set environment variables
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0
 export PATH=/usr/lib/jvm/java-1.8.0/bin:$PATH
+export JAVA_TOOL_OPTIONS=&apos;-Xmx2048M&apos;
 
 # Install Maven
 wget http://www-us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz

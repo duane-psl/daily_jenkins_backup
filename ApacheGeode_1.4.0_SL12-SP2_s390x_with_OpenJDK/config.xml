@@ -192,8 +192,8 @@ fi
 
 
 #Verify binary
-export PATH=$PATH:$WS/incubator-geode/geode-assembly/build/install/apache-geode/bin
-gfsh</command>
+#export PATH=$PATH:$WS/incubator-geode/geode-assembly/build/install/apache-geode/bin
+$WS/incubator-geode/geode-assembly/build/install/apache-geode/bin/gfsh</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

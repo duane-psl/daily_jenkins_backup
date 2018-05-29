@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>jenkin Job for Logstash</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10-ibm-java</assignedNode>
+  <assignedNode>dockercloud_rhel7.4</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 23 * * 1</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 23 * * 1</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -52,24 +52,19 @@ else
 fi
 
 
+
+source /home/test/.bashrc
 export WORK_DIR=`pwd`
 #Install dependencies
-sudo apt-get update -y
-sudo apt-get install -y ant make wget unzip tar gcc 
+sudo yum install -y ant wget unzip make gcc unzip tar
 
-# Install IBM JAVA SDK
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.7/linux/s390x/ibm-java-sdk-8.0-5.7-s390x-archive.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-sdk-8.0-5.7-s390x-archive.bin
-sudo ./ibm-java-sdk-8.0-5.7-s390x-archive.bin -r installer.properties
-
-#Set Environment Variables
-export JAVA_HOME=/opt/ibm/java
+#Install AdoptJDK8
+cd $WORK_DIR
+wget https://github.com/AdoptOpenJDK/openjdk8-openj9-releases/releases/download/jdk8u162-b12_openj9-0.8.0/OpenJDK8-OPENJ9_s390x_Linux_jdk8u162-b12_openj9-0.8.0.tar.gz
+tar -xvf OpenJDK8-OPENJ9_s390x_Linux_jdk8u162-b12_openj9-0.8.0.tar.gz
+export JAVA_HOME=$WORK_DIR/jdk8u162-b12_openj9-0.8.0/ 
 export PATH=$JAVA_HOME/bin:$PATH
-java -version
-
+java -version 
 
 #Download source code of Logstash
 cd $WORK_DIR
@@ -88,9 +83,8 @@ export LD_LIBRARY_PATH=$WORK_DIR/jffi-jffi-1.2.16/build/jni/:$LD_LIBRARY_PATH
 
 #Run Logstash
 cd $WORK_DIR/logstash-6.2.4
-bin/logstash -V
+bin/logstash -V 
 bin/logstash -V | grep 6.2.4
-
 
 # The following part has been added under migration activity
 
@@ -113,7 +107,13 @@ else
 
     exit 1
 
-fi</command>
+fi
+
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
