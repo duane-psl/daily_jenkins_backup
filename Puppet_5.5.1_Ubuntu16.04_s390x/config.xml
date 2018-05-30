@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_root</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04_root-node</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;puppet&quot;
-published_version=&quot;5.5.0&quot;
+published_version=&quot;5.5.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -79,7 +79,7 @@ sudo /usr/bin/gem install bundler rake-compiler
 
 #Install Puppet
 cd $WORK_DIR
-sudo /usr/bin/gem install puppet -v 5.5.0
+sudo /usr/bin/gem install puppet -v 5.5.1
 which puppet
 #Locate the $confdir by command
 sudo chmod 755 /usr/local/lib
@@ -151,7 +151,7 @@ echo &quot;puppet&quot; | su -c whoami puppet
 
 echo &quot;puppet&quot; | su -c &apos;git clone git://github.com/puppetlabs/puppet&apos; puppet
 cd puppet
-echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.0&apos; puppet
+echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.1&apos; puppet
 echo &quot;puppet&quot; | su -c &apos;bundle install --path .bundle/gems/&apos; puppet
 
 cd /home/puppet/puppet

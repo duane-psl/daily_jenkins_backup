@@ -9,70 +9,77 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_4096 || dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>dc2_rh6.9_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 15 * * 0</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORK_DIR=`pwd`
+      <command>source /home/test/.bashrc
+# Install dependencies
+sudo yum install -y wget tar curl
 
-# Install packages
-sudo apt-get update
-sudo apt-get install -y git wget tar maven curl
+# Download and install AdoptOpenJDK 9  
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz  
+tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
 
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
 
-# Set the variables
+# Download and Install ant 1.9.6
+wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.6-bin.tar.gz
+tar zxvf apache-ant-1.9.6-bin.tar.gz
+export PATH=`pwd`/apache-ant-1.9.6/bin:$PATH
+
+#  Download Apache Solr 7.2.1 source code
+wget http://archive.apache.org/dist/lucene/solr/7.2.1/solr-7.2.1-src.tgz
+tar zxvf solr-7.2.1-src.tgz
+
+# Set JAVA_HOME and PATH
 export JAVA_HOME=`pwd`/jdk-9+181
-export PATH=$JAVA_HOME/bin:$PATH
+export PATH=$JAVA_HOME/bin:$PATH  
+java -version
+ant -version
+
+#  Configure and make
+cd solr-7.2.1/solr
+ant ivy-bootstrap
+ant compile
+ant server
 
 
-# Download Apache Maven 3.3.9&amp; set the variables
-wget https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
-tar -xf apache-maven-3.3.9-bin.tar.gz
+# Verification
+# Start Solr and create a core
+cd bin
+sudo chmod a+x solr
+./solr start
+sleep 120s
+echo &quot;Started&quot;
 
-export PATH=$PWD/apache-maven-3.3.9/bin:$PATH
+./solr create -c samp | tee solr_output.txt
+cat solr_output.txt
 
-cd $WORK_DIR
-git clone https://github.com/wildfly/wildfly.git
-cd wildfly
-git checkout 12.0.0.Final
-export PATH=$PATH:$PWD/build/target/wildfly-12.0.0.Final/bin
-export MAVEN_OPTS=&quot;-Xmx1024m&quot;
-export JBOSS_HOME=$PWD/build/target/wildfly-12.0.0.Final
+curl http://localhost:8983/solr/
 
-# Build the Source
-mvn install -DskipTests 
-#mvn -DsomeModule.test.excludes=&quot;**/*JmsClientTestCase.java&quot; test -fn
+#verification of output 
+string=&quot;Created new core &apos;samp&apos;&quot;;
+if grep -i &quot;$string&quot;  solr_output.txt; then
+   ./solr stop
+else
+  exit 1
+fi
 
-#Verification
-# Start server in stand alone mode
-nohup sh ./dist/target/wildfly-12.0.0.Final/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0 &amp;
-sleep 60s
-curl http://localhost:8080 
-sleep 60s
 
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;
-
-sleep 20s
-# Start server in domain mode
-nohup sh ./dist/target/wildfly-12.0.0.Final/bin/domain.sh -b 0.0.0.0 -bmanagement 0.0.0.0 &amp;
-sleep 60s
-
-sleep 60s
-# Check server response
-curl http://localhost:8080 
-
-pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;</command>
+./solr version | grep 7.2.1</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -82,11 +89,10 @@ pgrep -d&quot; &quot; -f &quot;wildfly&quot; | sudo xargs kill;</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -98,7 +104,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @agautam</room>
+      <room>#loz-jenkins-build, @gsalgaon</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

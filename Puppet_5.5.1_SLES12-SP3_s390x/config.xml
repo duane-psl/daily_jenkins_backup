@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_root</assignedNode>
+  <assignedNode>dockercloud_sles12-sp3_root</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;puppet&quot;
-published_version=&quot;5.5.0&quot;
+published_version=&quot;5.5.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -51,38 +51,50 @@ fi
 cd /home/test
 export WORK_DIR=`pwd`
 echo $WORK_DIR
-
+export PATH=/usr/local/bin/:/usr/sbin:$PATH
 sudo chmod -R 777 /home/test 
 whoami
 sudo touch puppetinstall.sh  
 sudo chmod +x puppetinstall.sh
 sudo bash -c &quot;cat &gt; puppetinstall.sh&quot; &lt;&lt;&apos;finish&apos;
-sudo apt-get update
-sudo apt-get install -y g++ libreadline6 libreadline6-dev \
-tar openssl unzip libyaml-dev libssl-dev make git wget libsqlite3-dev libc6-dev cron locales ruby ruby-dev
-echo $PATH
-cat /etc/os*            
+sudo zypper update -y &amp;&amp; sudo zypper install -y gcc-c++ readline-devel tar openssl unzip libopenssl-devel \
+                                                make git wget sqlite-devel glibc-locale cron net-tools curl         
+
+cat /etc/os*
 export WORK_DIR=`pwd`
 whoami
-# Download and Install ruby
-cd $WORK_DIR
-ruby -v
-which ruby
+ cd $WORK_DIR
+wget https://www.openssl.org/source/old/1.0.2/openssl-1.0.2k.tar.gz
+tar zxf openssl-1.0.2k.tar.gz
+cd openssl-1.0.2k
+./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared zlib-dynamic
+make
+sudo make install 
 
-which gem
-gem -v
+# Download and Install ruby 2.2.9
+cd $WORK_DIR
+wget http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.9.tar.gz
+tar -xvf ruby-2.2.9.tar.gz
+cd ruby-2.2.9
+./configure LDFLAGS=&apos;-L/$WORK_DIR/openssl-1.0.2k&apos; --with-openssl-include=$WORK_DIR/openssl-1.0.2k/include --with-openssl-dir=/usr
+make
+sudo make install
+
+
+ruby -v
+gem env
 
 
 # Install bundler
 cd $WORK_DIR
-sudo /usr/bin/gem install bundler rake-compiler  
+sudo /usr/local/bin/gem install bundler rake-compiler  
 
 #Install Puppet
 cd $WORK_DIR
-sudo /usr/bin/gem install puppet -v 5.5.0
-which puppet
+sudo /usr/local/bin/gem install puppet -v 5.5.1
 #Locate the $confdir by command
 sudo chmod 755 /usr/local/lib
+export PATH=/usr/local/bin/:/usr/sbin:$PATH
 confdir=`puppet master --configprint confdir` 
 echo $confdir
 mkdir -p $confdir
@@ -138,20 +150,20 @@ sleep 60s
 nohup puppet agent --test &amp;
 sleep 60s
 ps -ef | grep puppet
-export PUPPET_HOME=/home/puppet
 sudo chmod -R 777 /home/puppet
 finish
+
 su -c whoami test
 su -c ./puppetinstall.sh test
-pwd
-
-#Testing
+whoami
+#Clone Puppet git repository in /home/puppet
 cd /home/puppet
+pwd
 echo &quot;puppet&quot; | su -c whoami puppet
 
 echo &quot;puppet&quot; | su -c &apos;git clone git://github.com/puppetlabs/puppet&apos; puppet
 cd puppet
-echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.0&apos; puppet
+echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.1&apos; puppet
 echo &quot;puppet&quot; | su -c &apos;bundle install --path .bundle/gems/&apos; puppet
 
 cd /home/puppet/puppet
@@ -185,7 +197,6 @@ sudo bash -c &quot;cat &gt; rootuser_tests.sh&quot; &lt;&lt;&apos;EOF&apos;
 EOF
 cat rootuser_tests.sh
 path_pwd=$(pwd)
-locale-gen &quot;en_US.UTF-8&quot;
 export LC_ALL=&quot;en_US.UTF8&quot;
 ./rootuser_tests.sh 
 echo $LC_ALL

@@ -13,20 +13,12 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers>
-    <hudson.triggers.TimerTrigger>
-      <spec>1 H/8 * * *</spec>
-    </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>1 H/6 * * *</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
-  </triggers>
+  <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders/>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.2">
-      <script plugin="script-security@1.13">
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
         <script>println &quot;Cleaning up offline slaves...&quot;
 hudson.model.Hudson.instance.slaves.each {
   if(it.getComputer().isOffline()) {
