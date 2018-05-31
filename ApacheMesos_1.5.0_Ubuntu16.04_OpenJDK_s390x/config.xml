@@ -24,13 +24,13 @@
     <hudson.tasks.Shell>
       <command># Install Dependencies
 sudo apt-get update
-sudo apt-get install -y tar wget git build-essential python-dev openjdk-8-jdk libcurl4-nss-dev libsasl2-dev libsasl2-modules maven libapr1-dev libsvn-dev zlib1g-dev libssl-dev autoconf automake libtool bzip2
+
 sudo apt-get install -y tar wget git build-essential python-dev openjdk-8-jdk libcurl4-nss-dev libsasl2-dev libsasl2-modules maven libapr1-dev libsvn-dev zlib1g-dev libssl-dev autoconf automake libtool bzip2 unzip python-six python-virtualenv
 
 # Set environment variables
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-s390x/
 export PATH=/usr/lib/jvm/java-1.8.0-openjdk-s390x/bin:$PATH
-
+export JAVA_TOOL_OPTIONS=&apos;-Xmx2048M&apos;
 
 # Clone repo and apply patches
 git clone https://github.com/apache/mesos

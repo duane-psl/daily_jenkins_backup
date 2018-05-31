@@ -9,82 +9,67 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>dc2_rh6.9_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export rethinkdb_home=`pwd`
+      <command>source /home/test/.bashrc
+export mysql_home=$(pwd)
+# Install dependencies
+sudo yum install -y git gcc gcc-c++ make cmake bison ncurses-devel util-linux tar zip wget zlib-devel bzip2.s390x libtool.s390x
 
-#Install the dependencies
-sudo apt-get update -y
-sudo apt-get install -y build-essential protobuf-compiler python libprotobuf-dev libcurl4-openssl-dev libboost-all-dev libncurses5-dev libjemalloc-dev wget m4 libssl-dev git
+wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
+bunzip2  gcc-4.8.2.tar.bz2
+tar xvf gcc-4.8.2.tar
+cd gcc-4.8.2/
+./contrib/download_prerequisites
+mkdir $mysql_home/gcc-4.8.2/build
+cd $mysql_home/gcc-4.8.2/build
 
-#Clone and build RethinkDB
+../configure --disable-multilib --disable-checking --enable-languages=c,c++ --enable-multiarch --enable-shared --enable-threads=posix --without-included-gettext --with-system-zlib --prefix=/opt/gcc4.8
 
-git clone https://github.com/linux-on-ibm-z/rethinkdb.git --branch next-s390x
-cd rethinkdb/
-
-#Changes for Jemalloc
-cp mk/support/pkg/jemalloc.sh mk/support/pkg/jemalloc.sh.orig
-sed -i &apos;4d&apos; mk/support/pkg/jemalloc.sh
-sed -i &apos;4 i src_url=https://github.com/jemalloc/jemalloc/releases/download/4.1.0/jemalloc-4.1.0.tar.bz2&apos; mk/support/pkg/jemalloc.sh
-
-#Changed for V8
-cp mk/support/pkg/v8.sh mk/support/pkg/v8.sh.orig
-
-sed -i &apos;65 i export CXXFLAGS=&quot;-fno-delete-null-pointer-checks&quot;&apos; mk/support/pkg/v8.sh
-sed -i &apos;65 s/^/       /&apos; mk/support/pkg/v8.sh
-
-sed -i &apos;67d &apos; mk/support/pkg/v8.sh
-sed -i &apos;67 i make dependencies || true&apos;  mk/support/pkg/v8.sh
-sed -i &apos;67 s/^/       /&apos; mk/support/pkg/v8.sh
-
-sed -i &apos;68d &apos; mk/support/pkg/v8.sh
-sed -i &apos;68 i make s390x -j4 werror=no snapshot=off library=static&apos;  mk/support/pkg/v8.sh
-sed -i &apos;68 s/^/       /&apos; mk/support/pkg/v8.sh
-
-
-sed -i &apos;158d &apos; mk/support/pkg/v8.sh
-sed -i &apos;158 i  for lib in libv8_{base,libbase,nosnapshot,libplatform}; do&apos;  mk/support/pkg/v8.sh
-sed -i &apos;158 s/^/    /&apos; mk/support/pkg/v8.sh
-
-
-./configure --allow-fetch
-make -j 4
-
-#Install RethinkDB
+make 
 sudo make install
 
+export PATH=/opt/gcc4.8/bin:$PATH
+export LD_LIBRARY_PATH=/opt/gcc4.8/lib64/
 
-#There are intermittent testcase failures and timeout failures, hence commented the testcases.
-#Test RethinkDB
-#make -j 4 DEBUG=1
-#./test/run unit | tee unit_tests
+# Build and install MySQL
+git clone git://github.com/mysql/mysql-server.git
+cd mysql-server
+git checkout tags/mysql-5.7.22
 
-#Execute Integration Tests
-#./test/run  2&gt;&amp;1 | tee integration_tests
+cmake -DCMAKE_C_COMPILER=/opt/gcc4.8/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc4.8/bin/g++ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
+gmake
 
+# Execute test cases
+gmake test
+sudo gmake install
 
-#Start RethinkDB server
-nohup rethinkdb --bind all &amp;
-sleep 10 
-ps -aef | grep rethinkdb
+sudo cp /opt/gcc4.8/lib64/libstdc++.so.6 /usr/lib64/
 
+# Post installation setup 
+if !(getent passwd mysql); then
+    sudo useradd mysql
+fi
+cd /usr/local/mysql
+sudo chown -R mysql .
+sudo chgrp -R mysql .
 
-</command>
+nohup sudo bin/mysqld --initialize --user=mysql &amp;
+
+sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+ 
+/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -94,11 +79,10 @@ ps -aef | grep rethinkdb
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
-}
-</script>
+    }
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -110,7 +94,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>@chandranana.naik,@ketank</room>
+      <room>#loz-jenkins-build, @narang</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
