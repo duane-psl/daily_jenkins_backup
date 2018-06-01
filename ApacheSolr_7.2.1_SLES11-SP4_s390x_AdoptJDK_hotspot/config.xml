@@ -16,43 +16,70 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 2 * * 3</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 2 * * 3</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo zypper update -y
-sudo zypper install -y wget tar awk curl wget-openssl1 curl-openssl1
-cat /etc/os*
-export WORK_DIR=`pwd`
-cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180529/OpenJDK9_s390x_Linux_20180529.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_20180529.tar.gz
+      <command># Install dependencies
+sudo zypper up -y
+sudo zypper install -y wget-openssl1 tar awk curl
 
-export JAVA_HOME=$WORK_DIR/jdk-9+181/
+
+# Download and install AdoptOpenJDK 9  
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz -O OpenJDK9_s390x_Linux_20180523.tar.gz 
+tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
+
+# Download and Install ant 1.9.6
+wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.6-bin.tar.gz
+tar zxvf apache-ant-1.9.6-bin.tar.gz
+export PATH=`pwd`/apache-ant-1.9.6/bin:$PATH
+
+#  Download Apache Solr 7.2.1 source code
+wget http://archive.apache.org/dist/lucene/solr/7.2.1/solr-7.2.1-src.tgz
+tar zxvf solr-7.2.1-src.tgz
+
+# Set JAVA_HOME and PATH
+export JAVA_HOME=`pwd`/jdk-9+181
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
+ant -version
 
-cd $WORK_DIR
-wget https://neo4j.com/artifact.php?name=neo4j-community-3.3.3-unix.tar.gz
-tar -xvzf artifact.php?name=neo4j-community-3.3.3-unix.tar.gz
-mv neo4j-community-3.3.3 neo4j
-cd neo4j/bin
+#  Configure and make
+cd solr-7.2.1/solr
+ant ivy-bootstrap
+ant compile
+ant server
 
-./neo4j version
-./neo4j start 
-sleep 30s
-./neo4j status 
-sleep 20s
-curl http://localhost:7474/
-./neo4j stop
-sleep 20s
-</command>
+
+# Verification
+# Start Solr and create a core
+cd bin
+sudo chmod a+x solr
+./solr start
+sleep 120s
+echo &quot;Started&quot;
+
+./solr create -c samp | tee solr_output.txt
+cat solr_output.txt
+
+curl http://localhost:8983/solr/
+
+#verification of output 
+string=&quot;Created new core &apos;samp&apos;&quot;;
+if grep -i &quot;$string&quot;  solr_output.txt; then
+   ./solr stop
+else
+  exit 1
+fi
+
+
+./solr version | grep 7.2.1</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -62,9 +89,9 @@ sleep 20s
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -77,7 +104,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@chandranana.naik,@ketank</room>
+      <room>#loz-jenkins-build, @gsalgaon</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -32,8 +32,8 @@ sudo yum install -y wget tar curl
 cat /etc/os*
 export WORK_DIR=`pwd`
 cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180529/OpenJDK9_s390x_Linux_20180529.tar.gz
+tar -xvzf OpenJDK9_s390x_Linux_20180529.tar.gz
 
 export JAVA_HOME=$WORK_DIR/jdk-9+181/
 export PATH=$JAVA_HOME/bin:$PATH

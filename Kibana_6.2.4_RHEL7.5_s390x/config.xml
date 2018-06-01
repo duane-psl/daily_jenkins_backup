@@ -9,49 +9,69 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl11-SP4_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 2 * * 3</spec>
+      <spec>H 11 * * 1</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 2 * * 3</spec>
+      <spec>H 11 * * 1</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo zypper update -y
-sudo zypper install -y wget tar awk curl wget-openssl1 curl-openssl1
-cat /etc/os*
-export WORK_DIR=`pwd`
-cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180529/OpenJDK9_s390x_Linux_20180529.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_20180529.tar.gz
+      <command>source /home/test/.bashrc
+#Install dependencies
+sudo yum install -y wget tar java-1.8.0-ibm-devel java-1.8.0-ibm
 
-export JAVA_HOME=$WORK_DIR/jdk-9+181/
+#Set environmental variables
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
+export WORK_DIR=`pwd`
+#Install Node.js
 cd $WORK_DIR
-wget https://neo4j.com/artifact.php?name=neo4j-community-3.3.3-unix.tar.gz
-tar -xvzf artifact.php?name=neo4j-community-3.3.3-unix.tar.gz
-mv neo4j-community-3.3.3 neo4j
-cd neo4j/bin
+wget https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-s390x.tar.gz
+tar xvf node-v8.9.4-linux-s390x.tar.gz
+mv node-v8.9.4-linux-s390x nodejs
 
-./neo4j version
-./neo4j start 
-sleep 30s
-./neo4j status 
-sleep 20s
-curl http://localhost:7474/
-./neo4j stop
-sleep 20s
+#Get Kibana release package and extract
+cd $WORK_DIR
+wget https://artifacts.elastic.co/downloads/kibana/kibana-6.2.4-linux-x86_64.tar.gz
+tar xvf kibana-6.2.4-linux-x86_64.tar.gz
+
+
+#Replace Node.js in the package with the installed IBM SDK for Node.js.
+cd kibana-6.2.4-linux-x86_64
+mv node node_old
+ln -s $WORK_DIR/nodejs  node
+
+ 
+# Start Kibana 
+
+cd $WORK_DIR
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.tar.gz
+tar -xvf elasticsearch-6.2.4.tar.gz
+ls
+nohup elasticsearch-6.2.4/bin/elasticsearch &amp;
+sleep 2m
+
+cd $WORK_DIR/kibana-6.2.4-linux-x86_64
+bin/kibana -H 0.0.0.0 &amp;
+
+sleep 2m
+
+curl http://localhost:5601
+
+pgrep -d&quot; &quot; -f &quot;node&quot; | xargs kill;
+pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
 </command>
     </hudson.tasks.Shell>
   </builders>
