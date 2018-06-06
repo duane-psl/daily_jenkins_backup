@@ -30,9 +30,9 @@
       <command>###some steps mentioned in recipe can not be checked in container, have to check them on host
 yum install -y wget tar gcc cmake gcc-c++ make lua-devel.s390x kernel-devel patch
 
-wget https://github.com/draios/sysdig/archive/0.20.0.tar.gz
-tar -xvzf 0.20.0.tar.gz
-cd sysdig-0.20.0
+wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
+tar -xvzf 0.21.0.tar.gz
+cd sysdig-0.21.0
 mkdir build
 cd build
 cmake -DUSE_BUNDLED_LUAJIT=OFF -DBUILD_DRIVER=OFF ..

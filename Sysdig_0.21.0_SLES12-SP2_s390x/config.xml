@@ -31,9 +31,9 @@
 zypper update -y
 zypper install -y patch wget tar gcc cmake make gcc-c++ lua51 lua51-devel kernel-default-devel
 
-wget https://github.com/draios/sysdig/archive/0.20.0.tar.gz
-tar -xvzf 0.20.0.tar.gz
-cd sysdig-0.20.0
+wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
+tar -xvzf 0.21.0.tar.gz
+cd sysdig-0.21.0
 
 mkdir build
 cd build

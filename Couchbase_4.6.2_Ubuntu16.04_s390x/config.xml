@@ -9,9 +9,9 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-ibm-java-8</assignedNode>
+  <assignedNode>Couchbase</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -54,7 +54,7 @@ fi
 export couchbase_home=`pwd`
 # Install the Dependencies
 sudo apt-get update -y
-sudo apt-get install -y autoconf automake check cmake curl flex gcc-4.8 git g++-4.8 libcloog-pplv4-dev libcurl4-openssl-dev libevent-dev libglib2.0-dev libmozjs-24-dev libncurses5-dev libsnappy-dev libssl-dev libtool libxml2-utils make openssl pkg-config python python-dev ruby sqlite3 subversion tar unixodbc unixodbc-dev vim wget xsltproc
+sudo apt-get install -y autoconf automake check cmake curl flex gcc-4.8 git g++-4.8 libcloog-pplv4-dev libcurl4-openssl-dev libevent-dev libglib2.0-dev libmozjs-24-dev libncurses5-dev libsnappy-dev libssl-dev libtool libxml2-utils make openssl pkg-config python python-dev ruby sqlite3 subversion tar unixodbc unixodbc-dev vim wget xsltproc 
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40
 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 40
 sudo update-alternatives --config gcc
@@ -66,12 +66,10 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 java  -version
 
-
 #Install go
-apt-get install -y golang-1.9
+sudo apt-get install -y golang-1.9
 export PATH=/usr/lib/go-1.9/bin/:$PATH
 go version
-
 
 #Install Erlang
 cd $couchbase_home
@@ -229,10 +227,10 @@ export CB_MULTI_GO=0
 cd $couchbase_home
 export GOPATH=$HOME/go
 go get -u golang.org/x/tools/cmd/goyacc
-sudo cp $HOME/go/bin/goyacc /usr/local/go/pkg/tool/linux_s390x/
-sudo chown root:root /usr/local/go/pkg/tool/linux_s390x/goyacc
-sudo chmod -f 755 /usr/local/go/pkg/tool/linux_s390x/goyacc
-sudo ln -sf /usr/local/go/pkg/tool/linux_s390x/goyacc /usr/local/go/pkg/tool/linux_s390x/yacc
+sudo cp $HOME/go/bin/goyacc /usr/lib/go-1.9/pkg/tool/linux_s390x/
+sudo chown root:root /usr/lib/go-1.9/pkg/tool/linux_s390x/goyacc 
+sudo chmod -f 755 /usr/lib/go-1.9/pkg/tool/linux_s390x/goyacc
+sudo ln -sf /usr/lib/go-1.9/pkg/tool/linux_s390x/goyacc /usr/lib/go-1.9/pkg/tool/linux_s390x/yacc
 
 
 #Run the make command and start the building procedure
@@ -268,21 +266,6 @@ ps -aef
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
-      <script plugin="script-security@1.24">
-        <script>import jenkins.model.Jenkins
-
-def x=manager.envVars[&apos;NODE_NAME&apos;]
-Jenkins.instance.slaves.each {
-    if(it.name==x){
-it.getComputer().doDoDelete()
-    }
-}</script>
-        <sandbox>false</sandbox>
-      </script>
-      <behavior>0</behavior>
-      <runForMatrixParent>false</runForMatrixParent>
-    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

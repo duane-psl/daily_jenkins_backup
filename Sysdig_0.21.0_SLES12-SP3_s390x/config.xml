@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04_root-node</assignedNode>
+  <assignedNode>dockercloud_sles12-sp3_root</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,22 +28,21 @@
   <builders>
     <hudson.tasks.Shell>
       <command>###some steps mentioned in recipe can not be checked in container, have to check them on host
-apt-get -y update
-apt-get install -y patch wget tar gcc cmake g++ lua5.1 lua5.1-dev  linux-headers-*
+zypper update -y
+zypper install -y patch wget tar gcc cmake make gcc-c++ lua51 lua51-devel kernel-default-devel
 
-wget https://github.com/draios/sysdig/archive/0.20.0.tar.gz
-tar -xvzf 0.20.0.tar.gz
-cd sysdig-0.20.0
+wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
+tar -xvzf 0.21.0.tar.gz
+cd sysdig-0.21.0
 
 mkdir build
 cd build
 cmake -DUSE_BUNDLED_LUAJIT=OFF -DBUILD_DRIVER=OFF ..
 
 make
-sudo make install
+make install
 ##cd driver
 ##insmod sysdig-probe.ko
-
 
 
 

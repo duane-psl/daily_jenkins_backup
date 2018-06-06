@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_root</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_root</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,9 +26,9 @@
 apt-get -y update
 apt-get install -y patch wget tar gcc cmake g++ lua5.1 lua5.1-dev  linux-headers-*
 
-wget https://github.com/draios/sysdig/archive/0.20.0.tar.gz
-tar -xvzf 0.20.0.tar.gz
-cd sysdig-0.20.0
+wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
+tar -xvzf 0.21.0.tar.gz
+cd sysdig-0.21.0
 
 mkdir build
 cd build

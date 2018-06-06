@@ -69,7 +69,7 @@ sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-m
 ##Build, configure, install and execute test cases
 cd $SRC_ROOT/server-mariadb-10.2.14
 BUILD/autorun.sh 
-./configure --WITH_SAFEMALLOC=ON --with-debug
+./configure
 make
 sudo make install 
 sudo useradd mysql
