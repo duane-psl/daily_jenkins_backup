@@ -9,14 +9,14 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_8192</assignedNode>
+  <assignedNode>dockercloud_sles12-sp3_8192</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 10 * * 5</spec>
+      <spec>H 15 * * 4</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -24,7 +24,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;elasticsearch&quot;
-published_version=&quot;6.2.2&quot;
+published_version=&quot;6.2.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -46,24 +46,27 @@ else
 fi
 
 export WORK_DIR=`pwd`
-#Install Build Dependencies
-sudo apt-get update
+#Install dependencies
+sudo zypper update -y
 cat /etc/issue
-sudo apt-get install -y tar wget unzip curl maven git make automake autoconf libtool  patch libx11-dev libxt-dev pkg-config texinfo locales-all ant hostname
+sudo zypper install -y tar wget unzip curl which git words gcc-c++ patch libtool automake autoconf ccache xorg-x11-proto-devel xorg-x11-devel alsa-devel cups-devel libffi48-devel libstdc++6-locale glibc-locale libstdc++-devel libXt-devel libX11-devel texinfo ant ant-junit.noarch make net-tools
+
 
 #Install AdoptJDK
 cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-export JAVA_HOME=$WORK_DIR/jdk-9+181/ 
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz
+tar -xvf OpenJDK9_s390x_Linux_20180523.tar.gz
+export JAVA_HOME=$WORK_DIR/jdk-9+181
 export PATH=$JAVA_HOME/bin:$PATH
 java -version 
 
 
-#Set the environment variable
+#Set Environmetal variable
 unset JAVA_TOOL_OPTIONS
 export LANG=&quot;en_US.UTF-8&quot;
 export JAVA_TOOL_OPTIONS=&quot;-Dfile.encoding=UTF8&quot;
+export ANT_HOME=/usr/share/ant/
+export PATH=&quot;$ANT_HOME/bin:$PATH&quot;
 export _JAVA_OPTIONS=&quot;-Xmx10g&quot;
 
 # Download Elasticsearch source code
@@ -71,11 +74,15 @@ cd $WORK_DIR
 sudo rm -rf elasticsearch
 git clone https://github.com/elastic/elasticsearch
 cd elasticsearch
-git checkout v6.2.2
+git checkout v6.2.4
 
+# Apply patch to disable warning related with seccomp
+
+sed -i &apos;244a m.put(&quot;s390x&quot;, new Arch(0x80000016, 0xFFFFFFFF, 1, 190, 11, 354, 348));&apos; $WORK_DIR/elasticsearch/server/src/main/java/org/elasticsearch/bootstrap/SystemCallFilter.java
 
 #Build Package
 ./gradlew assemble
+                      
 
 ## Run Network test cases
 cd $WORK_DIR/elasticsearch
@@ -87,19 +94,19 @@ cd $WORK_DIR/elasticsearch
 
 #Verification Steps
 cd $WORK_DIR/elasticsearch
-sudo tar -C /usr/share/ -xf  distribution/tar/build/distributions/elasticsearch-6.2.2-SNAPSHOT.tar.gz
+sudo tar -C /usr/share/ -xf  distribution/tar/build/distributions/elasticsearch-6.2.4-SNAPSHOT.tar.gz
 sudo rm -rf /usr/share/elasticsearch
-sudo mv /usr/share/elasticsearch-6.2.2-SNAPSHOT /usr/share/elasticsearch
+sudo mv /usr/share/elasticsearch-6.2.4-SNAPSHOT /usr/share/elasticsearch
 
 #Start Elastic Search Server
+sudo /usr/sbin/groupadd test
 sudo chown test:test -R /usr/share/elasticsearch
-/usr/share/elasticsearch/bin/elasticsearch --version | grep 6.2.2
+/usr/share/elasticsearch/bin/elasticsearch --version | grep 6.2.4
 nohup /usr/share/elasticsearch/bin/elasticsearch &amp;
 sleep 60s
 curl http://localhost:9200/
 
-
-sudo apt-get install -y python-pip 
+sudo zypper install -y python-pip python-devel   
 sudo pip install elasticsearch-curator
 curator --version
 
@@ -153,7 +160,12 @@ ps -aef
 
 pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
 
-ps -aef</command>
+ps -aef
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -172,6 +184,28 @@ it.getComputer().doDoDelete()
       <behavior>0</behavior>
       <runForMatrixParent>false</runForMatrixParent>
     </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build,@nbhave</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

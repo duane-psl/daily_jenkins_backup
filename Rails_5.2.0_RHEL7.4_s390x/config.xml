@@ -9,26 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB || dc2_ub16.04_4096</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 15 * * 4</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 15 * * 4</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;heapster&quot;
-published_version=&quot;1.5.3&quot;
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;rails&quot;
+published_version=&quot;5.2.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -48,36 +49,41 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-sudo apt-get update
-
-cd $HOME
 
 
-sudo apt-get install -y git make tar wget gcc golang-1.10
-export PATH=/usr/lib/go-1.10/bin:$PATH
-go version
-export GOPATH=$HOME
-export PATH=$HOME/bin:$PATH
 
-mkdir -p $HOME/src/k8s.io/
+# Install dependencies
+sudo yum install -y bison flex openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel tcl-devel tk-devel sqlite-devel gcc make wget tar
 
-go get github.com/tools/godep
+# Download and unpack the Ruby 2.5.1 source code
+wget http://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.1.tar.gz
+tar zxf ruby-2.5.1.tar.gz
+cd ruby-2.5.1
 
-cd $HOME/src/k8s.io/
-git clone https://github.com/kubernetes/heapster.git
-cd heapster
-git checkout tags/v1.5.3
+# Configure and build Ruby 2.5.1
+./configure
+make
 
- 
-cd $HOME/src/k8s.io/heapster
-make ARCH=s390x 
+# Test results and install ruby
+make test
+export PATH=/usr/local/bin:$PATH
+sudo -E make install
 
+# Verify that ruby is available
+ruby -v
+gem env
 
-make test-unit test-unit-cov ARCH=s390x 
+# Correct the gem environment for a standard user
+export GEM_HOME=/home/test/.gem/ruby
+export PATH=/home/test/.gem/ruby/bin:$PATH
+        
+# Install dependencies
+sudo yum install -y patch make gcc
 
-#Verification
-./heapster --version | grep 1.5.3
+# Install Rails
+gem install rails -v 5.2.0
 
+rails -v | grep 5.2.0
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -88,9 +94,9 @@ make test-unit test-unit-cov ARCH=s390x
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -103,14 +109,14 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@srajmane</room>
+      <room> #loz-jenkins-build, @ajakhade</room>
       <startNotification>false</startNotification>
-      <notifySuccess>false</notifySuccess>
+      <notifySuccess>true</notifySuccess>
       <notifyAborted>false</notifyAborted>
       <notifyNotBuilt>false</notifyNotBuilt>
       <notifyUnstable>false</notifyUnstable>
       <notifyRegression>false</notifyRegression>
-      <notifyFailure>true</notifyFailure>
+      <notifyFailure>false</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
       <notifyRepeatedFailure>true</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>

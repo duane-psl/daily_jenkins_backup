@@ -9,22 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_8192</assignedNode>
+  <assignedNode>dockercloud_rhel7.5</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 10 * * 5</spec>
+      <spec>H 14 * * 4</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 14 * * 4</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;elasticsearch&quot;
-published_version=&quot;6.2.2&quot;
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;helm&quot;
+published_version=&quot;2.9.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -46,114 +51,67 @@ else
 fi
 
 export WORK_DIR=`pwd`
-#Install Build Dependencies
-sudo apt-get update
-cat /etc/issue
-sudo apt-get install -y tar wget unzip curl maven git make automake autoconf libtool  patch libx11-dev libxt-dev pkg-config texinfo locales-all ant hostname
 
-#Install AdoptJDK
+#Install Go
+sudo yum install -y tar wget gcc
+cat /etc/os*
 cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-export JAVA_HOME=$WORK_DIR/jdk-9+181/ 
-export PATH=$JAVA_HOME/bin:$PATH
-java -version 
+wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
+chmod ugo+r go1.9.2.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+go version
 
+#
+sudo yum install -y git make mercurial wget    
+export GOPATH=$WORK_DIR
+export PATH=$GOPATH/bin:$PATH
+ 
+#Install glide
+cd $GOPATH
+wget https://github.com/Masterminds/glide/releases/download/v0.13.0/glide-v0.13.0-linux-s390x.tar.gz
+tar -xzf glide-v0.13.0-linux-s390x.tar.gz
+export PATH=$GOPATH/linux-s390x:$PATH
+glide --version 
 
-#Set the environment variable
-unset JAVA_TOOL_OPTIONS
-export LANG=&quot;en_US.UTF-8&quot;
-export JAVA_TOOL_OPTIONS=&quot;-Dfile.encoding=UTF8&quot;
-export _JAVA_OPTIONS=&quot;-Xmx10g&quot;
-
-# Download Elasticsearch source code
-cd $WORK_DIR
-sudo rm -rf elasticsearch
-git clone https://github.com/elastic/elasticsearch
-cd elasticsearch
-git checkout v6.2.2
-
-
-#Build Package
-./gradlew assemble
-
-## Run Network test cases
-cd $WORK_DIR/elasticsearch
-./gradlew test --continue -Dtests.haltonfailure=false -Dtests.es.node.mode=network  2&gt;&amp;1 | tee -a network_test_log
-
-# Run Local test cases
-cd $WORK_DIR/elasticsearch
-./gradlew test --continue -Dtests.haltonfailure=false -Dtests.es.node.mode=local  2&gt;&amp;1 | tee -a local_test_log
-
-#Verification Steps
-cd $WORK_DIR/elasticsearch
-sudo tar -C /usr/share/ -xf  distribution/tar/build/distributions/elasticsearch-6.2.2-SNAPSHOT.tar.gz
-sudo rm -rf /usr/share/elasticsearch
-sudo mv /usr/share/elasticsearch-6.2.2-SNAPSHOT /usr/share/elasticsearch
-
-#Start Elastic Search Server
-sudo chown test:test -R /usr/share/elasticsearch
-/usr/share/elasticsearch/bin/elasticsearch --version | grep 6.2.2
-nohup /usr/share/elasticsearch/bin/elasticsearch &amp;
-sleep 60s
-curl http://localhost:9200/
-
-
-sudo apt-get install -y python-pip 
-sudo pip install elasticsearch-curator
-curator --version
-
-sudo bash -c &quot;cat &gt; config.yml&quot; &lt;&lt;&apos;EOF&apos; 
----
-client:
-  hosts:
-    - 127.0.0.1
-  port: 9200
-  url_prefix:
-  use_ssl: False
-  certificate:
-  client_cert:
-  client_key:
-  ssl_no_validate: False
-  http_auth:
-  timeout: 30
-  master_only: False
-
-logging:
-  loglevel: INFO
-  logfile:
-  logformat: default
-  blacklist: [&apos;elasticsearch&apos;, &apos;urllib3&apos;] 
+#Download Helm source code
+mkdir -p $GOPATH/src/k8s.io
+cd $GOPATH/src/k8s.io
+git clone https://github.com/kubernetes/helm.git
+cd helm
+git checkout v2.9.1
+ 
+#Build Helm
+cd $GOPATH/src/k8s.io/helm
+make bootstrap build
+export PATH=$GOPATH/src/k8s.io/helm/bin:$PATH
   
-EOF
+sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/helm/Makefile
 
-sudo bash -c &quot;cat &gt; action_create.yml&quot; &lt;&lt;&apos;EOF&apos; 
----
-actions:
-  create_web-app1-metrics:
-    action: create_index
-    description: &gt;-
-      Create Elasticsearch Index based on Todays Date
-      Specify Number of Primary and Replica Shards
-      web-app1-metrics-2017.12.04
-    options:
-      name: &apos;&lt;web-app1-metrics-{now/d}&gt;&apos;
-      extra_settings:
-        settings:
-          number_of_shards: 5
-          number_of_replicas: 1
-        continue_if_exception: True
-        disable_action: False
-  
-EOF
-curator --config config.yml action_create.yml
-curl -XGET localhost:9200/_cat/indices/web-*?v
+git diff
 
-ps -aef 
+#Run test cases
+cd $GOPATH/src/k8s.io/helm/
+make test
 
-pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
 
-ps -aef</command>
+cd $GOPATH/src/k8s.io/helm
+bin/tiller &amp;
+sleep 20s
+export HELM_HOST=localhost:44134
+helm version
+ 
+sleep 20s
+pgrep -d&quot; &quot; -f &quot;tiller&quot; | sudo xargs kill || true 
+sleep 20s 
+ 
+ 
+ 
+ 
+ 
+ </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -178,7 +136,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@nbhave</room>
+      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

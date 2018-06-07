@@ -41,19 +41,17 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+
+
+source /home/test/.bashrc
 sudo rm -rf ./*
 export WS=$PWD
 echo $PATH
 
 # Install build dependencies
-sudo zypper info python
-sudo zypper info beats* || true
-sudo zypper update -y
-sudo zypper install -y git awk make wget tar gcc libpcap libpcap-devel  python-setuptools git python-xml python python-devel python-cffi openssl-devel libffi-devel acl
-
-#Install required Python modules
-sudo python -m easy_install pip
-sudo python -m pip install appdirs pyparsing six packaging setuptools wheel PyYAML termcolor ordereddict nose-timer MarkupSafe virtualenv
+sudo yum info python
+sudo yum info beats* || true
+sudo yum install -y git make wget tar gcc libpcap libpcap-devel openssl openssl-devel which acl zlib-devel vim
 
 # Golang 1.9.2
 cd $WS
@@ -65,9 +63,34 @@ cd /usr/bin
 sudo ln gcc s390x-linux-gnu-gcc
 go version
 
+# Python 2.7.14
+cd $WS
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar
+rm -rf Python-2.7.14 Python-2.7.14.tar.xz Python
+wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+sudo tar -xvf Python-2.7.14.tar.xz
+cd Python-2.7.14
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make
+sudo make install
+export PATH=/usr/local/bin:$PATH
+sudo /usr/sbin/update-alternatives --install /usr/bin/python python /usr/local/bin/python 10
+sudo /usr/sbin/update-alternatives --display python
+python -V
+
+#Install pip
+wget https://bootstrap.pypa.io/get-pip.py
+sudo python get-pip.py
+rm get-pip.py
+
+#Install required Python modules
+sudo python -m easy_install pip
+sudo python -m pip install appdirs pyparsing six packaging setuptools wheel PyYAML termcolor ordereddict nose-timer MarkupSafe virtualenv
+   
 
 # Set environment variable
 export GOPATH=$WS
+
 # Set default permissions
 setfacl -dm u::rwx,g::r,o::r $GOPATH
 
@@ -117,20 +140,20 @@ cp $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile $GOPATH/src/git
 sed -i 35d $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile
 sed -i &apos;34aTIMEOUT?= 900000&apos; $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile
 diff -u $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile.orig  $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile || true
-find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10/max_timeout=1000/g&apos;
-git diff $GOPATH/src/github.com/elastic/beats || true
+
+find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10/max_timeout=10000/g&apos;
+git diff $GOPATH/src/github.com/elastic/beats || true 
 
 #Code change to fix audit test
 sed -i &apos;s/arch=b64/arch=s390x || arch=b64/g&apos; $GOPATH/src/github.com/elastic/beats/auditbeat/module/auditd/config_linux_test.go
-
 
 # Build and test filebeat.
 cd $GOPATH/src/github.com/elastic/beats/filebeat
 make
 ./filebeat --version
 make update
-make unit 
-make system-tests 
+make unit
+make system-tests
 
 
 # Build and test packetbeat.
@@ -138,8 +161,8 @@ cd $GOPATH/src/github.com/elastic/beats/packetbeat
 make
 ./packetbeat --version
 make update
-make unit
-make system-tests
+make unit 
+make system-tests 
 
 
 # Build and test metricbeat.
@@ -162,14 +185,14 @@ cd $GOPATH/src/github.com/elastic/beats/libbeat
 make
 ./libbeat --version
 make update
-make unit
-make system-tests
+make unit 
+make system-tests 
 #echo &quot;ERROR: test that we support nested key&quot; &gt;&gt; expectedfail2
-#cho &quot;ERROR: Test that we correctly to string replacement with values from the keystore&quot; &gt;&gt; expectedfail2
+#echo &quot;ERROR: Test that we correctly to string replacement with values from the keystore&quot; &gt;&gt; expectedfail2
 #grep &quot;ERROR:&quot; sys_test | tee actuallyfail2
 #if diff -u --ignore-all-space expectedfail2 actuallyfail2 ; then
-##	echo &quot;Unexpected failures found!&quot;
-  #  exit 1
+#	echo &quot;Unexpected failures found!&quot;
+#    exit 1
 #fi
 
 find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10000/max_timeout=1000/g&apos;
@@ -188,8 +211,8 @@ cd $GOPATH/src/github.com/elastic/beats/auditbeat
 make
 ./auditbeat --version
 make update 
-make unit 
-make system-tests
+make unit 2&gt;&amp;1 | tee -a unit_test
+make system-tests 2&gt;&amp;1 | tee -a sys_test
 echo &quot;ERROR: Auditbeat starts and stops without error.&quot; &gt;&gt; expectedfail2
 grep &quot;ERROR:&quot; sys_test | tee actuallyfail2
 if diff -u --ignore-all-space expectedfail2 actuallyfail2 ; then
@@ -197,6 +220,11 @@ if diff -u --ignore-all-space expectedfail2 actuallyfail2 ; then
     exit 1
 fi
 
+
+# Restore Python and check if yum is working
+sudo /usr/sbin/update-alternatives --install /usr/bin/python python /usr/bin/python2.7 15
+sudo /usr/sbin/update-alternatives --display python
+sudo yum info python
 
 # Verify that individual beats are running without error
 cd $GOPATH/src/github.com/elastic/beats/filebeat
@@ -233,9 +261,6 @@ sudo chown root auditbeat.yml
 sudo ./auditbeat -e -c auditbeat.yml -d &quot;publish&quot; &amp;
 sleep 5s
 pgrep -d&quot; &quot; -f &quot;auditbeat&quot; | sudo xargs kill || true
-
-
-
 </command>
     </hudson.tasks.Shell>
   </builders>

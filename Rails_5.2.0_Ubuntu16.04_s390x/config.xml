@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB || dc2_ub16.04_4096</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 15 * * 4</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 15 * * 4</spec>
+      <spec>H 13 * * 5 </spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,8 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
-package_name=&quot;heapster&quot;
-published_version=&quot;1.5.3&quot;
+package_name=&quot;rails&quot;
+published_version=&quot;5.2.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -48,37 +48,18 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+
+
+#Install the dependencies
 sudo apt-get update
+sudo apt-get install -y ruby ruby-dev patch make gcc zlib1g-dev
 
-cd $HOME
-
-
-sudo apt-get install -y git make tar wget gcc golang-1.10
-export PATH=/usr/lib/go-1.10/bin:$PATH
-go version
-export GOPATH=$HOME
-export PATH=$HOME/bin:$PATH
-
-mkdir -p $HOME/src/k8s.io/
-
-go get github.com/tools/godep
-
-cd $HOME/src/k8s.io/
-git clone https://github.com/kubernetes/heapster.git
-cd heapster
-git checkout tags/v1.5.3
-
- 
-cd $HOME/src/k8s.io/heapster
-make ARCH=s390x 
-
-
-make test-unit test-unit-cov ARCH=s390x 
-
-#Verification
-./heapster --version | grep 1.5.3
-
-</command>
+#Install Rails using Gem
+sudo gem install rails -v 5.2.0
+  
+#Check the verion
+rails -v | grep 5.2.0
+         </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -88,10 +69,11 @@ make test-unit test-unit-cov ARCH=s390x
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -103,14 +85,14 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@srajmane</room>
+      <room>#loz-jenkins-build, @ajakhade</room>
       <startNotification>false</startNotification>
-      <notifySuccess>false</notifySuccess>
+      <notifySuccess>true</notifySuccess>
       <notifyAborted>false</notifyAborted>
       <notifyNotBuilt>false</notifyNotBuilt>
       <notifyUnstable>false</notifyUnstable>
       <notifyRegression>false</notifyRegression>
-      <notifyFailure>true</notifyFailure>
+      <notifyFailure>false</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
       <notifyRepeatedFailure>true</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>

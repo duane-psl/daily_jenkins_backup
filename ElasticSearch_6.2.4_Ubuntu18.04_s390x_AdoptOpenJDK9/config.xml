@@ -9,14 +9,14 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10_8192</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 10 * * 5</spec>
+      <spec>H 15 * * 1</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -24,7 +24,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;elasticsearch&quot;
-published_version=&quot;6.2.2&quot;
+published_version=&quot;6.2.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -45,17 +45,21 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+
+
+export DEBIAN_FRONTEND=&apos;noninteractive&apos;
 export WORK_DIR=`pwd`
 #Install Build Dependencies
-sudo apt-get update
+sudo -E apt-get update -y
 cat /etc/issue
-sudo apt-get install -y tar wget unzip curl maven git make automake autoconf libtool  patch libx11-dev libxt-dev pkg-config texinfo locales-all ant hostname
+sudo -E apt-get install -y tar wget unzip curl maven git make automake autoconf libtool  patch libx11-dev libxt-dev pkg-config texinfo locales-all ant hostname
+#sudo apt-get install -y tar wget unzip  openjdk-8-jdk openjdk-8-jre curl maven git make automake autoconf libtool  patch libx11-dev libxt-dev pkg-config texinfo locales-all ant hostname
 
 #Install AdoptJDK
 cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-export JAVA_HOME=$WORK_DIR/jdk-9+181/ 
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz 
+tar -xvf OpenJDK9_s390x_Linux_20180523.tar.gz
+export JAVA_HOME=$WORK_DIR/jdk-9+181 
 export PATH=$JAVA_HOME/bin:$PATH
 java -version 
 
@@ -71,8 +75,11 @@ cd $WORK_DIR
 sudo rm -rf elasticsearch
 git clone https://github.com/elastic/elasticsearch
 cd elasticsearch
-git checkout v6.2.2
+git checkout v6.2.4
 
+# Apply patch to disable warning related with seccomp
+
+sed -i &apos;244a m.put(&quot;s390x&quot;, new Arch(0x80000016, 0xFFFFFFFF, 1, 190, 11, 354, 348));&apos; $WORK_DIR/elasticsearch/server/src/main/java/org/elasticsearch/bootstrap/SystemCallFilter.java
 
 #Build Package
 ./gradlew assemble
@@ -87,17 +94,16 @@ cd $WORK_DIR/elasticsearch
 
 #Verification Steps
 cd $WORK_DIR/elasticsearch
-sudo tar -C /usr/share/ -xf  distribution/tar/build/distributions/elasticsearch-6.2.2-SNAPSHOT.tar.gz
+sudo tar -C /usr/share/ -xf  distribution/tar/build/distributions/elasticsearch-6.2.4-SNAPSHOT.tar.gz
 sudo rm -rf /usr/share/elasticsearch
-sudo mv /usr/share/elasticsearch-6.2.2-SNAPSHOT /usr/share/elasticsearch
+sudo mv /usr/share/elasticsearch-6.2.4-SNAPSHOT /usr/share/elasticsearch
 
 #Start Elastic Search Server
 sudo chown test:test -R /usr/share/elasticsearch
-/usr/share/elasticsearch/bin/elasticsearch --version | grep 6.2.2
+/usr/share/elasticsearch/bin/elasticsearch --version | grep 6.2.4
 nohup /usr/share/elasticsearch/bin/elasticsearch &amp;
 sleep 60s
 curl http://localhost:9200/
-
 
 sudo apt-get install -y python-pip 
 sudo pip install elasticsearch-curator
@@ -148,6 +154,7 @@ actions:
 EOF
 curator --config config.yml action_create.yml
 curl -XGET localhost:9200/_cat/indices/web-*?v
+
 
 ps -aef 
 

@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>snehal_rhel</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -84,7 +84,7 @@ sleep 10s
 
 cd $GOPATH/src/github.com/prometheus/alertmanager
 make test 2&gt;&amp;1 | tee -a build_logs
-cat build_logs | &apos;FAIL\s\github.com&apos; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+cat build_logs | grep &quot;FAIL&quot; | grep &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
 while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
 count=$(grep FAIL individual_test_log | wc -l)
 while [ $count -gt 0 ]

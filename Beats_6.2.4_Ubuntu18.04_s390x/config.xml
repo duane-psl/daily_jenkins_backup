@@ -42,32 +42,27 @@ else
 fi
 
 sudo rm -rf ./*
+export DEBIAN_FRONTEND=&apos;noninteractive&apos;
 export WS=$PWD
 echo $PATH
 
-# Install build dependencies
-sudo zypper info python
-sudo zypper info beats* || true
-sudo zypper update -y
-sudo zypper install -y git awk make wget tar gcc libpcap libpcap-devel  python-setuptools git python-xml python python-devel python-cffi openssl-devel libffi-devel acl
+# Install dependencies
+sudo -E apt-get update -y
+sudo -E apt-cache policy python
+sudo -E apt-cache policy beats* || true
+sudo -E apt-get install -y git make wget tar gcc python python-setuptools libcap-dev libpcap0.8-dev openssl libssh-dev python-openssl acl rsync golang-1.9 tzdata
 
 #Install required Python modules
 sudo python -m easy_install pip
 sudo python -m pip install appdirs pyparsing six packaging setuptools wheel PyYAML termcolor ordereddict nose-timer MarkupSafe virtualenv
 
-# Golang 1.9.2
-cd $WS
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-go version
 
+export PATH=$PATH:/usr/lib/go-1.9/bin
+go version
 
 # Set environment variable
 export GOPATH=$WS
+
 # Set default permissions
 setfacl -dm u::rwx,g::r,o::r $GOPATH
 
@@ -110,28 +105,28 @@ sed -i &apos;329a\\t } else {&apos; $GOPATH/src/github.com/elastic/beats/vendor/
 sed -i &apos;330a\\t\t err = binary.Read(r, binary.LittleEndian, inetDiagMsg)&apos; $GOPATH/src/github.com/elastic/beats/vendor/github.com/elastic/gosigar/sys/linux/inetdiag.go
 sed -i &apos;331a\\t }&apos; $GOPATH/src/github.com/elastic/beats/vendor/github.com/elastic/gosigar/sys/linux/inetdiag.go
 
+
+
 diff -u $GOPATH/src/github.com/elastic/beats/vendor/github.com/elastic/gosigar/sys/linux/inetdiag.go.orig $GOPATH/src/github.com/elastic/beats/vendor/github.com/elastic/gosigar/sys/linux/inetdiag.go || true
 
-#This part is just to relax timeouts. Not mentioned in recipe.
 cp $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile.orig
 sed -i 35d $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile
 sed -i &apos;34aTIMEOUT?= 900000&apos; $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile
 diff -u $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile.orig  $GOPATH/src/github.com/elastic/beats/libbeat/scripts/Makefile || true
-find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10/max_timeout=1000/g&apos;
-git diff $GOPATH/src/github.com/elastic/beats || true
+
+find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10/max_timeout=10000/g&apos;
+git diff $GOPATH/src/github.com/elastic/beats || true 
 
 #Code change to fix audit test
 sed -i &apos;s/arch=b64/arch=s390x || arch=b64/g&apos; $GOPATH/src/github.com/elastic/beats/auditbeat/module/auditd/config_linux_test.go
-
 
 # Build and test filebeat.
 cd $GOPATH/src/github.com/elastic/beats/filebeat
 make
 ./filebeat --version
 make update
-make unit 
+make unit
 make system-tests 
-
 
 # Build and test packetbeat.
 cd $GOPATH/src/github.com/elastic/beats/packetbeat
@@ -162,14 +157,14 @@ cd $GOPATH/src/github.com/elastic/beats/libbeat
 make
 ./libbeat --version
 make update
-make unit
-make system-tests
+make unit 
+make system-tests 2&gt;&amp;1 | tee -a sys_test
 #echo &quot;ERROR: test that we support nested key&quot; &gt;&gt; expectedfail2
-#cho &quot;ERROR: Test that we correctly to string replacement with values from the keystore&quot; &gt;&gt; expectedfail2
+#echo &quot;ERROR: Test that we correctly to string replacement with values from the keystore&quot; &gt;&gt; expectedfail2
 #grep &quot;ERROR:&quot; sys_test | tee actuallyfail2
 #if diff -u --ignore-all-space expectedfail2 actuallyfail2 ; then
-##	echo &quot;Unexpected failures found!&quot;
-  #  exit 1
+#	echo &quot;Unexpected failures found!&quot;
+#    exit 1
 #fi
 
 find $GOPATH/src/github.com/elastic/beats/ -type f -iname &quot;*.py&quot; -print0 | xargs -0 sed -i &apos;s/max_timeout=10000/max_timeout=1000/g&apos;
@@ -178,7 +173,7 @@ cd $GOPATH/src/github.com/elastic/beats/heartbeat
 make
 ./heartbeat --version
 make update
-make unit 
+make unit
 make system-tests 
 
 
@@ -188,8 +183,8 @@ cd $GOPATH/src/github.com/elastic/beats/auditbeat
 make
 ./auditbeat --version
 make update 
-make unit 
-make system-tests
+make unit 2&gt;&amp;1 | tee -a unit_test
+make system-tests 2&gt;&amp;1 | tee -a sys_test
 echo &quot;ERROR: Auditbeat starts and stops without error.&quot; &gt;&gt; expectedfail2
 grep &quot;ERROR:&quot; sys_test | tee actuallyfail2
 if diff -u --ignore-all-space expectedfail2 actuallyfail2 ; then
@@ -233,8 +228,6 @@ sudo chown root auditbeat.yml
 sudo ./auditbeat -e -c auditbeat.yml -d &quot;publish&quot; &amp;
 sleep 5s
 pgrep -d&quot; &quot; -f &quot;auditbeat&quot; | sudo xargs kill || true
-
-
 
 </command>
     </hudson.tasks.Shell>
