@@ -26,15 +26,57 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>
+export WORK_DIR=`pwd`
+sudo yum install -y autoconf automake bison flex bzip2-devel curl-devel freetype-devel gcc gcc-c++ gdbm-devel git gmp-devel libdbi libjpeg-turbo-devel libpng-devel libtool libxml2-devel libXpm-devel libxslt-devel make mysql-devel net-snmp-devel openldap-devel openssl-devel pcre-devel pkgconfig postgresql-devel readline-devel unixODBC-devel vim wget tar
 
-  export WORK_DIR=`pwd`
-  sudo yum install -y autoconf automake bison flex bzip2-devel curl-devel freetype-devel gcc gcc-c++ gdbm-devel git gmp-devel libdbi libjpeg-turbo-devel libpng-devel libtool libxml2-devel libXpm-devel libxslt-devel make mysql-devel net-snmp-devel openldap-devel openssl-devel pcre-devel pkgconfig postgresql-devel readline-devel unixODBC-devel vim wget tar
+cd $WORK_DIR
+wget https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+tar xvf autoconf-2.69.tar.gz
+cd autoconf-2.69
+./configure
+make &amp;&amp; sudo make install
+
 
 cd $WORK_DIR
 git clone https://github.com/php/php-src.git
 cd php-src
-git checkout tags/php-7.1.2
+git checkout tags/php-7.2.1
+
+
+#Applying following patch
+sudo sed -i &apos;531d&apos; ext/mbstring/oniguruma/src/regint.h
+sudo sed -i &apos;531i typedef int StateCheckNumType;&apos; ext/mbstring/oniguruma/src/regint.h
+
+sudo sed -i &apos;778d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;778i if (WIFEXITED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;796d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;796i if (WIFSTOPPED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;814d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;814i if (WIFSIGNALED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;831d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;831i if (WIFCONTINUED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;850d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;850i RETURN_LONG(WEXITSTATUS((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;868d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;868i RETURN_LONG(WTERMSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;886d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;886i RETURN_LONG(WSTOPSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;1630d&apos; ext/standard/streamsfuncs.c
+sudo sed -i &apos;1630i php_socket_t fileno;&apos; ext/standard/streamsfuncs.c
+
+sudo sed -i &apos;109d&apos; main/php_globals.h
+sudo sed -i &apos;109i zend_bool ignore_user_abort;&apos; main/php_globals.h
+
+
+
 
 sudo ln -sf /usr/lib64/libldap.so /usr/lib/libldap.so
 sudo ln -sf /usr/lib64/liblber.so /usr/lib/liblber.so
@@ -61,9 +103,7 @@ cd $WORK_DIR/php-src
  make clean
  make -j$(cat /proc/cpuinfo | grep processor | wc -l)
  
-make test 
-#(**NOTE:There are few test case failures which are also observed on Intel x86 platform. These failures can be ignored.)
-
+ ###make test
 
 sudo make install
 sudo install -m644 php.ini-production /usr/local/etc/php.ini
@@ -112,7 +152,7 @@ sudo sed -i &apos;1784i zend_extension=opcache.so&apos; php.ini
 
 php -v
 
-if php -v | grep &quot;Zend OPcache v7.1.2&quot;; then
+if php -v | grep &quot;Zend OPcache v7.2.1&quot;; then
   echo &quot;Done&quot;
   exit 0
 else

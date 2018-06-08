@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04-8192MB || dc2_ub16.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;heapster&quot;
-published_version=&quot;1.5.2&quot;
+published_version=&quot;1.5.3&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,6 +50,8 @@ else
 fi
 sudo apt-get update
 
+cd $HOME
+
 
 sudo apt-get install -y git make tar wget gcc golang-1.9
 export PATH=/usr/lib/go-1.9/bin:$PATH
@@ -64,7 +66,7 @@ go get github.com/tools/godep
 cd $HOME/src/k8s.io/
 git clone https://github.com/kubernetes/heapster.git
 cd heapster
-git checkout tags/v1.5.2
+git checkout tags/v1.5.3
 
  
 cd $HOME/src/k8s.io/heapster
@@ -74,7 +76,7 @@ make ARCH=s390x
 make test-unit test-unit-cov ARCH=s390x 
 
 #Verification
-./heapster --version | grep 1.5.2
+./heapster --version | grep 1.5.3
 
 </command>
     </hudson.tasks.Shell>

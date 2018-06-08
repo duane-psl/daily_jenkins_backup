@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB || dc2_ub16.04_4096</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -50,11 +50,9 @@ else
 fi
 sudo apt-get update
 
-cd $HOME
 
-
-sudo apt-get install -y git make tar wget gcc golang-1.10
-export PATH=/usr/lib/go-1.10/bin:$PATH
+sudo apt-get install -y git make tar wget gcc golang-1.9
+export PATH=/usr/lib/go-1.9/bin:$PATH
 go version
 export GOPATH=$HOME
 export PATH=$HOME/bin:$PATH

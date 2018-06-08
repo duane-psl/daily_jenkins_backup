@@ -64,7 +64,7 @@ sudo yum install -y git gcc gcc-c++ make cmake bison ncurses-devel perl-Data-Dum
 ### Build and install MySQL 
 git clone https://github.com/mysql/mysql-server.git
 cd mysql-server
-git checkout tags/mysql-5.7.20
+git checkout tags/mysql-5.7.22
 cmake . -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
 gmake 
 sudo gmake install

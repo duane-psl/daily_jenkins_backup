@@ -60,7 +60,8 @@ libexpat-devel \
 curl \
 openssl \
 openssl-devel \
-curl \ 
+git
+ 
 
 #Http dependencies
 sudo yum install -y expat-devel which 
@@ -76,15 +77,15 @@ make &amp;&amp; sudo make install
 #Install http
 cd $Apigility_home
 sudo yum install -y git openssl openssl-devel gcc autoconf make pcre pcre-devel libxml2 libxml2-devel expat-devel which wget tar
-git clone https://github.com/apache/httpd.git
+git clone git://github.com/apache/httpd.git 
 cd httpd
 git checkout 2.4.33
 cd srclib
-git clone https://github.com/apache/apr.git
+git clone git://github.com/apache/apr.git
 cd apr
 git checkout 1.6.3
 cd ..
-git clone https://github.com/apache/apr-util.git
+git clone git://github.com/apache/apr-util.git
 cd apr-util
 git checkout 1.6.1
 cd ../..
