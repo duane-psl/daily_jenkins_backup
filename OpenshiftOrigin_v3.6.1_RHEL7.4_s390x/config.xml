@@ -29,7 +29,7 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;origin&quot;
-published_version=&quot;3.6.1&quot;
+published_version=&quot;3.7.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,7 +50,7 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-##Build for Openshift origin 3.6.1
+##Build for Openshift origin 3.7.1
 sudo yum install -y git tar which wget make gcc createrepo bsdtar krb5-devel rsync go rpm-build gpgme-devel libassuan-devel
 curl &quot;https://bootstrap.pypa.io/get-pip.py&quot; -o &quot;get-pip.py&quot;
 sudo python get-pip.py
@@ -67,7 +67,7 @@ mkdir -p $GOPATH/src/github.com/openshift
 cd $GOPATH/src/github.com/openshift
 git clone https://github.com/openshift/origin.git  
 cd origin  
-git checkout tags/v3.6.1 -b v3.6.1
+git checkout tags/v3.7.1 -b v3.7.1
 make clean build
 </command>
     </hudson.tasks.Shell>

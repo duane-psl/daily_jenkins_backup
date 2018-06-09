@@ -16,10 +16,10 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 23 * * 2</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 23 * * 2</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -56,60 +56,7 @@ cd /home/test/5.2.g/root/
 
 #Testing ( Optional )
 cd /home/test/5.2.g/root/
-#mvn clean install -fn
-
-
-# Installing Tomcat
-
-sudo apt-get install -y wget git tar  make gcc
-cd /home/test/
-git clone https://github.com/openssl/openssl.git
-cd openssl
-git checkout OpenSSL_1_0_2h
-./config --prefix=/usr --openssldir=/usr/local/openssl shared
-make
-sudo make install
-cd /home/test/
-wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.6-bin.tar.gz 
-tar -zxvf apache-ant-1.9.6-bin.tar.gz
-export ANT_HOME=/home/test/apache-ant-1.9.6
-export PATH=$PATH:$ANT_HOME/bin
-cd /home/test/
-git clone https://github.com/apache/tomcat85.git
-cd tomcat85
-git checkout TOMCAT_8_5_16
-cp build.properties.default build.properties
-ant
-export CATALINA_HOME=/home/test/tomcat85/output/build
-export PATH=$PATH:$CATALINA_HOME/bin
-cd $CATALINA_HOME/bin
-
-
-cp /home/test/5.2.g/root/projects/web-client/target/alfresco.war /home/test/tomcat85/output/build/webapps/
-cp /home/test/5.2.g/root/projects/solr4/target/solr4.war /home/test/tomcat85/output/build/webapps/
-cp /home/test/5.2.g/root/projects/server-root/target/ROOT.war /home/test/tomcat85/output/build/webapps/
-cp /home/test/5.2.g/root/projects/solr/source/solr/instance/apache-solr-1.4.1.war /home/test/tomcat85/output/build/webapps/
-cp /home/test/5.2.g/root/projects/solr/target/solr.war /home/test/tomcat85/output/build/webapps/
-
-#cp /home/test/work/Alfresco_5.2/postgresql-9.4.1211.jre6.jar /home/test/tomcat85/output/build/webapps/.
-
-export CATALINA_HOME=/home/test/tomcat85/output/build
-export PATH=$PATH:$CATALINA_HOME/bin
-cd $CATALINA_HOME/bin
-
-rm -rf index.html
-sh catalina.sh start
-sleep 1m
-
-
-wget http://127.0.0.1:8080/
-
-
-#wget localhost:8080 
-
-cat index.html
-
-sh catalina.sh stop
+mvn clean install -fn
 </command>
     </hudson.tasks.Shell>
   </builders>
