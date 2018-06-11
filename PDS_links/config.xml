@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_pds_monitoring</assignedNode>
+  <assignedNode>pds_monitor</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -81,6 +81,7 @@ fi
 
 if echo &quot;$urlLiveInt2_STATUS&quot; | grep &apos;200&apos;; then
 exit_status=$exit_status;
+echo $exit_status
 else
 exit_status=1;
 fi
@@ -104,7 +105,7 @@ fi
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>@preeti.khorjuvenkar,@ketank,@aborkar,@abhays</room>
+      <room>@preeti.khorjuvenkar,@ketank,@aborkar,@snalkar</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
