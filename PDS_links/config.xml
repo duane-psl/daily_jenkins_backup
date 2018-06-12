@@ -81,7 +81,6 @@ fi
 
 if echo &quot;$urlLiveInt2_STATUS&quot; | grep &apos;200&apos;; then
 exit_status=$exit_status;
-echo $exit_status
 else
 exit_status=1;
 fi

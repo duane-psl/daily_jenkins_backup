@@ -57,9 +57,9 @@ sudo yum install -y tar wget gcc
 
 export GOPATH=`pwd`
 cd $GOPATH
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
+chmod ugo+r go1.9.2.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 cd /usr/bin
 sudo ln gcc s390x-linux-gnu-gcc
@@ -84,13 +84,13 @@ sleep 10s
 
 cd $GOPATH/src/github.com/prometheus/alertmanager
 make test 2&gt;&amp;1 | tee -a build_logs
-cat build_logs | grep &quot;FAIL&quot; | grep &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
 while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
-count=$(grep FAIL individual_test_log | wc -l)
+count=$(grep -a FAIL individual_test_log | wc -l)
 while [ $count -gt 0 ]
 do
    while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
-   count=$(grep FAIL individual_test_log | wc -l)
+   count=$(grep -a FAIL individual_test_log | wc -l)
 done
 
 

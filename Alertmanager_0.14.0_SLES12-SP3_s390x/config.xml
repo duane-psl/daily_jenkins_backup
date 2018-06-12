@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,7 +26,7 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>
 #Set the below parameters manually
 package_name=&quot;alertmanager&quot;
 published_version=&quot;0.14.0&quot;
@@ -49,11 +49,12 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-cat /etc/os-release
+
+
 cat /etc/os*
 
-sudo yum install -y git make curl glibc-static file
-sudo yum install -y tar wget gcc
+sudo zypper install -y git make curl file
+sudo zypper install -y tar wget gcc
 
 export GOPATH=`pwd`
 cd $GOPATH
@@ -92,8 +93,6 @@ do
    while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
    count=$(grep FAIL individual_test_log | wc -l)
 done
-
-
 </command>
     </hudson.tasks.Shell>
   </builders>

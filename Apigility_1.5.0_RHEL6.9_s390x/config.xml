@@ -45,38 +45,20 @@ fi
 #Install dependencies
 export Apigility_home=$(pwd)
 
-sudo yum install -y git \
-wget \
-gcc \
-tar \
-libtool \
-autoconf \
-make \
-pcre \
-pcre-devel \
-libxml2 \
-libxml2-devel \
-libexpat-devel \
-curl \
-openssl \
-openssl-devel \
-git
+#Build https
+sudo yum install -y git openssl openssl-devel gcc autoconf make pcre pcre-devel libxml2 libxml2-devel expat-devel which wget tar
  
-
-#Http dependencies
-sudo yum install -y expat-devel which 
-
 #Install libtool
 cd $Apigility_home
 wget http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
 tar -xvf libtool-2.4.6.tar.gz
 cd libtool-2.4.6
 ./configure
-make &amp;&amp; sudo make install
+make
+sudo make install
 
 #Install http
 cd $Apigility_home
-sudo yum install -y git openssl openssl-devel gcc autoconf make pcre pcre-devel libxml2 libxml2-devel expat-devel which wget tar
 git clone git://github.com/apache/httpd.git 
 cd httpd
 git checkout 2.4.33
@@ -102,7 +84,7 @@ sudo /usr/local/apache2/bin/apachectl -k start
 cd $Apigility_home
 wget http://www.php.net/distributions/php-5.6.8.tar.gz 
 tar xvzf php-5.6.8.tar.gz &amp;&amp; cd php-5.6.8
-./configure --prefix=/usr/local/php --with-apxs2=/usr/local/apache2/bin/apxs --with-config-file-path=/usr/local/php --with-mysql --with-openssl
+./configure --prefix=/usr/local/php --with-apxs2=/usr/local/apache2/bin/apxs --with-config-file-path=/usr/local/php --with-mysql --with-openssl --enable-mbstring --enable-xml
 make
 sudo make install
 export PATH=/usr/local/php/bin:$PATH
@@ -113,7 +95,7 @@ cd $Apigility_home
 sudo rm -rf zf-apigility-skeleton 
 git clone https://github.com/zfcampus/zf-apigility-skeleton.git 
 cd zf-apigility-skeleton 
-git checkout 1.4.2
+git checkout 1.5.0
 curl -s https://getcomposer.org/installer | php --
 ./composer.phar -n update
 ./composer.phar -n install
@@ -125,6 +107,7 @@ cd $Apigility_home/zf-apigility-skeleton
 php -S $IP:8080 -t public -f public/index.php &amp;
 sleep 10s
 curl http://localhost:80 | grep works!
+curl http://$(hostname -i):8080/apigility/ui#/
 
 
 

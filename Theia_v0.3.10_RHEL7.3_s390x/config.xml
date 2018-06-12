@@ -1,0 +1,260 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dc2_rh7.3_4096</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 3 * * 2</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 3 * * 2</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>source /home/test/.bashrc
+#Install dependencies
+cat /etc/os*
+sudo yum install -y java-1.8.0-openjdk make tar wget git unzip curl expat-devel zlib-devel libcurl-devel file hostname perl-Digest-SHA.s390x xz-lzma-compat
+sudo yum install -y tar wget gcc
+
+export WORK_DIR=`pwd`
+cd $WORK_DIR
+# Install GO
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+go version
+
+#Install Nodejs
+cd $WORK_DIR
+wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/8.9.4.0/linux/s390x/ibm-8.9.4.0-node-v8.9.4-linux-s390x.bin
+chmod +x ibm-8.9.4.0-node-v8.9.4-linux-s390x.bin
+echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$HOME/ibm/node\n-fileOverwrite_$HOME/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
+cat installer.properties
+./ibm-8.9.4.0-node-v8.9.4-linux-s390x.bin -f installer.properties -i silent 
+export PATH=$PATH:$HOME/ibm/node/bin
+node -v
+
+#Installing PhantomJS
+sudo yum -y install gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel libXfont.s390x libXfont-devel.s390x xorg-x11-utils.s390x xorg-x11-font-utils.s390x tzdata.noarch tzdata-java.noarch xorg-x11-fonts-Type1.noarch  xorg-x11-font-utils.s390x python-setuptools git wget tar 
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar openssl-devel
+cd $WORK_DIR
+wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tar.xz
+tar -xvf Python-2.7.9.tar.xz
+cd $WORK_DIR/Python-2.7.9
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make
+sudo make install
+
+sudo easy_install argparse
+cd $WORK_DIR
+git clone git://github.com/ariya/phantomjs.git
+cd phantomjs
+git checkout 2.1.1
+python build.py
+export PATH=$WORK_DIR/phantomjs/bin:$PATH
+phantomjs -v
+
+#Install Yarn
+npm install -g yarn@1.2.1
+
+#Download Theia source code
+cd $WORK_DIR
+git clone https://github.com/theia-ide/theia
+cd theia/
+git checkout v0.3.10
+
+#Build the package
+yarn 2&gt;&amp;1 | tee yarnlog
+yarn run build
+
+#Build vscode-ripgrep and dugite-native from source on s390x
+
+#Install vscode-ripgrep
+cd $WORK_DIR
+wget https://static.rust-lang.org/dist/rust-1.25.0-s390x-unknown-linux-gnu.tar.gz
+tar -xzf rust-1.25.0-s390x-unknown-linux-gnu.tar.gz
+cd rust-1.25.0-s390x-unknown-linux-gnu
+sudo ./install.sh
+cargo install ripgrep
+export PATH=$HOME/.cargo/bin:$PATH
+cp -a $HOME/.cargo/bin $WORK_DIR/theia/node_modules/vscode-ripgrep/
+
+#Install dugite-native
+cd $WORK_DIR
+git clone https://github.com/desktop/dugite-native.git
+cd dugite-native/
+git checkout v2.17.0
+cp ./script/build-arm64.sh ./script/build-s390x.sh
+git submodule update --init --recursive
+
+cat &lt;&lt; &apos;EOF&apos; &gt; script/build-s390x.patch
+diff --git a/script/build-arm64.sh b/script/build-arm64.sh
+index 807c7f7..4a5099d 100755
+--- a/script/build-arm64.sh
++++ b/script/build-arm64.sh
+@@ -6,27 +6,44 @@
+ SOURCE=$1
+ DESTINATION=$2
+ BASEDIR=$3
+-
++GIT_LFS_VERSION=2.4.0
+ mkdir -p $DESTINATION
+
+-docker run --rm --privileged multiarch/qemu-user-static:register --reset
+-docker run -it \
+---mount type=bind,source=$BASEDIR,target=$BASEDIR \
+---mount type=bind,source=$DESTINATION,target=$DESTINATION \
+--e &quot;SOURCE=$SOURCE&quot; \
+--e &quot;DESTINATION=$DESTINATION&quot; \
+--w=$BASEDIR \
+---rm multiarch/debian-debootstrap:arm64-jessie sh $BASEDIR/script/build-arm64-git.sh
+-cd - &gt; /dev/null
++echo &quot; -- Building git at $SOURCE to $DESTINATION&quot;
++
++cd $SOURCE
++make clean
++DESTDIR=&quot;$DESTINATION&quot; make strip install prefix=/ \
++           NO_PERL=1 \
++           NO_TCLTK=1 \
++           NO_GETTEXT=1 \
++           NO_OPENSSL=1 \
++           NO_INSTALL_HARDLINKS=1 \
++           CC=&apos;gcc&apos; \
++           CFLAGS=&apos;-Wall -g -O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -U_FORTIFY_SOURCE&apos; \
++           LDFLAGS=&apos;-Wl,-Bsymbolic-functions -Wl,-z,relro&apos;
++
++echo &quot;-- Removing server-side programs&quot;
++rm &quot;$DESTINATION/bin/git-cvsserver&quot;
++rm &quot;$DESTINATION/bin/git-receive-pack&quot;
++rm &quot;$DESTINATION/bin/git-upload-archive&quot;
++rm &quot;$DESTINATION/bin/git-upload-pack&quot;
++rm &quot;$DESTINATION/bin/git-shell&quot;
++
++echo &quot;-- Removing unsupported features&quot;
++rm &quot;$DESTINATION/libexec/git-core/git-svn&quot;
++rm &quot;$DESTINATION/libexec/git-core/git-remote-testsvn&quot;
++rm &quot;$DESTINATION/libexec/git-core/git-p4&quot;
++chmod 777 &quot;$DESTINATION/libexec/git-core&quot;
+
+ echo &quot;-- Building Git LFS&quot;
+ go get github.com/git-lfs/git-lfs
+ GOPATH=`go env GOPATH`
+ cd $GOPATH/src/github.com/git-lfs/git-lfs
+ git checkout &quot;v${GIT_LFS_VERSION}&quot;
+-$GOPATH/src/github.com/git-lfs/git-lfs/script/bootstrap -arch arm64 -os linux
++$GOPATH/src/github.com/git-lfs/git-lfs/script/bootstrap -arch s390x -os linux
+ echo &quot;-- Bundling Git LFS&quot;
+-GIT_LFS_FILE=$GOPATH/src/github.com/git-lfs/git-lfs/bin/releases/linux-arm64/git-lfs-$GIT_LFS_VERSION/git-lfs
++GIT_LFS_FILE=$GOPATH/src/github.com/git-lfs/git-lfs/bin/releases/linux-s390x/git-lfs-$GIT_LFS_VERSION/git-lfs
+ SUBFOLDER=&quot;$DESTINATION/libexec/git-core&quot;
+ cp $GIT_LFS_FILE $SUBFOLDER
+EOF
+
+cd script
+patch build-s390x.sh &lt; build-s390x.patch
+sed -i -e &apos;/exit 1/ c\  bash &quot;$DIR/build-s390x.sh&quot; $SOURCE $DESTINATION $BASEDIR&apos; build.sh
+sed -i -e &apos;/exit 1/ c\  GZIP_FILE=&quot;dugite-native-$VERSION-s390x.tar.gz&quot;\n\  LZMA_FILE=&quot;dugite-native-$VERSION-s390x.lzma&quot;&apos; package.sh
+
+
+#Build dugite-native
+cd $WORK_DIR/dugite-native
+bash ./script/build.sh
+bash ./script/package.sh
+
+#Replace dugite-native binary
+rm -rf $WORK_DIR/theia/node_modules/dugite/git/*
+cp $WORK_DIR/dugite-native/output/dugite-native-v2.17.0-s390x.tar.gz $WORK_DIR/theia/node_modules/dugite/git
+cd $WORK_DIR/theia/node_modules/dugite/git
+tar -xzf dugite-native-v2.17.0-s390x.tar.gz
+
+#Testing
+cd $WORK_DIR/theia/
+sed -i &quot;s/--stream --concurrency 1/--parallel/&quot; $WORK_DIR/theia/package.json
+yarn test 2&gt;&amp;1 | tee testlogg
+grep passing testlogg
+grep failing testlogg 2&gt;&amp;1 | tee failing_test
+grep ^@ failing_test | awk &apos;{print $1}&apos; | sed &apos;s/.$//&apos; 2&gt;&amp;1 | tee failing_test_log
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
+    npx run test $line
+done &lt; failing_test_log 2&gt;&amp;1 | tee individual_test_log
+
+grep failing individual_test_log 2&gt;&amp;1 | tee failing_test2
+grep ^@ failing_test2 | awk &apos;{print $1}&apos; | sed &apos;s/.$//&apos; 2&gt;&amp;1 | tee failing_test_log2
+count=$(grep ^@ failing_test_log2 | awk &apos;{print $1}&apos; | sed &apos;s/.$//&apos; 2&gt;&amp;1 | tee failing_test_log3 | wc -l)
+if [ $count == 1 ]; then  grep extension-manager failing_test_log2; else exit 1; fi
+
+
+
+#Verification
+cd $WORK_DIR/theia/examples/browser
+yarn run start --hostname 0.0.0.0 &amp;
+
+#sleep 200s
+
+#curl http://localhost:3000
+
+sleep 30s 
+pgrep -d&quot; &quot; -f &quot;node&quot; | xargs sudo kill; 
+sleep 20s</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+    if(it.name==x){
+it.getComputer().doDoDelete()
+    }
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>true</botUser>
+      <room>#loz-jenkins-build,@vibhut.sawant</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

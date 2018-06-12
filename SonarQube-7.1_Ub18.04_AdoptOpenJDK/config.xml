@@ -36,22 +36,22 @@ export JAVA_HOME=$WRK_DIR/jdk-9+181/
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-# Download and extract SonarQube 7.0 and sonar-scanner-cli 3.0.3
-wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.0.zip
-unzip sonarqube-7.0.zip
+# Download and extract SonarQube 7.1 and sonar-scanner-cli 3.0.3
+wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.1.zip
+unzip sonarqube-7.1.zip
 wget https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.0.3.778-linux.zip
 unzip sonar-scanner-cli-3.0.3.778-linux.zip
-rm -rf sonarqube-7.0.zip sonar-scanner-cli-3.0.3.778-linux.zip
+rm -rf sonarqube-7.1.zip sonar-scanner-cli-3.0.3.778-linux.zip
 
-cd $WRK_DIR/sonarqube-7.0/lib/
-java -jar sonar-application-7.0.jar &gt; sonar_service_status.log &amp;
+cd $WRK_DIR/sonarqube-7.1/lib/
+java -jar sonar-application-7.1.jar &gt; sonar_service_status.log &amp;
 
 sonarqube_is_up=false
 
 until [ $sonarqube_is_up == true ]; do
   sleep 5m
-  if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.0/logs/web.log &amp;&amp; \
-  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.0/logs/sonar.log ; then sonarqube_is_up=true; fi
+  if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.1/logs/web.log &amp;&amp; \
+  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.1/logs/sonar.log ; then sonarqube_is_up=true; fi
 done
 
 # Testing
