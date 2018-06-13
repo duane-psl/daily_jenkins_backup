@@ -33,7 +33,7 @@ wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B
 tar -xvf OpenJDK9_s390x_Linux_20180523.tar.gz
 export JAVA_HOME=$WRK_DIR/jdk-9+181/ 
 export PATH=$JAVA_HOME/bin:$PATH
-java -version 
+java -version
 
 # Download and extract SonarQube 7.1 and sonar-scanner-cli 3.0.3
 wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.1.zip

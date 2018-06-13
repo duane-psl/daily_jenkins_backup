@@ -29,7 +29,7 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;apigility&quot;
-published_version=&quot;1.4.2&quot;
+published_version=&quot;1.5.0&quot;
 
 available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
@@ -79,6 +79,9 @@ sudo make install
 sudo /usr/local/apache2/bin/apachectl configtest
 sudo /usr/local/apache2/bin/apachectl -k start
 
+
+#Apigility dependencies
+sudo yum install -y curl openssl openssl-devel git wget gcc tar libtool autoconf make pcre pcre-devel libxml2 libxml2-devel libexpat-devel
 
 #Install PHP
 cd $Apigility_home

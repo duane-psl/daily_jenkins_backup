@@ -83,12 +83,12 @@ git checkout TOMCAT_8_5_16
 cp build.properties.default build.properties
 ant
 
-
-cp /home/test/5.2.g/root/projects/web-client/target/alfresco.war /home/test/tomcat85/output/build/webapps/.
-cp /home/test/5.2.g/root/projects/server-root/target/ROOT.war /home/test/tomcat85/output/build/webapps/.
-cp /home/test/5.2.g/root/projects/solr4/target/solr4.war /home/test/tomcat85/output/build/webapps/.
-cp /home/test/5.2.g/root/projects/solr/source/solr/instance/apache-solr-1.4.1.war /home/test/tomcat85/output/build/webapps/.
-cp /home/test/5.2.g/root/projects/solr/target/solr.war /home/test/tomcat85/output/build/webapps/.
+ls /home/test/5.2.g/root/projects
+#cp /home/test/5.2.g/root/projects/web-client/target/alfresco.war /home/test/tomcat85/output/build/webapps/.
+#cp /home/test/5.2.g/root/projects/server-root/target/ROOT.war /home/test/tomcat85/output/build/webapps/.
+#cp /home/test/5.2.g/root/projects/solr4/target/solr4.war /home/test/tomcat85/output/build/webapps/.
+#cp /home/test/5.2.g/root/projects/solr/source/solr/instance/apache-solr-1.4.1.war /home/test/tomcat85/output/build/webapps/.
+#cp /home/test/5.2.g/root/projects/solr/target/solr.war /home/test/tomcat85/output/build/webapps/.
 
 export CATALINA_HOME=/home/test/tomcat85/output/build
 export PATH=$PATH:$CATALINA_HOME/bin

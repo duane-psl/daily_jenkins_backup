@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Install dependencies
 sudo zypper update -y
-sudo zypper install -y wget tar curl
+sudo zypper install -y wget tar curl which
 
 
 export WORK_DIR=`pwd`
@@ -70,11 +70,11 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.ta
 tar -xvf elasticsearch-6.2.4.tar.gz
 ls
 nohup elasticsearch-6.2.4/bin/elasticsearch &amp;
-sleep 2m
+sleep 5m
 
 cd $WORK_DIR/kibana-6.2.4-linux-x86_64
 bin/kibana -H 0.0.0.0 &amp;
-sleep 2m
+sleep 5m
 
 curl http://localhost:5601
 
