@@ -9,77 +9,77 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_4096</assignedNode>
+  <assignedNode>dc2_rh7.4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 4 * * 7</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>source /home/test/.bashrc
+export WRK_DIR=`pwd`
+
 # Install dependencies
-sudo zypper install -y git tar bzip2 unzip python-devel make autoconf net-tools wget python-setuptools python-lxml python-ldap libxslt-devel gcc openssl libopenssl-devel libffi-devel python-xml gcc-c++ libbz2-devel
-sudo easy_install pip
+sudo yum install -y git wget java-1.8.0-ibm java-1.8.0-ibm-devel unzip which
+  
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
+export PATH=$JAVA_HOME/bin:$PATH
 
-# Install required packages using pip
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto cryptography==2.0.3 msgpack-python jinja2 psutil futures tornado 
+java -version
+
+# Download and extract SonarQube 7.1 and sonar-scanner-cli 3.0.3
+wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.1.zip
+unzip sonarqube-7.1.zip
+wget https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.0.3.778-linux.zip
+unzip sonar-scanner-cli-3.0.3.778-linux.zip
+rm -rf sonarqube-7.1.zip sonar-scanner-cli-3.0.3.778-linux.zip
+
+cd $WRK_DIR/sonarqube-7.1/lib/
+java -jar sonar-application-7.1.jar &gt; sonar_service_status.log &amp;
+
+sonarqube_is_up=false
+
+until [ $sonarqube_is_up == true ]; do
+  sleep 5m
+  if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.1/logs/web.log &amp;&amp; \
+  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.1/logs/sonar.log ; then sonarqube_is_up=true; fi
+done
+
+# Testing
+cd $WRK_DIR
+git clone https://github.com/khatilov/sonar-examples.git
+
+cd $WRK_DIR
+sed -i &quot;47d&quot; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+sed -i &apos;47 i use_embedded_jre=false&apos; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+
+cd $WRK_DIR/sonar-examples/projects/languages/java/sonar-runner/java-sonar-runner-simple/
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/java-sonar-runner-simple
+
+cd $WRK_DIR/sonar-examples/projects/languages/javascript/javascript-sonar-runner/
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:javascript-sonar-runner
+
+cd $WRK_DIR/sonar-examples/projects/languages/python/python-sonar-runner
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:example-python-sonar-runner
+
+cd $WRK_DIR/sonar-examples/projects/languages/php/php-sonar-runner
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 
-export SOURCE=`pwd`
-
-#Clone the source
-git clone git://github.com/saltstack/salt
-cd salt        
-git checkout v2017.7.4
-
-#Install Salt
-cd $SOURCE
-sudo pip install -e ./salt
-
-salt --version
-salt --version | grep 2017.7.4
-
-#Configure salt
-mkdir -p $SOURCE/etc/salt/
-cp ./salt/conf/master ./salt/conf/minion $SOURCE/etc/salt/
-cd $SOURCE/etc/salt/
+pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill ||true
 
 
-# Edit config file master as shown below
-sed -i &apos;s/#user: root/user: root/g&apos; master
-sed -i &quot;s,#root_dir: /,root_dir: $SOURCE,&quot; master
-
-# Edit config file minion as shown below
-sed -i &apos;s/#master: salt/master: localhost/g&apos; minion
-sed -i &apos;s/#user: root/user: root/g&apos; minion
-sed -i &quot;s,#root_dir: /,root_dir: $SOURCE,&quot; minion
-
-cd $SOURCE
-sudo salt-master -c ./etc/salt -d 
-sleep 30
-sudo salt-minion -c ./etc/salt -d
-sleep 60
-sudo salt-key -c ./etc/salt -L 
-sleep 20
-sudo salt-key -c ./etc/salt -A -y 
-sudo salt -c ./etc/salt &apos;*&apos; test.ping  || true
-
-ps -ef |grep salt
-
-#Testing (optional)
-#cd $SOURCE/salt
-#sudo pip install git+https://github.com/saltstack/salt-testing.git#egg=SaltTesting
-#sudo pip install -r requirements/dev_python27.txt
-#sudo ./setup.py test
-
-# **Note:** Test failures seen in the following modules can be ignore as these are not related to IBM z Systems:_ 
-#           _Module Tests, State Tests, Shell Tests, NetAPI Tests, Salt Unit Test</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -92,7 +92,8 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -104,7 +105,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @gsalgaon</room>
+      <room>#loz-jenkins-build</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

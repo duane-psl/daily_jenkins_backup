@@ -31,7 +31,6 @@ sudo zypper install -y ncurses patch zlib zlib-devel git awk tar bzip2 unzip ope
 
 #Build openssl
 cd $homedir
-sudo rm -rf openssl
 git clone git://github.com/openssl/openssl.git
 cd openssl
 git checkout OpenSSL_1_0_2l	 
@@ -43,7 +42,6 @@ openssl version
 
 #Build curl
 cd $homedir
-sudo rm -rf curl
 git clone git://github.com/curl/curl.git
 cd curl
 git checkout curl-7_52_1
@@ -59,14 +57,12 @@ wget https://raw.githubusercontent.com/curl/curl/curl-7_53_0/lib/mk-ca-bundle.pl
 perl mk-ca-bundle.pl -k
 export SSL_CERT_FILE=`pwd`/ca-bundle.crt
 rm  $HOME/.curlrc
-
+curl --version
 
 #Install  python
 cd $homedir
-sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar
 sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar bzip2 zlib-devel xz readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_5-devel gdb awk glibc-debuginfo netcfg libbz2-devel
-rm -rf Python-2.7.14 Python-2.7.14.tar.xz Python
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+curl -o Python-2.7.14.tar.xz https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
 sudo tar -xvf Python-2.7.14.tar.xz
 cd Python-2.7.14
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
@@ -85,8 +81,8 @@ curl -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
 sudo /usr/local/bin/python2.7 /tmp/get-pip.py
 
 cd $homedir
-sudo pip install &apos;cryptography==1.4&apos;
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto msgpack-python jinja2 psutil futures tornado
+sudo pip install cffi
+sudo pip install paramiko httplib2 passlib six patch django call coverage coveralls funcsigs pyzmq PyYAML pycrypto cryptography msgpack-python jinja2 psutil futures tornado
 
 # Download source code
 git clone git://github.com/saltstack/salt
@@ -97,7 +93,6 @@ git checkout v2017.7.4
 cd ..
 sudo pip install -e ./salt  
 salt --version
-salt --version | grep 2017.7.4
 
 # Configure Salt master and minion
 sudo rm -rf etc/salt/

@@ -22,13 +22,13 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>sudo zypper up -y
 # Install dependencies
 sudo zypper install -y git tar bzip2 unzip python-devel make autoconf net-tools wget python-setuptools python-lxml python-ldap libxslt-devel gcc openssl libopenssl-devel libffi-devel python-xml gcc-c++ libbz2-devel
 sudo easy_install pip
-
+sudo pip install -U setuptools
 # Install required packages using pip
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto cryptography==2.0.3 msgpack-python jinja2 psutil futures tornado 
+sudo pip install paramiko httplib2 passlib six patch django call coverage coveralls funcsigs pyzmq PyYAML pycrypto cryptography msgpack-python jinja2 psutil futures tornado 
 
 
 export SOURCE=`pwd`

@@ -9,74 +9,73 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dockercloud_rhel7.4-8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 7</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 7</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;r-base&quot;
-published_version=&quot;3.4.3&quot;
+      <command>source /home/test/.bashrc
+export WRK_DIR=`pwd`
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
-fi
+# INstall depedencies
+sudo yum install -y wget git java-1.8.0-openjdk unzip which
+export JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk
+export PATH=$JAVA_HOME/bin:$PATH
 
-
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
-########################
-
-sudo zypper update -y
-
-cat /etc/os-release
-sudo zypper install -y wget tar rpm-build help2man zlib-devel xz-devel ncurses-devel make cairo-devel gcc-c++ gcc-fortran libcurl-devel libjpeg-devel libpng-devel libtiff-devel readline-devel fdupes texlive-helvetic texlive-metafont texlive-psnfss texlive-times xdg-utils pango-devel tcl-devel tk-devel xorg-x11-devel perl-macros texinfo  java-1_8_0-openjdk-devel
-
-
-export JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
 java -version
 
-wget https://cran.r-project.org/src/base/R-3/R-3.4.3.tar.gz
-tar zxvf R-3.4.3.tar.gz
+# Download and extract SonarQube 7.1 and sonar-scanner-cli 3.0.3
+wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.1.zip
+unzip sonarqube-7.1.zip
+wget https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.0.3.778-linux.zip
+unzip sonar-scanner-cli-3.0.3.778-linux.zip
+rm -rf sonarqube-7.1.zip sonar-scanner-cli-3.0.3.778-linux.zip
 
-cd R-3.4.3
+cd $WRK_DIR/sonarqube-7.1/lib/
+java -jar sonar-application-7.1.jar &gt; sonar_service_status.log &amp;
 
-./configure --with-x=no
-make
-sudo make install
-export PATH=/usr/local/bin:$PATH
-export LANG=&quot;en_US.UTF-8&quot;
-make check
+sonarqube_is_up=false
 
-echo &quot;sessionInfo()&quot; | R --save 
+until [ $sonarqube_is_up == true ]; do
+  sleep 5m
+  if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.1/logs/web.log &amp;&amp; \
+  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.1/logs/sonar.log ; then sonarqube_is_up=true; fi
+done
+
+# Testing
+cd $WRK_DIR
+git clone https://github.com/khatilov/sonar-examples.git
+
+cd $WRK_DIR
+sed -i &quot;47d&quot; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+sed -i &apos;47 i use_embedded_jre=false&apos; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+
+cd $WRK_DIR/sonar-examples/projects/languages/java/sonar-runner/java-sonar-runner-simple/
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/java-sonar-runner-simple
+
+cd $WRK_DIR/sonar-examples/projects/languages/javascript/javascript-sonar-runner/
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:javascript-sonar-runner
+
+cd $WRK_DIR/sonar-examples/projects/languages/python/python-sonar-runner
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:example-python-sonar-runner
+
+cd $WRK_DIR/sonar-examples/projects/languages/php/php-sonar-runner
+$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 
-
-
-
+pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill ||true
 
 </command>
     </hudson.tasks.Shell>
@@ -91,7 +90,8 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -103,7 +103,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vaibhavv</room>
+      <room>#loz-jenkins-build,@vitthalb</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

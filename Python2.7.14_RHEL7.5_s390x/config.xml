@@ -9,22 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu17.10</assignedNode>
+  <assignedNode>dockercloud_rhel7.5</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 4</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;docker-compose&quot;
-published_version=&quot;1.21.0&quot;
+      <command>source /home/test/.bashrc 
+#Set the below parameters manually
+package_name=&quot;python&quot;
+published_version=&quot;2.7.14&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -45,15 +50,48 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-# Install the following Dependencies
-sudo apt-get update
-sudo apt-get install -y python-pip
-#pip install --upgrade pip
+rm -rf ./*
+#Install dependencies
 
-# INstall package       
-sudo pip install docker-compose==1.21.0
-        
-docker-compose version</command>
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2 bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-devel gdb
+
+#Get source
+wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+tar -xvf Python-2.7.14.tar.xz
+cd Python-2.7.14
+
+#Apply patch to fix test_regrtest
+wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
+cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
+
+#Build and test
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make 
+make test 2&gt;&amp;1 | tee testlog
+
+#Store failed tests
+grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
+
+#Store tests expected to fail and intermittent tests
+echo &quot;test_bz2&quot; &gt;expected
+
+#Diff between expected and actual failures
+diff -u expected failures | tee diff_
+
+#Fail if any extra test failed apart from expected
+if grep -q &apos;+test&apos; diff_; then
+    exit 1
+fi
+
+#Run intermittent tests individually
+cd ./Lib/test
+../../python -m unittest test_bz2
+
+#Install
+cd ../../
+sudo make install
+
+python -V 2&gt;&amp;1 | grep 2.7.14</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -78,7 +116,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

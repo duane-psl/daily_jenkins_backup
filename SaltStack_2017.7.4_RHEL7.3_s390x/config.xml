@@ -30,9 +30,9 @@ echo $homedir
 sudo yum install -y git wget tar make bzip2 unzip gcc gcc-c++ python-devel make autoconf net-tools python-setuptools python-lxml python-ldap sqlite-devel openldap-devel libxslt-devel openssl-devel libffi-devel openssl libtool libbz2-devel
 sudo easy_install pip
 
-
+sudo pip install -U setuptools
 # Install required packages using pip
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto cryptography==2.0.3 msgpack-python jinja2 psutil futures tornado
+sudo pip install paramiko httplib2 passlib six patch django call coverage coveralls funcsigs pyzmq PyYAML pycrypto cryptography msgpack-python jinja2 psutil futures tornado
 
 
 # Download source code
@@ -71,16 +71,7 @@ sudo salt -c ./etc/salt &apos;*&apos; test.ping  || true
 # Check master, minion process
 
 ps -ef | grep salt
-
-# Unit and integration tests (optional)
-#cd $homedir/salt
-#sudo pip install git+https://github.com/saltstack/salt-testing.git#egg=SaltTesting
-#sudo pip install -r requirements/dev_python27.txt 
-#sudo ./setup.py test
-
-
-# **Note:** Test failures seen in the following modules can be ignore as these are not related to IBM z Systems:_ 
-#           _Module Tests, State Tests, Shell Tests, NetAPI Tests, Salt Unit Test_</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

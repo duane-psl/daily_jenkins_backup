@@ -65,11 +65,10 @@ echo $PATH
 
 
 ###To download and extract the content on the fly
-#wget -O- https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz | tar zxvz
-wget -O- https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz | tar zxvz
-
-export JAVA_HOME=$WORKDIR/jdk-9+181
-export PATH=/sbin:$JAVA_HOME/bin:$PATH
+wget -O OpenJDK9_s390x_Linux_20180523.tar.gz https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz -O OpenJDK9_s390x_Linux_20180523.tar.gz
+tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
+export JAVA_HOME=`pwd`/jdk-9+181
+export PATH=$JAVA_HOME/bin:$PATH  
 java -version
 
 export PATH=/usr/local/bin:/sbin:$PATH

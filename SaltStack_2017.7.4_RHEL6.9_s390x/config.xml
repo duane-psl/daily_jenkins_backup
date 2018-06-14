@@ -58,7 +58,7 @@ sudo /usr/local/bin/python2.7 /tmp/get-pip.py
 sudo ln -s /usr/local/bin/pip /usr/bin/pip
 
 #Install required Python modules
-sudo pip install paramiko httplib2 passlib six patch &apos;django&lt;2.0&apos; call coverage==3.7.1 coveralls funcsigs pyzmq PyYAML pycrypto cryptography==2.0.3 msgpack-python jinja2 psutil futures tornado
+sudo pip install paramiko httplib2 passlib six patch django call coverage coveralls funcsigs pyzmq PyYAML pycrypto cryptography msgpack-python jinja2 psutil futures tornado
 
 # Download source code
 cd $homedir
@@ -68,7 +68,7 @@ git checkout v2017.7.4
           
 # Install saltstack and check version
 sudo pip install -e .
-sudo env PATH=$PATH python ./setup.py install
+#sudo env PATH=$PATH python ./setup.py install
 
 # Configure Salt master and minion
 cd $homedir
@@ -99,15 +99,6 @@ sudo env PATH=$PATH salt -c ./etc/salt &apos;*&apos; test.ping || true
 # Check master, minion process
 ps -ef | grep salt
 
-# Unit and integration tests (optional)
-#cd /&lt;source_root&gt;/salt
-#sudo pip install git+https://github.com/saltstack/salt-testing.git#egg=SaltTesting
-#sudo pip install -r requirements/dev_python27.txt 
-#sudo ./setup.py test
-
-
-# **Note:** Test failures seen in the following modules can be ignore as these are not related to IBM z Systems:_ 
-#           _Module Tests, State Tests, Shell Tests, NetAPI Tests, Salt Unit Test_
 
 
 
