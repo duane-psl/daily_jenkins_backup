@@ -57,7 +57,7 @@ line1=-race
 line2=
 sed -i &quot;60s/$line1/$line2/&quot; Makefile
 
-make test |tee testlogs
+#make test |tee testlogs
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:
   scrape_interval:     15s # By default, scrape targets every 15 seconds.

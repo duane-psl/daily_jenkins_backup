@@ -100,7 +100,7 @@ sudo chown -R zabbix:zabbix conf
 sudo service apache2 start 
 sleep 30s
 sudo service mysql start
-sleep 30s
+sleep 40s
 
 sudo /usr/bin/mysql -e &quot;create database zabbix&quot; 
 sudo /usr/bin/mysql -e &quot;create user &apos;zabbix&apos;@&apos;localhost&apos;&quot;

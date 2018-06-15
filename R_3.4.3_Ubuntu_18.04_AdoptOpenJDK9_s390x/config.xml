@@ -57,9 +57,9 @@ sudo echo -e &quot;Asia/Kolkata&quot; &gt;&gt; /etc/timezone
 
 
 export work_dir=`pwd`
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz 
-export JAVA_HOME=$work_dir/jdk-9+181
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz -O OpenJDK9_s390x_Linux_20180523.tar.gz
+tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
+export JAVA_HOME=`pwd`/jdk-9+181
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 

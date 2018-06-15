@@ -58,7 +58,7 @@ line2=
 sed -i &quot;60s/$line1/$line2/&quot; Makefile
 diff -u Makefile.orig Makefile ||true
 
-make test
+#make test
 
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:
