@@ -81,7 +81,7 @@ diff -u expected failures | tee diff_
 
 #Fail if any extra test failed apart from expected
 if grep -q &apos;+test&apos; diff_; then
-    exit 0
+    exit 1
 fi
 
 #Run intermittent tests individually

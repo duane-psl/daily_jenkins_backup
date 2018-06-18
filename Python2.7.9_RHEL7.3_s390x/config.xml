@@ -23,7 +23,7 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
-export Workdir=`pwd`
+export WORK_DIR=`pwd`
 # Install Pre-Build Dependencies
 sudo yum -y install gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel libXfont.s390x libXfont-devel.s390x xorg-x11-utils.s390x xorg-x11-font-utils.s390x tzdata.noarch tzdata-java.noarch xorg-x11-fonts-Type1.noarch  xorg-x11-font-utils.s390x python-setuptools git wget tar 
 sudo yum install -y gcc gcc-c++ make ncurses patch wget tar openssl-devel

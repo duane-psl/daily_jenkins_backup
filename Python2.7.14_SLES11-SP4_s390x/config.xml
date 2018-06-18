@@ -110,7 +110,7 @@ diff -u --ignore-all-space expected failures | tee diff_
 
 #Fail if any extra test failed apart from expected
 if grep -q &apos;+test&apos; diff_; then
-    exit 0
+    exit 1
 fi
 
 #Run intermittent tests individually
@@ -124,7 +124,19 @@ fi
 #./python Lib/test/regrtest.py -v test_ssl
 #./python Lib/test/regrtest.py -v test_gdb
 sudo make install
-python -V
+python_version=$(python --version 2&gt;&amp;1)
+
+echo $python_version &gt; output.txt
+
+echo &apos;Python 2.7.14&apos; &gt; expected.txt
+result=`diff output.txt expected.txt`
+
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi
+
 </command>
     </hudson.tasks.Shell>
   </builders>
