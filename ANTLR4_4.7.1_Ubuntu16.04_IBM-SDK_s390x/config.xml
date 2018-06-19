@@ -87,12 +87,12 @@ sudo ln -s `which nodejs` /usr/local/bin/node
 
 #install IBM java
 cd $SRCRT
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.4.10/linux/s390x/ibm-java-sdk-8.0-4.10-s390x-archive.bin
+wget http://www14.software.ibm.com/cgi-bin/weblap/lap.pl?popup=Y&amp;la_formnum=&amp;li_formnum=L-SMKR-AVSEUH&amp;title=IBM%20SDK,%20Java%20Technology%20Edition,%20Version%208&amp;accepted_url=http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin
 wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
 tail -n +3 installer.properties.java | tee installer.properties
 cat installer.properties
-chmod +x ibm-java-sdk-8.0-4.10-s390x-archive.bin
-sudo ./ibm-java-sdk-8.0-4.10-s390x-archive.bin -r installer.properties
+chmod +x ibm-java-sdk-8.0.5.16-s390x-archive.bin
+sudo ./ibm-java-sdk-8.0.5.16-s390x-archive.bin -r installer.properties
 
 
 # Set env variables

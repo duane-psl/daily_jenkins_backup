@@ -48,10 +48,8 @@ git clone https://github.com/hashicorp/terraform.git
 cd terraform/
 git checkout v0.11.7
 
-XC_OS=linux XC_ARCH=s390x make bin
-
 # While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
-make test 2&gt;&amp;1 | tee -a build_logs
+make 2&gt;&amp;1 | tee -a build_logs
 cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
 while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
     go test -v -timeout 20m $line
@@ -77,9 +75,9 @@ done &lt; test.txt
 
 #Build terraform
 
-#cd $GOPATH/src/github.com/hashicorp/terraform/
+cd $GOPATH/src/github.com/hashicorp/terraform/
 #make fmt
-#XC_OS=linux XC_ARCH=s390x make bin
+XC_OS=linux XC_ARCH=s390x make bin
 
 file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
 

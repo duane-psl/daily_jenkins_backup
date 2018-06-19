@@ -44,7 +44,15 @@ git checkout v0.11.7
 
 
 # While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
-make 
+make 2&gt;&amp;1 | tee -a build_logs
+cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
+    go test -v -timeout 20m $line
+    until $? 
+    do
+     go test -v -timeout 20m $line
+    done
+done &lt; test.txt
 
 
 
