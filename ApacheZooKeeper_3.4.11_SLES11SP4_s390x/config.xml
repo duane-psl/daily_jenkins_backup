@@ -51,6 +51,7 @@ fi
 #------------------------
 sudo zypper up -y
 sudo zypper install -y git gcc-c++ make tar wget-openssl1 java-1_7_0-ibm java-1_7_0-ibm-devel libcppunit-devel libtool net-tools xz awk
+#sudo zypper install -y autoconf pcre pcre-devel libxml2 libxml2-devel libexpat-devel
 
 rm -rf source_root
 mkdir source_root
@@ -61,6 +62,17 @@ export JAVA_HOME=/usr/lib64/jvm/java-1.7.0-ibm-1.7.0/
 export PATH=/usr/local/bin:$PATH:$JAVA_HOME/bin
 echo $PATH
 java -version
+
+#Install OpenSSL
+#wget ftp https://www.openssl.org/source/old/1.0.2/openssl-1.0.2l.tar.gz
+#tar zxf openssl-1.0.2l.tar.gz
+#cd openssl-1.0.2l
+#./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared zlib-dynamic
+#make
+#sudo make install		
+#export PATH=/usr/local/ssl/bin:$PATH
+
+export JAVA_TOOL_OPTIONS=&quot;-Dhttps.protocols=TLSv1.2&quot;
 
 cd $WD
 wget http://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.xz 

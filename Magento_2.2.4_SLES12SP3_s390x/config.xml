@@ -29,7 +29,7 @@
       <command>
 #Set the below parameters manually
 package_name=&quot;magento&quot;
-published_version=&quot;2.2.3&quot;
+published_version=&quot;2.2.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -55,20 +55,52 @@ export WORK_DIR=`pwd`
 
 sudo zypper update -y
 
-sudo zypper install -y tar wget curl libjpeg8-devel libpng-devel curl-devel cronie openssh libicu-devel pkg-config patch 
-sudo zypper install -y libxslt-devel gcc-c++ cmake mariadb libmysqld-devel  apache2 apache2-devel  libmcrypt libmcrypt-devel freetype2 freetype2-devel
+sudo zypper install -y tar wget curl libjpeg8-devel libpng-devel curl-devel cronie openssh libicu-devel pkg-config libxslt-devel gcc-c++ cmake libmysqld-devel apache2 apache2-devel freetype2 freetype2-devel libxml2-devel
 
 
-###Create magento database
-sudo /usr/bin/mysql_install_db --user=mysql
-sleep 15s
-sudo mkdir -p  /var/log/mysql
-sudo sed -i &apos;701s/hostname/echo $HOSTNAME/&apos; /usr/bin/mysqld_safe 
-sudo /usr/bin/mysqld_safe --user=mysql &amp;  
+# Install MySQL
+sudo zypper install -y git gcc gcc-c++ make cmake bison ncurses-devel wget tar net-tools
+
+cd $WORK_DIR
+git clone git://github.com/mysql/mysql-server.git
+cd mysql-server
+git checkout tags/mysql-5.7.22
+
+wget http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.gz
+tar xzf boost_1_59_0.tar.gz
+cmake . -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
+gmake
+
+# Execute test cases
+gmake test
+sudo gmake install
+
+
+# Post installation setup
+if !(getent passwd mysql); then
+   sudo /usr/sbin/useradd mysql
+   sudo /usr/sbin/groupadd mysql
+fi
+cd /usr/local/mysql
+sudo chown -R mysql .
+sudo chgrp -R mysql .
+
+nohup sudo bin/mysqld --initialize --user=mysql &amp;
+sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
 sleep 20s
-sudo /usr/bin/mysql -e &quot;create database magento&quot; 
-sudo /usr/bin/mysql -e &quot;create user &apos;magento&apos;@&apos;localhost&apos; &quot; 
-sudo /usr/bin/mysql -e &quot;grant all privileges on magento.* to &apos;magento&apos;@&apos;localhost&apos;&quot; 
+/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;
+
+
+
+###Install libmcrypt
+cd $WORK_DIR
+wget http://sourceforge.net/projects/mcrypt/files/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
+tar -xzvf libmcrypt-2.5.8.tar.gz
+cd libmcrypt-2.5.8
+./configure
+make
+sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:$LD_LIBRARY_PATH
 
 
 ###Install PHP
@@ -77,7 +109,7 @@ sudo rm -rf php-7.0.23
 wget http://www.php.net/distributions/php-7.0.23.tar.gz  
 tar xvzf php-7.0.23.tar.gz 	
 cd php-7.0.23
-./configure --with-apxs2=/usr/bin/apxs --without-pcre-jit --with-openssl --enable-soap --with-libxml-dir=/usr/lib64 --with-mysqli --with-gd --with-jpeg-dir=/usr/include/jpeglib.h --with-png-dir --with-pdo_mysql --with-curl  --with-mcrypt --enable-mbstring --enable-intl --enable-zip --with-xsl --with-freetype-dir=/usr/lib64/
+./configure --with-apxs2=/usr/bin/apxs --without-pcre-jit --with-openssl --enable-soap --with-libxml-dir=/usr/lib64 --with-mysqli --with-gd --with-jpeg-dir=/usr/include/jpeglib.h --with-png-dir --with-pdo_mysql --with-curl  --with-mcrypt --enable-mbstring --enable-intl --enable-zip --with-xsl --with-freetype-dir=/usr/lib64/ --enable-bcmath
 
 make   
 sudo make install
@@ -136,7 +168,7 @@ cd /srv/www/htdocs
 sudo chmod -R a+w /srv/www/htdocs
 git clone https://github.com/magento/magento2.git
 cd magento2
-git checkout 2.2.3
+git checkout 2.2.4
 composer install
 
 sudo chmod -R a+w /srv/www/htdocs/magento2
