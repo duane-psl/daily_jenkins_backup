@@ -42,7 +42,6 @@ fi
 # Install dependencies
 sudo yum install -y wget httpd httpd-devel.s390x mariadb mariadb-server unzip tar make libxml2 libxml2-devel libpng libpng-devel gcc-c++
 
-
 # Build and Install libmcrypt
 wget http://sourceforge.net/projects/mcrypt/files/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
 tar -xvzf libmcrypt-2.5.8.tar.gz
@@ -56,7 +55,7 @@ cd ..
 wget http://www.php.net/distributions/php-5.6.8.tar.gz 
 tar xvzf php-5.6.8.tar.gz
 cd php-5.6.8
-./configure --prefix=/usr/local/php --with-apxs2=/usr/sbin/apxs2 --with-config-file-path=/usr/local/php --with-mysql --with-gd --with-zlib  --with-mcrypt 
+./configure --prefix=/usr/local/php --with-config-file-path=/usr/local/php --with-mysql --with-gd --with-zlib  --with-mcrypt --with-apxs2=/usr/bin/apxs
 make  
 sudo make install
 export PATH=/usr/local/php/bin/:$PATH

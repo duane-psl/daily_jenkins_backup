@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>Abhay_slave</assignedNode>
+  <assignedNode>Abhay_Jenkins_Slave</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,6 +29,7 @@
       <command>sudo zypper update -y 
 sudo zypper install -y git wget unzip java-1_8_0-ibm-devel
 export WORK_DIR=`pwd`
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 cat /etc/os*
 
 #Install gradle

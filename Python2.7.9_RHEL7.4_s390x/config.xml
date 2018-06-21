@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.4</assignedNode>
+  <assignedNode>dockercloud_rhel7.4||dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -25,7 +25,7 @@
       <command>source /home/test/.bashrc
 export WORK_DIR=`pwd`
 # Install Pre-Build Dependencies
-sudo yum -y install gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel libXfont.s390x libXfont-devel.s390x xorg-x11-utils.s390x xorg-x11-font-utils.s390x tzdata.noarch tzdata-java.noarch xorg-x11-fonts-Type1.noarch  xorg-x11-font-utils.s390x python-setuptools git wget tar 
+sudo yum -y install gcc gcc-c++ make git wget tar flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel libXfont libXfont-devel xorg-x11-utils xorg-x11-font-utils tzdata.noarch tzdata-java.noarch xorg-x11-fonts-Type1.noarch  xorg-x11-font-utils python-setuptools  
 sudo yum install -y gcc gcc-c++ make ncurses patch wget tar openssl-devel
 cd $WORK_DIR
 wget https://www.python.org/ftp/python/2.7.9/Python-2.7.9.tar.xz

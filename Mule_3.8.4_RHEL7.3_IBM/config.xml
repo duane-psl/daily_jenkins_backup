@@ -28,7 +28,7 @@
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
     </extensions>
   </scm>
-  <assignedNode>dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dockercloud_rhel7.3 || ravi_rh7.3</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>

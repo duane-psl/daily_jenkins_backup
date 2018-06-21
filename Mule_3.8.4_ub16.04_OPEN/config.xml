@@ -28,7 +28,7 @@
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
     </extensions>
   </scm>
-  <assignedNode>ravi_ub16.04</assignedNode>
+  <assignedNode>ravi_ub16.04 || dc2_ub16.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>

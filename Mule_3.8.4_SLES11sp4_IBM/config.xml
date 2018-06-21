@@ -28,7 +28,7 @@
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
     </extensions>
   </scm>
-  <assignedNode>dockercloud_sles11-sp4</assignedNode>
+  <assignedNode>dockercloud_sles11-sp4 || ravi_sl11_SP4</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>

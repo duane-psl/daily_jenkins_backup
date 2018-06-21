@@ -49,7 +49,7 @@ else
 fi
 
 #Install the dependencies
-sudo zypper install -y tar wget awk autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel patch
+sudo zypper install -y tar wget-openssl1 curl-openssl1 awk autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel patch
 
 #Build GCC
 export WORK_DIR=`pwd`
@@ -69,8 +69,6 @@ cd gccbuild/
 #Build and install gcc
 make
 sudo make install
-
-
 export PATH=$HOME/install/gcc-4.8.2/bin:$PATH
 gcc --version
 
