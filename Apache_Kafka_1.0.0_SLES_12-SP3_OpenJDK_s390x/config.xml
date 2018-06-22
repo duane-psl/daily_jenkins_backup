@@ -38,7 +38,7 @@ unzip gradle-4.2-bin.zip
 
 #Build kafka
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 

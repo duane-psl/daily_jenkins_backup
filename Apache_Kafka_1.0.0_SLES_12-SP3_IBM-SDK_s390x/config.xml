@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>Abhay_Jenkins_Slave</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -39,7 +39,7 @@ unzip gradle-4.2-bin.zip
 
 #Build kafka
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 

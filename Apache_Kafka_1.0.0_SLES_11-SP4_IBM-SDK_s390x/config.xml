@@ -27,10 +27,10 @@
   <builders>
     <hudson.tasks.Shell>
       <command>sudo zypper update -y 
-sudo zypper install -y git wget unzip
+sudo zypper install -y git wget-openssl1 curl-openssl1 unzip
 export WORK_DIR=`pwd`
 cat /etc/os*
-
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 #Install gradle
 wget https://services.gradle.org/distributions/gradle-4.2-bin.zip
 unzip gradle-4.2-bin.zip
@@ -38,7 +38,7 @@ unzip gradle-4.2-bin.zip
 
 #Build kafka
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 

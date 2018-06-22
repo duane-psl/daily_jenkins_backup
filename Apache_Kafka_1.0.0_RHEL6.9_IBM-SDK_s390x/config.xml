@@ -28,6 +28,7 @@
     <hudson.tasks.Shell>
       <command>
 source /home/test/.bashrc
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 sudo yum install -y git wget unzip java-1.8.0-ibm java-1.8.0-ibm-devel
 export WORK_DIR=`pwd`
 cat /etc/red*

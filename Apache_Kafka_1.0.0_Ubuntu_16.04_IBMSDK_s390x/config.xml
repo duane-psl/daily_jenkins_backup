@@ -27,6 +27,7 @@
   <builders>
     <hudson.tasks.Shell>
       <command>export WORK_DIR=`pwd`
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 cat /etc/os-release
 java -version ||true
 
@@ -40,7 +41,7 @@ unzip gradle-4.2-bin.zip
 
 
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 
