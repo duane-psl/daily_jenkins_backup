@@ -9,27 +9,28 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
+  <assignedNode>dc2_rh7.4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 5 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 5 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>cat /etc/os*
+      <command>source /home/test/.bashrc
+cat /etc/os*
 
 #Install dependencies
-sudo zypper install -y git gcc wget tar
+sudo yum install -y git gcc wget tar
 
 #Build and install CFSSL
 #Setup Environment variable and source folder to build the package
@@ -46,13 +47,14 @@ cd /usr/bin
 sudo ln gcc s390x-linux-gnu-gcc
 export GOPATH=$WK_DIR/
 export PATH=$GOPATH/bin:$PATH
+
 go version
 
 #Download CFSSL source code
 cd $WK_DIR/src/github.com/cloudflare/
 git clone https://github.com/cloudflare/cfssl.git
 cd cfssl
-git checkout tags/1.3.1
+git checkout tags/1.3.2
 
 #Build CFSSL
 cd $WK_DIR/src/github.com/cloudflare/cfssl
@@ -61,8 +63,6 @@ go install ./cmd/cfssljson
 
 #Run test cases
 cd $WK_DIR/src/github.com/cloudflare/cfssl
-sed -i &apos;/REPO_PATH=&quot;${ORG_PATH}\/cfssl&quot;/ a\ARCH=&quot;$(uname -m)&quot; \&apos; test.sh
-sed -i &apos;/go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package/ c\    if [ $ARCH = &apos;x86_64&apos;  ]; then\n\        go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    else\n\        go test -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    fi&apos; test.sh
 ./test.sh 2&gt;&amp;1 | tee testlogg
 grep &apos;FAIL\s\github.com&apos; testlogg
 count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)

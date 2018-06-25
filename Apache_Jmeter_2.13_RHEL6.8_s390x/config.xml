@@ -45,7 +45,8 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo yum install -y git wget tar java-1.7.1-ibm-devel.s390x subversion
+      <command>source /home/test/.bashrc
+sudo yum install -y git wget tar java-1.7.1-ibm-devel.s390x subversion
 export WORK_DIR=`pwd`
 cd $WORK_DIR
 wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.3-bin.tar.gz 

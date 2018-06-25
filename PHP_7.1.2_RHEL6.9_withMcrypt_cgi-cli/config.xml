@@ -26,7 +26,7 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>source /home/test/.bashrc
 export WORK_DIR=`pwd`
 sudo yum install -y autoconf automake bison flex bzip2-devel curl-devel freetype-devel gcc gcc-c++ gdbm-devel git gmp-devel libdbi libjpeg-turbo-devel libpng-devel libtool libxml2-devel libXpm-devel libxslt-devel make mysql-devel net-snmp-devel openldap-devel openssl-devel pcre-devel pkgconfig postgresql-devel readline-devel unixODBC-devel vim wget tar
 

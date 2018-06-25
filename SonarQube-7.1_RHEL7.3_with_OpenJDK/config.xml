@@ -74,8 +74,8 @@ $WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
 curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 
-pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill ||true
-
+#pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill || true
+kill -9 $(pgrep -f sonar) || true
 
 </command>
     </hudson.tasks.Shell>

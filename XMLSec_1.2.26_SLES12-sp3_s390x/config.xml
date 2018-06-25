@@ -9,57 +9,74 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_4096</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 17 * * 2</spec>
+      <spec>H 13 * * 0</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 17 * * 2</spec>
+      <spec>H 13 * * 0</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>cat /etc/os*
+      <command>#Check if published version is already present in repo 
+package_name=&quot;xmlsec1&quot;
+published_version=&quot;1.2.25&quot;
+
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
 
 #Install dependencies
-sudo apt-get update
-sudo apt-get install -y git gcc golang-1.9
-export PATH=/usr/lib/go-1.9/bin:$PATH
+sudo zypper install -y git-core gcc make libtool libxslt-devel libopenssl-devel
 
-#Build and install CFSSL
-#Setup Environment variable and source folder to build the package
-export WK_DIR=`pwd`
-cd $WK_DIR
-export GOPATH=$WK_DIR/
-export PATH=$GOPATH/bin:$PATH
-mkdir -p $WK_DIR/src/github.com/cloudflare/
 
-#Download CFSSL source code
-cd $WK_DIR/src/github.com/cloudflare/
-git clone https://github.com/cloudflare/cfssl.git
-cd cfssl
-git checkout tags/1.3.1
+export src_dir=$(pwd)
+cd $src_dir
+#Download XMLSec source code
+git clone git://github.com/lsh123/xmlsec.git
+cd xmlsec
+git checkout xmlsec-1_2_25
 
-#Build CFSSL
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-go install ./cmd/cfssl
-go install ./cmd/cfssljson
+#Generate and then run the configuration
+./autogen.sh 
+ 
+#Build and (optionally) test
+make
+make check
 
-#Run test cases
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-sed -i &apos;/REPO_PATH=&quot;${ORG_PATH}\/cfssl&quot;/ a\ARCH=&quot;$(uname -m)&quot; \&apos; test.sh
-sed -i &apos;/go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package/ c\    if [ $ARCH = &apos;x86_64&apos;  ]; then\n\        go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    else\n\        go test -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    fi&apos; test.sh
-./test.sh 2&gt;&amp;1 | tee testlogg
-grep &apos;FAIL\s\github.com&apos; testlogg
-count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)
-if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit 1; fi</command>
+
+#Install XMLSec and verify the installation
+sudo make install
+export PATH=/usr/local/bin/:$PATH
+export LD_LIBRARY_PATH=/usr/local/lib
+
+xmlsec1 --version | grep 1.2.25</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -69,10 +86,11 @@ if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -84,7 +102,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@prajyot.parab</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

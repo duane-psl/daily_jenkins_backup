@@ -39,6 +39,7 @@ export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot; 
 
 wget http://www.eu.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
 tar -xvzf apache-maven-3.3.9-bin.tar.gz
@@ -48,15 +49,19 @@ export MAVEN_OPTS=&quot;-Xms1024m -Xmx1024m&quot;
 export _JAVA_OPTIONS=&quot;-Xmx1024m&quot;
 mvn --version
 
-    wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.0.0/linux/s390x/ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
-    chmod +x ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
-    echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-    cat installer.properties
-    ./ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin -f installer.properties -i silent
+    #wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.0.0/linux/s390x/ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
+    #chmod +x ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
+    #echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
+    #cat installer.properties
+    #./ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin -f installer.properties -i silent
     
-    export PATH=$PATH:$WORK_DIR/ibm/node/bin
-    node -v
+    #export PATH=$PATH:$WORK_DIR/ibm/node/bin
+    #node -v
+wget https://nodejs.org/dist/v6.12.0/node-v6.12.0-linux-s390x.tar.gz
+tar -xvf node-v6.12.0-linux-s390x.tar.gz
 
+export PATH=$PATH:$WORK_DIR/node-v6.12.0-linux-s390x/bin
+node -v
 
 
 cd $WORK_DIR

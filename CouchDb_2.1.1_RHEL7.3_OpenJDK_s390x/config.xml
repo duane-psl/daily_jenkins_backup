@@ -127,7 +127,7 @@ sleep 300s
 # Verify the output of CouchDB server 
 curl http://127.0.0.1:15984/ 
 
-
+make check
 
 
 </command>

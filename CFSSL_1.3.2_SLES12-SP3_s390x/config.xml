@@ -9,55 +9,62 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 2 * * 1</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORKSPACE=`pwd`
+      <command>cat /etc/os*
 
-# Install dependencies
-sudo apt-get update &amp;&amp; sudo apt-get install -y git golang-1.9 wget python
+#Install dependencies
+sudo zypper install -y git gcc wget tar
 
-#Install Go
-export PATH=/usr/lib/go-1.9/bin:$PATH 
-export GOPATH=$WORKSPACE
+#Build and install CFSSL
+#Setup Environment variable and source folder to build the package
+export WK_DIR=`pwd`
+cd $WK_DIR
+mkdir -p $WK_DIR/src/github.com/cloudflare/
+
+# Install GO
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+export GOPATH=$WK_DIR/
 export PATH=$GOPATH/bin:$PATH
-mkdir $GOPATH/bin
 go version
-wget https://glide.sh/get
-sh get
 
-# clone and build the heketi
-git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
-cd $GOPATH/src/github.com/heketi/heketi
-git checkout v6.0.0
-make
-make test
+#Download CFSSL source code
+cd $WK_DIR/src/github.com/cloudflare/
+git clone https://github.com/cloudflare/cfssl.git
+cd cfssl
+git checkout tags/1.3.2
 
-# verify
-cd $GOPATH/src/github.com/heketi/heketi
-sudo mkdir -p /var/lib/heketi/
-sudo ./heketi --config=etc/heketi.json &amp;
-sleep 15s
-wget http://127.0.0.1:8080/hello
+#Build CFSSL
+cd $WK_DIR/src/github.com/cloudflare/cfssl
+go install ./cmd/cfssl
+go install ./cmd/cfssljson
 
-export Expected_str=&quot;Hello from Heketi&quot;
-export Actual_str=$(cat hello)
-
-if [[ $Expected_str == *&quot;$Actual_str&quot;* ]]; then 
-  echo &quot;Same&quot; 
-else	
-  exit 1 
-fi</command>
+#Run test cases
+cd $WK_DIR/src/github.com/cloudflare/cfssl
+./test.sh 2&gt;&amp;1 | tee testlogg
+grep &apos;FAIL\s\github.com&apos; testlogg
+count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)
+if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit 1; fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -67,9 +74,9 @@ fi</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -82,7 +89,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room>#loz-jenkins-build,@prajyot.parab</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

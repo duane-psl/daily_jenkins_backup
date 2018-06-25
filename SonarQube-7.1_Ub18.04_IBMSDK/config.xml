@@ -22,7 +22,7 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>vexport WRK_DIR=`pwd`
+      <command>export WRK_DIR=`pwd`
 
 # Install dependencies
 sudo -E apt-get update
@@ -82,6 +82,7 @@ curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 
 pgrep -d&quot; &quot; -f &quot;sonar&quot; | sudo xargs kill ||true
+#kill -9 $(pgrep -f sonar) || true
 
 
 

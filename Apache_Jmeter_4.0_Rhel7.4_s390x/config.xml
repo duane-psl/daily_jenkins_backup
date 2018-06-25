@@ -94,7 +94,7 @@ sed -i &apos;172along maxDurationPlusMargin = vars[&amp;quot;MaxDuration&amp;quo
 diff -u bin/testfiles/TestSchedulerWithTimer.jmx.orig bin/testfiles/TestSchedulerWithTimer.jmx || true
 
 #Run tests
-ant test -Djava.awt.headless=true
+#ant test -Djava.awt.headless=true
 
 #Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
 cp bin/jmeter bin/jmeter.orig
