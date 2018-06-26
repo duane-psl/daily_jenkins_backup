@@ -9,64 +9,83 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_4096</assignedNode>
+  <assignedNode>dockercloud_sles12-sp3_8192</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 9 * * 2</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 9 * * 2</spec>
+      <spec>H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>cat /etc/os*
+      <command>
+sudo zypper up -y
+###Install build dependencies
+sudo zypper install -y git wget tar cmake gcc gcc-c++ make ncurses-devel boost-devel check-devel libopenssl-devel bison scons glibc-locale gawk net-tools
+##Change the directory to server
 
-#Install dependencies
-sudo zypper install -y git gcc wget tar
+SOURCE_ROOT=`pwd`
 
-#Build and install CFSSL
-#Setup Environment variable and source folder to build the package
-export WK_DIR=`pwd`
-cd $WK_DIR
-mkdir -p $WK_DIR/src/github.com/cloudflare/
+cd $SOURCE_ROOT
+wget https://github.com/MariaDB/server/archive/mariadb-10.2.15.tar.gz
+tar xzf mariadb-10.2.15.tar.gz
+cd server-mariadb-10.2.15
 
-# Install GO
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-export GOPATH=$WK_DIR/
-export PATH=$GOPATH/bin:$PATH
-go version
+#added
+cd $SOURCE_ROOT
+git clone git://github.com/MariaDB/mariadb-connector-c.git
+cd mariadb-connector-c
+git checkout v3.0.2
+cd ..
+cp -r mariadb-connector-c/* server-mariadb-10.2.15/libmariadb/
 
-#Download CFSSL source code
-cd $WK_DIR/src/github.com/cloudflare/
-git clone https://github.com/cloudflare/cfssl.git
-cd cfssl
-git checkout tags/1.3.1
+sed -i &apos;231d&apos; server-mariadb-10.2.15/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_IN_TRANS_READONLY       8192&apos; server-mariadb-10.2.15/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_SESSION_STATE_CHANGED      16384&apos; server-mariadb-10.2.15/libmariadb/include/mariadb_com.h
+sed -i &apos;231 a\#define SERVER_STATUS_ANSI_QUOTES        32768&apos; server-mariadb-10.2.15/libmariadb/include/mariadb_com.h
 
-#Build CFSSL
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-go install ./cmd/cfssl
-go install ./cmd/cfssljson
+##Build, configure, install and execute test cases
+cd $SOURCE_ROOT/server-mariadb-10.2.15
+BUILD/autorun.sh
+./configure 
+make 
+sudo make install
 
-#Run test cases
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-sed -i &apos;/REPO_PATH=&quot;${ORG_PATH}\/cfssl&quot;/ a\ARCH=&quot;$(uname -m)&quot; \&apos; test.sh
-sed -i &apos;/go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package/ c\    if [ $ARCH = &apos;x86_64&apos;  ]; then\n\        go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    else\n\        go test -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    fi&apos; test.sh
-./test.sh 2&gt;&amp;1 | tee testlogg
-grep &apos;FAIL\s\github.com&apos; testlogg
-count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)
-if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit 1; fi</command>
+
+sudo useradd mysql
+sudo groupadd mysql
+cd /usr/local/mysql		
+sudo chmod -R o+rwx .
+ 
+sudo scripts/mysql_install_db --user=mysql
+sleep 20s 
+sudo cp support-files/mysql.server /etc/init.d/mysql
+
+sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+sleep 30s
+sudo bin/mysqladmin version --user=mysql
+
+cd $SOURCE_ROOT/server-mariadb-10.2.15
+make test 2&gt;&amp;1 | tee test.log
+  
+cd $SOURCE_ROOT
+git clone git://github.com/codership/galera.git
+cd galera
+git checkout release_25.3.21
+   
+scons strict_build_flags=0 --config=force
+
+sudo cp garb/garbd /usr/local/sbin/        
+sudo cp libgalera_smm.so /usr/local/lib64/
+sudo /sbin/ldconfig -v</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -76,9 +95,9 @@ if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -91,7 +110,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@prajyot.parab</room>
+      <room></room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
@@ -100,7 +119,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <notifyRepeatedFailure>false</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>

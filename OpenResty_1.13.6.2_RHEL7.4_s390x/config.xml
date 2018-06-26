@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 22 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 22 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,8 +28,8 @@
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;protobuf-compiler&quot;
-published_version=&quot;3.5.1&quot;
+package_name=&quot;openresty&quot;
+published_version=&quot;1.13.6.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -41,6 +41,7 @@ elif [ $ID == &quot;ubuntu&quot; ]; then
 	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
+
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
@@ -49,52 +50,93 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-export home_dir=`pwd`
+#Building OpenResty 
+# Prerequisites:LuaJIT
+export WORK_DIR=`pwd`
+cd $WORK_DIR
+
+
+cat /etc/os*
+sudo yum install -y gcc make git
+export WORK_DIR=`pwd`
+cd $WORK_DIR
+git clone https://github.com/linux-on-ibm-z/LuaJIT.git
+cd LuaJIT
+git checkout v2.1
+cd $WORK_DIR/LuaJIT/
+make
+sudo make install
+
+sudo ln -s luajit-2.1.0-beta3 /usr/local/bin/luajit
 
 #Install the dependencies
-sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel patch
+sudo yum install -y git tar wget make gcc gcc-c++ unix2dos hg cpan perl postgresql-devel patch pcre-devel readline-devel openssl openssl-devel
+export PATH=$PATH:/sbin
 
-git clone git://github.com/google/protobuf.git
-cd protobuf
-git checkout v3.5.1
+#Download the source code
 
+cd $WORK_DIR
 
-echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-index 0b0b06c..95f2338 100644
---- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-+++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-@@ -146,6 +146,15 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
- }
+ wget https://openresty.org/download/openresty-1.13.6.2.tar.gz
+ tar -xvf openresty-1.13.6.2.tar.gz
 
-+inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-+                                       Atomic64 old_value,
-+                                       Atomic64 new_value) {
-+  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
-+                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
-+  return old_value;
-+}
-+
-+
- #endif // defined(__LP64__)
+cd $WORK_DIR/openresty-1.13.6.2
+cp configure configure.ori
+sed -i &apos;655,698 s/^/#/&apos; configure
+diff -u configure.ori configure 2&gt;&amp;1 | tee changediff
 
 
- }  // namespace internal&apos; &gt; add_func.patch
+sudo rm -vrf $WORK_DIR/openresty-1.13.6.2/bundle/LuaJIT-2.1-20180420/
+sudo cp -vrf $WORK_DIR/LuaJIT $WORK_DIR/openresty-1.13.6.2/bundle/LuaJIT-2.1-20180420/ 
  
-patch $home_dir/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
-
-
-#Generate and then run the configuration
-./autogen.sh &amp;&amp; ./configure 
-
-# Build and test
-make &amp;&amp; make check 
-
-#Install Protobuf and verify the installation
+cd $WORK_DIR/openresty-1.13.6.2
+./configure --without-http_redis2_module --with-http_iconv_module --with-http_postgres_module  -j2 
+make -j2
 sudo make install
-export LD_LIBRARY_PATH=/usr/local/lib
-export PATH=$PATH:/usr/local/bin
-protoc --version </command>
+cd $WORK_DIR/openresty-1.13.6.2/build/nginx-1.13.6
+./configure &amp;&amp; make &amp;&amp; sudo make install
+
+export PATH=/usr/local/openresty/bin:$PATH
+resty -V  
+## Install cpan modules
+
+sudo cpan Cwd IPC::Run3 Test::Base Test::LongString
+
+## Download files to run sanity tests on Openresty 
+cd $WORK_DIR/openresty-1.13.6.2
+mkdir t
+cd $WORK_DIR/openresty-1.13.6.2/t
+wget https://raw.githubusercontent.com/openresty/openresty/v1.13.6.2/t/Config.pm
+wget https://raw.githubusercontent.com/openresty/openresty/v1.13.6.2/t/sanity.t
+
+sed -i &apos;23,26d&apos; Config.pm
+
+
+cd $WORK_DIR/openresty-1.13.6.2/t
+
+sed -i &quot;/configure line 677/d&quot; sanity.t
+sed -i &quot;/INFO: found -msse4.2 in cc./d&quot; sanity.t
+sed -i &quot;/WARNING: -msse4.2/d&quot; sanity.t
+sed -i &quot;s/ XCFLAGS=&apos;-msse4.2&apos;//g&quot; sanity.t
+sed -i &quot;s/ -msse4.2//g&quot; sanity.t
+sed -i &quot;s/-msse4.2 -DLUAJIT_ENABLE_LUA52COMPAT/-DLUAJIT_ENABLE_LUA52COMPAT/g&quot; sanity.t
+
+
+cd $WORK_DIR/openresty-1.13.6.2
+## Run sanity tests
+
+prove -r t | tee oresty_test.log
+
+
+
+if grep -q &quot;All tests successful&quot; &quot;oresty_test.log&quot;; then
+   export PATH=/usr/local/openresty/bin:$PATH
+   resty -V  
+   exit 0
+else
+   exit 1
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -104,9 +146,9 @@ protoc --version </command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -119,7 +161,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @faizakht</room>
+      <room>#loz-jenkins-build,@srajmane</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

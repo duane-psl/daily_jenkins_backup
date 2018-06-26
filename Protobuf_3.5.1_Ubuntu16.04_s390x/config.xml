@@ -55,7 +55,7 @@ export home_dir=`pwd`
 sudo apt-get install -y tar wget autoconf libtool automake g++ make git bzip2 curl unzip zlib1g-dev patch
 
 # get code 
-git clone https://github.com/google/protobuf.git
+git clone git://github.com/google/protobuf.git
 cd protobuf
 git checkout v3.5.1
 

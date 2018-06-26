@@ -9,64 +9,90 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_4096</assignedNode>
+  <assignedNode>dc2_rh7.5_4096</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 9 * * 2</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 9 * * 2</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>cat /etc/os*
+      <command>source /home/test/.bashrc
+cat /etc/os*
+sudo yum install -y tar wget gcc
 
-#Install dependencies
-sudo zypper install -y git gcc wget tar
-
-#Build and install CFSSL
-#Setup Environment variable and source folder to build the package
-export WK_DIR=`pwd`
-cd $WK_DIR
-mkdir -p $WK_DIR/src/github.com/cloudflare/
-
-# Install GO
+export GOPATH=`pwd`
+cd $GOPATH
+#Install GO
 wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
 chmod ugo+r go1.10.1.linux-s390x.tar.gz
 sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
 cd /usr/bin
 sudo ln gcc s390x-linux-gnu-gcc
-export GOPATH=$WK_DIR/
-export PATH=$GOPATH/bin:$PATH
+export PATH=$PATH:/usr/local/go/bin
 go version
 
-#Download CFSSL source code
-cd $WK_DIR/src/github.com/cloudflare/
-git clone https://github.com/cloudflare/cfssl.git
-cd cfssl
-git checkout tags/1.3.1
 
-#Build CFSSL
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-go install ./cmd/cfssl
-go install ./cmd/cfssljson
 
-#Run test cases
-cd $WK_DIR/src/github.com/cloudflare/cfssl
-sed -i &apos;/REPO_PATH=&quot;${ORG_PATH}\/cfssl&quot;/ a\ARCH=&quot;$(uname -m)&quot; \&apos; test.sh
-sed -i &apos;/go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package/ c\    if [ $ARCH = &apos;x86_64&apos;  ]; then\n\        go test -race -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    else\n\        go test -tags &quot;$BUILD_TAGS&quot; --coverprofile=$profile $package\n\    fi&apos; test.sh
-./test.sh 2&gt;&amp;1 | tee testlogg
-grep &apos;FAIL\s\github.com&apos; testlogg
-count=$(grep &apos;FAIL\s\github.com&apos; testlogg | wc -l)
-if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit 1; fi</command>
+cd $GOPATH
+#Install Terraform
+sudo yum install -y git wget make zip file which
+export PATH=$GOPATH/bin:$PATH
+mkdir -p $GOPATH/src/github.com/hashicorp
+cd $GOPATH/src/github.com/hashicorp
+rm -rf terraform
+git clone https://github.com/hashicorp/terraform.git
+cd terraform/
+git checkout v0.11.7
+
+# While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
+make 2&gt;&amp;1 | tee -a build_logs
+cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
+    go test -v -timeout 20m $line
+    until $? 
+    do
+     go test -v -timeout 20m $line
+    done
+done &lt; test.txt
+
+#go get github.com/mitchellh/gox
+
+#Install gox
+#cd $GOPATH/src/github.com/mitchellh/gox
+#git checkout v0.4.0
+#wget https://github.com/mitchellh/gox/pull/85.patch
+#git config --global user.email &quot;bagalvitthal94@gmail.com&quot;
+#git config --global user.name &quot;vitthal bagal&quot;
+#git am 85.patch
+#cd $GOPATH/src/github.com/mitchellh/
+#go get github.com/mitchellh/iochan
+#go install ./... 
+
+
+#Build terraform
+
+#cd $GOPATH/src/github.com/hashicorp/terraform/
+#make fmt
+#XC_OS=linux XC_ARCH=s390x make bin
+XC_OS=linux XC_ARCH=s390x make bin
+file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
+
+
+
+#Verification
+terraform --version | grep 0.11.7
+echo &quot;1 + 5&quot; | terraform console
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -76,10 +102,11 @@ if [ $count == 1 ]; then  grep &apos;FAIL\s\github.com&apos; testlogg; else exit
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -91,7 +118,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@prajyot.parab</room>
+      <room>#loz-jenkins-build,@vitthalb</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

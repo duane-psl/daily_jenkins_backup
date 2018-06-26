@@ -50,8 +50,8 @@ sleep 1
 urlLiveInt1_STATUS=&quot;$(curl -IL --silent &quot;$urlLiveInt1&quot; | grep HTTP )&quot;;
 sleep 1
 
-urlLiveInt2_STATUS=&quot;$(curl -IL --silent &quot;$urlLiveInt2&quot; | grep HTTP )&quot;;
-sleep 5
+#urlLiveInt2_STATUS=&quot;$(curl -IL --silent &quot;$urlLiveInt2&quot; | grep HTTP )&quot;;
+#sleep 5
 
 # Check Responses
 exit_status=0;
@@ -79,11 +79,11 @@ else
 exit_status=1;
 fi
 
-if echo &quot;$urlLiveInt2_STATUS&quot; | grep &apos;200&apos;; then
-exit_status=$exit_status;
-else
-exit_status=1;
-fi
+#if echo &quot;$urlLiveInt2_STATUS&quot; | grep &apos;200&apos;; then
+#exit_status=$exit_status;
+#else
+#exit_status=1;
+#fi
 
 
 # Job Status

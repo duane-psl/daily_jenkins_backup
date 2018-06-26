@@ -45,38 +45,35 @@ tar -xvzf apache-maven-3.3.9-bin.tar.gz
 export PATH=$PATH:$WORK_DIR/apache-maven-3.3.9/bin
 mvn --version
 
-#Gcc Installation
-sudo yum install -y wget tar make flex subversion gcc gcc-c++ binutils-devel bzip2
+### Gcc Installation
+#sudo yum install -y wget tar make flex subversion gcc gcc-c++ binutils-devel bzip2
 
-mkdir $WORK_DIR/gcc &amp;&amp; 
-cd $WORK_DIR/gcc
-svn co svn://gcc.gnu.org/svn/gcc/trunk@223813 gcc_srcDir
-cd gcc_srcDir/
-./contrib/download_prerequisites
+#mkdir $WORK_DIR/gcc &amp;&amp; 
+#cd $WORK_DIR/gcc
+#svn co svn://gcc.gnu.org/svn/gcc/trunk@223813 gcc_srcDir
+#cd gcc_srcDir/
+#./contrib/download_prerequisites
 
-mkdir -p $WORK_DIR/gcc/gcc_buildDir/build
+#mkdir -p $WORK_DIR/gcc/gcc_buildDir/build
 
 
-cd $WORK_DIR/gcc/gcc_buildDir/build
+#cd $WORK_DIR/gcc/gcc_buildDir/build
         
- ../../gcc_srcDir/configure \
---prefix=&quot;/opt/gccgo&quot; \
---enable-shared --with-system-zlib --enable-threads=posix \
---disable-multilib --enable-__cxa_atexit --enable-checking \
---enable-gnu-indirect-function --enable-languages=&quot;c,c++&quot; \
---disable-bootstrap
+# ../../gcc_srcDir/configure \
+#--prefix=&quot;/opt/gccgo&quot; \
+#--enable-shared --with-system-zlib --enable-threads=posix \
+#--disable-multilib --enable-__cxa_atexit --enable-checking \
+#--enable-gnu-indirect-function --enable-languages=&quot;c,c++&quot; \
+#--disable-bootstrap
 
+#make all
+#sudo make install
 
-make all
-
-sudo make install
-
-#Set environment variables
-export PATH=/opt/gccgo/bin:$PATH
-sudo sh -c &quot;echo &apos;/opt/gccgo/lib64&apos; &gt;&gt; /etc/ld.so.conf.d/gccgo.conf&quot;
-sudo /sbin/ldconfig
-
-gcc --version
+### Set environment variables
+#export PATH=/opt/gccgo/bin:$PATH
+#sudo sh -c &quot;echo &apos;/opt/gccgo/lib64&apos; &gt;&gt; /etc/ld.so.conf.d/gccgo.conf&quot;
+#sudo /sbin/ldconfig
+#gcc --version
 
 
 wget https://nodejs.org/dist/v6.12.0/node-v6.12.0-linux-s390x.tar.gz

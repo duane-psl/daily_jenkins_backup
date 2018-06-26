@@ -40,7 +40,7 @@ else
 fi
 
 # Install dependencies
-sudo yum install -y wget httpd httpd-devel.s390x mariadb mariadb-server unzip tar make libxml2 libxml2-devel libpng libpng-devel gcc-c++
+sudo yum install -y openssl wget httpd httpd-devel.s390x mariadb mariadb-server unzip tar make libxml2 libxml2-devel libpng libpng-devel gcc-c++
 
 # Build and Install libmcrypt
 wget http://sourceforge.net/projects/mcrypt/files/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
