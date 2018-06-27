@@ -115,7 +115,8 @@ cd $WORK_DIR/openresty-1.13.6.2/build/nginx-1.13.6
 ./configure &amp;&amp; make &amp;&amp; sudo make install
 
 export PATH=/usr/local/openresty/bin:$PATH
-resty -V  
+resty -V 
+export LANG=C
 ## Install cpan modules
 
 sudo cpan Cwd IPC::Run3 Test::Base Test::LongString

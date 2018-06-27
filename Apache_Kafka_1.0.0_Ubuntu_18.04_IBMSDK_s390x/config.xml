@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3-8192MB</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04-ibm-java-8</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,39 +26,38 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-sudo yum install -y git wget unzip java-1.8.0-ibm-devel.s390x java-1.8.0-ibm.s390x
+      <command>export WORK_DIR=`pwd`
 export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
-export WORK_DIR=`pwd`
-cat /etc/os*
+cat /etc/os-release
+java -version ||true
 
-#Install gradle
-cd $WORK_DIR
+sudo apt-get update
+sudo apt-get install -y git wget unzip
+
+
+
 wget https://services.gradle.org/distributions/gradle-4.2-bin.zip
 unzip gradle-4.2-bin.zip
 
-#Build kafka
+
 cd $WORK_DIR
 git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 
-#Update build parameters
+
 cp build.gradle build.gradle.orig
 sed -i &apos;354d &apos; build.gradle
 sed -i &quot;354i \      \jvmArgs = [&apos;-Xss256m&apos;] + maxPermSizeArgs&quot; build.gradle
+sed -i &quot;375i \		\maxHeapSize = &apos;4g&apos;&quot; build.gradle
 git diff 
 
-#Set environment variables
+
 export PATH=$PATH:$WORK_DIR/gradle-4.2/bin
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
+export JAVA_HOME=/opt/ibm/java-s390x-80/
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-#
-#cp $WORK_DIR/kafka/gradle/dependencies.gradle $WORK_DIR/kafka/gradle/dependencies.gradle.ori
-#sed -i &quot;s/5.0.1/5.7.2/g&quot; $WORK_DIR/kafka/gradle/dependencies.gradle
-#Setup Gradle and build the jar files
 gradle
 gradle jar
 
@@ -67,9 +66,7 @@ sed -i &quot;s|checkstyle/java.header|$WORK_DIR/kafka/checkstyle/java.header|&qu
 sed -i &quot;s|checkstyle/suppressions.xml|$WORK_DIR/kafka/checkstyle/suppressions.xml|&quot; $WORK_DIR/kafka/checkstyle/checkstyle.xml
 git diff 
 
-#Note for some test cases from streams:test module need to install rocksdb from source it is work around , 
-#Build rocksdb
-sudo yum install -y snappy snappy-devel bzip2 bzip2-devel curl gcc-c++ make which
+sudo apt-get install -y libsnappy-dev libbz2-dev curl gcc g++ make
 cd $WORK_DIR
 git clone git://github.com/facebook/rocksdb.git
 cd rocksdb
@@ -77,7 +74,8 @@ git checkout v5.7.3
 sed -i -e &quot;s/-march=native/-march=z196/&quot; build_tools/build_detect_platform
 sed -i -e &quot;s/-momit-leaf-frame-pointer/-DDUMBDUMMY/&quot; Makefile
 PORTABLE=1 make shared_lib
-make rocksdbjava 
+make rocksdbjava          
+
 cd $WORK_DIR/rocksdb/java/target/
 cp rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3-linux64.jar.backup
 jar -xf rocksdbjni-5.7.3-linux64.jar
@@ -88,13 +86,12 @@ mv rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3.jar
 cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.11/
 cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11/
 cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/421b44ad957a2b6cce5adedc204db551831b553d/
-#========Workaround part finished=========================================
 
 cd $WORK_DIR/kafka
-gradle test --continue 2&gt;&amp;1 | tee testlog.log  
+#gradle test --continue 2&gt;&amp;1 | tee testlog.log 
 
-sed -i &apos;s/Xloggc/Xverbosegclog/&apos; bin/kafka-run-class.sh
 
+sed -i &apos;s/-XX:+UseG1GC//&apos; bin/kafka-run-class.sh
 
 nohup bin/zookeeper-server-start.sh -daemon config/zookeeper.properties &amp;
 sleep 5m
@@ -102,16 +99,18 @@ nohup bin/kafka-server-start.sh -daemon config/server.properties &amp;
 sleep 5m
 ps -aux
 
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partition 1 --topic test
 sleep 5m
 bin/kafka-topics.sh --list --zookeeper localhost:2181
 sleep 5m
 echo -e &quot;Congratulations\nThe build is working\n\nWelcome to Apache Kafka with Linux on z Systems\n&quot; &gt; /tmp/msg.log
 bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test &lt; /tmp/msg.log
 sleep 5m
-
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test &lt; /tmp/msg.log
+sleep 5m
 
 bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4 &gt; $WORK_DIR/output.txt
+sleep 5m
 cat $WORK_DIR/output.txt
 echo &quot;Welcome to Apache Kafka with Linux on z Systems&quot; &gt;&gt; expectedoutput.txt
 grep &quot;Welcome to Apache Kafka with Linux on z Systems&quot; $WORK_DIR/output.txt &gt; actualoutput.txt
@@ -120,6 +119,7 @@ cat actualoutput.txt
 kill -9 $(ps aux | grep &apos;kafka&apos; | awk &apos;{print $2}&apos;)| awk &apos;{print $2}&apos;
 if diff -u -w expectedoutput.txt actualoutput.txt ; then
     echo &quot;Success&quot;
+    exit 0
 else    
 	exit 1
 fi</command>
@@ -148,7 +148,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room></room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

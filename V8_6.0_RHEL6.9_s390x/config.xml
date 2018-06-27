@@ -83,7 +83,8 @@ export VPYTHON_BYPASS=&quot;manually managed python not supported by chrome oper
 
 fetch v8
 cd v8 
-git checkout 6.0.318
+#the -f flag is added to avoid the file overwriting error
+git checkout -f 6.0.318
 gclient sync
 python gypfiles/gyp_v8
 

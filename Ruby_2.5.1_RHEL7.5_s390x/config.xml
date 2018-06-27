@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,8 +28,8 @@
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;zabbix-agent&quot;
-published_version=&quot;3.4.8&quot;
+package_name=&quot;ruby&quot;
+published_version=&quot;2.5.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,37 +49,36 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-#------------------------------------------------------------------------------------
 
-source /home/test/.bashrc
-export WORK_DIR=`pwd`
+cat /etc/redhat-release
 
-sudo yum -y install tar wget make gcc pcre-devel    
+# Install dependencies
+sudo yum install -y bison flex openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel tcl-devel tk-devel sqlite-devel gcc make wget tar
 
- sudo rm -rf zabbix
- mkdir zabbix
- cd zabbix
- wget https://excellmedia.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/3.4.8/zabbix-3.4.8.tar.gz -O zabbix-3.4.8.tar.gz
- tar -xvf zabbix-3.4.8.tar.gz
- cd zabbix-3.4.8
- ./configure --enable-agent
- make
- sudo make install
- export PATH=$PATH:/usr/sbin  
- sudo groupadd zabbix | echo &quot;group already exsist&quot;
- sudo useradd -g zabbix zabbix | echo &quot;user already exsist&quot;
- export PATH=$PATH:/usr/local/sbin/
- zabbix_agentd  
- sleep 20s
- zabbix_get -s 127.0.0.1 -k &quot;agent.version&quot; | tee version.txt
+# Set environment variables
+export PATH=/usr/local/bin:$PATH
 
-if grep -e &quot;3.4.8&quot;  &quot;version.txt&quot;; then
-  sudo pkill zabbix
-  exit 0
-else
-  exit 1
-fi
-</command>
+# Download Ruby 2.5.1 source code
+wget http://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.1.tar.gz
+tar zxf ruby-2.5.1.tar.gz
+cd ruby-2.5.1
+
+
+# Configure and build Ruby 
+./configure
+make
+
+# Install Ruby
+sudo -E make install
+
+# Test the results 
+make test
+
+#  Verify Ruby
+
+ruby -v 
+ruby -v | grep 2.5.1
+gem env</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -89,9 +88,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -104,7 +103,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@cgopi</room>
+      <room>#loz-jenkins-build,@nbhave</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

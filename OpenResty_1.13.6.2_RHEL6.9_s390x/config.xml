@@ -120,7 +120,7 @@ export PATH=/usr/local/openresty/bin:$PATH
 resty -V  
 ## Install cpan modules
 
-sudo cpan Cwd IPC::Run3 Test::Base Test::LongString
+sudo /usr/local/perl/bin/cpan Cwd IPC::Run3 Test::Base Test::LongString
 
 ## Download files to run sanity tests on Openresty 
 cd $WORK_DIR/openresty-1.13.6.2

@@ -37,7 +37,7 @@ unzip gradle-4.2-bin.zip
 
 
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 
@@ -64,7 +64,7 @@ git diff
 
 sudo apt-get install -y libsnappy-dev libbz2-dev curl gcc g++ make
 cd $WORK_DIR
-git clone https://github.com/facebook/rocksdb.git
+git clone git://github.com/facebook/rocksdb.git
 cd rocksdb
 git checkout v5.7.3
 sed -i -e &quot;s/-march=native/-march=z196/&quot; build_tools/build_detect_platform

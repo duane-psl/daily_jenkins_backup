@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,7 +29,7 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;zabbix-agent&quot;
-published_version=&quot;3.4.8&quot;
+published_version=&quot;3.4.10&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -51,8 +51,6 @@ else
 fi
 #------------------------------------------------------------------------------------
 
-
-
 source /home/test/.bashrc
 export WORK_DIR=`pwd`
 
@@ -61,9 +59,9 @@ sudo yum -y install tar wget make gcc pcre-devel
  sudo rm -rf zabbix
  mkdir zabbix
  cd zabbix
- wget https://excellmedia.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/3.4.8/zabbix-3.4.8.tar.gz -O zabbix-3.4.8.tar.gz
- tar -xvf zabbix-3.4.8.tar.gz
- cd zabbix-3.4.8
+ wget https://excellmedia.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/3.4.10/zabbix-3.4.10.tar.gz -O zabbix-3.4.10.tar.gz
+ tar -xvf zabbix-3.4.10.tar.gz
+ cd zabbix-3.4.10
  ./configure --enable-agent
  make
  sudo make install
@@ -75,13 +73,12 @@ sudo yum -y install tar wget make gcc pcre-devel
  sleep 20s
  zabbix_get -s 127.0.0.1 -k &quot;agent.version&quot; | tee version.txt
 
-if grep -e &quot;3.4.8&quot;  &quot;version.txt&quot;; then
+if grep -e &quot;3.4.10&quot;  &quot;version.txt&quot;; then
   sudo pkill zabbix
   exit 0
 else
   exit 1
 fi
-
 </command>
     </hudson.tasks.Shell>
   </builders>

@@ -9,9 +9,9 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp2</assignedNode>
+  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command> #Set the below parameters manually
 package_name=&quot;zabbix-agent&quot;
-published_version=&quot;3.4.5&quot;
+published_version=&quot;3.4.10&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -51,15 +51,16 @@ fi
 #------------------------------------------------------------------------------------
 
 
+
  sudo zypper update -y
  sudo zypper install -y tar wget make gcc pcre-devel
  export WORK_DIR=`pwd`
  sudo rm -rf zabbix
  mkdir zabbix
  cd zabbix
- wget http://sourceforge.net/projects/zabbix/files/ZABBIX%20Latest%20Stable/3.4.5/zabbix-3.4.5.tar.gz/download -O zabbix-3.4.5.tar.gz
- tar -xvf zabbix-3.4.5.tar.gz
- cd zabbix-3.4.5
+ wget https://excellmedia.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/3.4.10/zabbix-3.4.10.tar.gz -O zabbix-3.4.10.tar.gz
+ tar -xvf zabbix-3.4.10.tar.gz
+ cd zabbix-3.4.10
  ./configure --enable-agent
  make
  sudo make install
@@ -69,7 +70,7 @@ fi
  sleep 50s
  
 zabbix_get -s 127.0.0.1 -k &quot;agent.version&quot; | sudo tee version.txt 
-if grep -e &quot;3.4.5&quot;  &quot;version.txt&quot;; then
+if grep -e &quot;3.4.10&quot;  &quot;version.txt&quot;; then
   sudo pkill zabbix
   exit 0
 else

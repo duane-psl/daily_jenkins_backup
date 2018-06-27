@@ -99,7 +99,8 @@ fetch v8 || true
 #if a folder &apos;v8&apos; already exists&quot;
 sleep 20s
 cd v8 
-git checkout 6.0.318
+#the -f flag is added to avoid the file overwriting error
+git checkout -f 6.0.318
 
 wget https://raw.githubusercontent.com/curl/curl/curl-7_53_0/lib/mk-ca-bundle.pl
 perl mk-ca-bundle.pl -k

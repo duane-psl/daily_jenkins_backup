@@ -79,7 +79,8 @@ export LD_LIBRARY_PATH=$HOME/install/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
 cd $JENKINS_HOME
 fetch v8
 cd $JENKINS_HOME/v8/
-git checkout 5.9.223
+#the -f flag is added to avoid the file overwriting error
+git checkout -f 5.9.223
 
 gclient sync
 python gypfiles/gyp_v8

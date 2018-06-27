@@ -24,23 +24,8 @@
     <hudson.tasks.Shell>
       <command>###Install the Dependencies
 sudo zypper update -y
-#sudo zypper install -y wget curl awk  java-1_8_0-ibm java-1_8_0-ibm-devel
-
+sudo zypper install -y tar wget
 export WORK_DIR=`pwd`
-
-sudo zypper install -y tar wget curl awk
-# Using ibm node for running this job
-cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.16.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.16.bin -r installer.properties
-export JAVA_HOME=/opt/ibm/java
-export PATH=$JAVA_HOME/bin:$PATH
-java -version 
-
 
 #Install Nodejs
 cd $WORK_DIR

@@ -94,7 +94,8 @@ fetch v8 || true
 
 cd v8/
 
-git checkout 5.9.223
+#the -f flag is added to avoid the file overwriting error
+git checkout -f 5.9.223
 
 gclient sync
 python gypfiles/gyp_v8

@@ -53,36 +53,31 @@ git checkout v0.11.7
 # While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
 make 2&gt;&amp;1 | tee -a build_logs
 cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
+
+COUNTER=1
+echo &quot;after assignment&quot;
+echo $COUNTER
+#while [[ (IFS=&apos;&apos; read -r line || (( -n &quot;$line&quot; ))) &amp;&amp; ( $COUNTER &lt; 5 )]]
 while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
-    go test -v -timeout 20m $line
-    until $? 
-    do
-     go test -v -timeout 20m $line
-    done
+echo &quot;11 condition&quot;
+echo $COUNTER
+echo &quot;222 condition&quot;
+if [ $COUNTER -lt 6 ]
+then 
+    echo &quot;inside if condition&quot;
+    echo $COUNTER
+    go test -v $line
+    COUNTER=$((COUNTER + 1))
+fi
+echo &quot;outside if condition&quot;
+echo $COUNTER
 done &lt; test.txt
-
-#go get github.com/mitchellh/gox
-
-#Install gox
-#cd $GOPATH/src/github.com/mitchellh/gox
-#git checkout v0.4.0
-#wget https://github.com/mitchellh/gox/pull/85.patch
-#git config --global user.email &quot;bagalvitthal94@gmail.com&quot;
-#git config --global user.name &quot;vitthal bagal&quot;
-#git am 85.patch
-#cd $GOPATH/src/github.com/mitchellh/
-#go get github.com/mitchellh/iochan
-#go install ./... 
-
 
 #Build terraform
 
-#cd $GOPATH/src/github.com/hashicorp/terraform/
-#make fmt
-#XC_OS=linux XC_ARCH=s390x make bin
 XC_OS=linux XC_ARCH=s390x make bin
-file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
 
+file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
 
 
 #Verification

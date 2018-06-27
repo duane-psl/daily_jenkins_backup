@@ -24,33 +24,16 @@
     <hudson.tasks.Shell>
       <command>###Install the Dependencies
 sudo zypper update -y
-sudo zypper install -y wget curl awk 
-
-
-sudo zypper install -y tar
-
-# Using ibm node for running this job
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.11/linux/s390x/ibm-java-s390x-sdk-8.0-5.11.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.11.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.11.bin -r installer.properties
-
-export JAVA_HOME=/opt/ibm/java-s390x-80
-export PATH=$JAVA_HOME/bin:$PATH
-java -version
+sudo zypper install -y wget tar
 
 export WORK_DIR=`pwd`
 
 #Install Nodejs
 cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.2.0/linux/s390x/ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-chmod +x ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin -f installer.properties -i silent
-export PATH=$PATH:/usr/local/sbin:$WORK_DIR/ibm/node/bin  
+wget https://nodejs.org/dist/v8.2.0/node-v8.2.0-linux-s390x.tar.gz
+tar xvf node-v8.2.0-linux-s390x.tar.gz
+mv node-v8.2.0-linux-s390x nodejs
+export PATH=$PATH:$WORK_DIR/nodejs/bin
 node -v
 
 

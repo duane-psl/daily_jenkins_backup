@@ -29,6 +29,7 @@
       <command>source /home/test/.bashrc
 sudo yum install -y git wget unzip java-1.8.0-ibm-devel.s390x java-1.8.0-ibm.s390x
 export WORK_DIR=`pwd`
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 cat /etc/os*
 
 #Install gradle
@@ -38,7 +39,7 @@ unzip gradle-4.2-bin.zip
 
 #Build kafka
 cd $WORK_DIR
-git clone https://github.com/apache/kafka
+git clone git://github.com/apache/kafka
 cd kafka
 git checkout 1.0.0
 
@@ -70,7 +71,7 @@ git diff
 #Build rocksdb
 sudo yum install -y snappy snappy-devel bzip2 bzip2-devel curl gcc-c++ make which
 cd $WORK_DIR
-git clone https://github.com/facebook/rocksdb.git
+git clone git://github.com/facebook/rocksdb.git
 cd rocksdb
 git checkout v5.7.3
 sed -i -e &quot;s/-march=native/-march=z196/&quot; build_tools/build_detect_platform
