@@ -25,7 +25,7 @@
       <command>source /home/test/.bashrc
 #Install Dependencies
 sudo yum install -y git java-1.8.0-ibm java-1.8.0-ibm-devel 
-
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 #Set Environmental variable
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0
 export PATH=$JAVA_HOME/bin:$PATH

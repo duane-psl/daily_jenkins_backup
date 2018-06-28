@@ -33,7 +33,7 @@
       <command># Install dependencies
 sudo zypper up -y
 sudo zypper install -y git wget tar awk
-
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 #Dependencis for mongodb server
 sudo zypper install -y net-snmp cyrus-sasl-plain cyrus-sasl-gssapi libcryptsetup-devel
 sudo zypper install -y bison flex libopenssl-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel tcl-devel tk-devel sqlite3-devel gcc make awk wget-openssl1 tar bzip2 subversion

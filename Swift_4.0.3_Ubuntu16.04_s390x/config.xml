@@ -9,9 +9,9 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>snehal_ub</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;swift&quot;
-published_version=&quot;3.1.1&quot;
+published_version=&quot;4.0.3&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -59,7 +59,7 @@ sudo apt-get install -y autoconf libtool git cmake ninja-build python \
     python-dev python3-dev uuid-dev libicu-dev \
     icu-devtools libbsd-dev libedit-dev libxml2-dev \
     libsqlite3-dev swig libpython-dev libncurses5-dev \
-    pkg-config libcurl4-openssl-dev tzdata
+    pkg-config libcurl4-openssl-dev systemtap-sdt-dev tzdata
 
 #Install Blocks runtime library:
 cd $Workdir
@@ -123,16 +123,11 @@ export PATH=/opt/llvm/bin:$PATH
 
 #Building Swift
 echo `pwd`
-mkdir swift31 &amp;&amp; cd swift31
+mkdir swift4 &amp;&amp; cd swift4
 git clone https://github.com/linux-on-ibm-z/swift.git
 cd swift
-git checkout swift-3.1.1-RELEASE-s390x
-./utils/update-checkout --clone --scheme swift-3.1.1-RELEASE-s390x --config $PWD/utils/update-checkout-config-s390x.json
-rm -f ./utils/swift_build_support/__init__.pyc
-cd ../swift-corelibs-libdispatch
-git submodule init
-git submodule update --recursive
-cd ../swift
+git checkout swift-4.0.3-RELEASE-s390x
+./utils/update-checkout --clone --scheme swift-4.0.3-RELEASE-s390x --config $PWD/utils/update-checkout-config-s390x.json
 
 
 
@@ -162,37 +157,41 @@ swiftc -v hello.swift
 
 sed -n -e &apos;/Failing Tests/,$p&apos; $Workdir/testunit |  sed -e &apos;/Expected/,$d&apos; | tee $Workdir/generated_failuresunit
 
-echo &quot;Failing Tests (7):
-    Swift(linux-s390x) :: stdlib/Runtime.swift.gyb
+echo &quot;Failing Tests (9):
     Swift(linux-s390x) :: stdlib/StringAPI.swift
-    Swift(linux-s390x) :: stdlib/UnsafeRawBufferPointer.swift
+    Swift(linux-s390x) :: stdlib/Runtime.swift.gyb
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_int_raw_type.swift
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_no_raw_type.swift
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_string_raw_type.swift
+    Swift(linux-s390x) :: Runtime/backtrace.swift
     Swift(linux-s390x) :: Runtime/linux-fatal-backtrace.swift
     Swift(linux-s390x) :: Interpreter/enum_resilience.swift
-    Swift(linux-s390x) :: stdlib/VarArgs.swift
     Swift(linux-s390x) :: IRGen/objc_simd.sil
 
  &quot; &gt;$Workdir/expectedfailuresunit
  
- 
+
 diff -u --ignore-all-space -B &lt;(sort $Workdir/expectedfailuresunit) &lt;(sort $Workdir/generated_failuresunit)
 #Complete validation test suite
 
-./utils/build-script -j 2 -r -T 2&gt;&amp;1 | tee $Workdir/testval 
+./utils/build-script -j 2 --assertions --release --test --validation-test --lit-args=-v 2&gt;&amp;1 | tee $Workdir/testval 
 sed -n -e &apos;/Failing Tests/,$p&apos; $Workdir/testval |  sed -e &apos;/Expected/,$d&apos; | tee $Workdir/generated_failuresval
 
 echo &quot;Failing Tests (10):
     Swift(linux-s390x) :: IRGen/objc_simd.sil
-    Swift(linux-s390x) :: stdlib/VarArgs.swift
     Swift(linux-s390x) :: Interpreter/enum_resilience.swift
-    Swift(linux-s390x) :: Runtime/linux-fatal-backtrace.swift
-    Swift(linux-s390x) :: stdlib/UnsafeRawBufferPointer.swift
+    Swift(linux-s390x) :: Runtime/backtrace.swift
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_string_raw_type.swift
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_no_raw_type.swift
+    Swift(linux-s390x) :: decl/protocol/special/coding/enum_coding_key_int_raw_type.swift
     Swift(linux-s390x) :: stdlib/Runtime.swift.gyb
     Swift(linux-s390x) :: stdlib/StringAPI.swift
     Swift(linux-s390x) :: stdlib/SequenceType.swift.gyb
-    Swift(linux-s390x) :: stdlib/String.swift
-    Swift(linux-s390x) :: Evolution/test_enum_change_size.swift 
+    Swift(linux-s390x) :: Evolution/test_enum_change_size.swift
+
     
     &quot;&gt;$Workdir/expectedfailuresval
+
 
 
 diff -u --ignore-all-space -B &lt;(sort $Workdir/expectedfailuresval) &lt;(sort $Workdir/generated_failuresval)
@@ -205,20 +204,26 @@ diff -u --ignore-all-space -B &lt;(sort $Workdir/expectedfailuresval) &lt;(sort 
 --install-prefix=/usr \
 --skip-test-cmark --skip-test-swift --skip-test-lldb --skip-test-llbuild --skip-test-xctest --skip-test-libdispatch 2&gt;&amp;1 | tee $Workdir/testmang
 
-grep &quot;failed&quot; $Workdir/testmang &gt;&gt; $Workdir/testmangfailed
-sed &apos;s/failed.*/failed/&apos; $Workdir/testmangfailed 2&gt;&amp;1 | tee $Workdir/testmangfailed1
 
-echo &quot;TestFoundation/TestNSString.swift:420: error: TestNSString.test_swiftStringUTF16 : XCTAssertTrue failed
-Test Case &apos;TestNSString.test_swiftStringUTF16&apos; failed
-Test Suite &apos;TestNSString&apos; failed
-TestFoundation/TestNSTimeZone.swift:166: error: TestNSTimeZone.test_initializingTimeZoneWithAbbreviation : XCTAssertEqual failed
-Test Case &apos;TestNSTimeZone.test_initializingTimeZoneWithAbbreviation&apos; failed
-Test Suite &apos;TestNSTimeZone&apos; failed
-Test Suite &apos;TestFoundation.xctest&apos; failed
-Test Suite &apos;All tests&apos; failed
+sed &apos;s/failed.*/failed/&apos; $Workdir/testmang 2&gt;&amp;1 | tee $Workdir/testmangfailed1
+grep &quot;failed&quot; $Workdir/testmangfailed1 2&gt;&amp;1 | tee $Workdir/testmangfailed
+sed &apos;s/unexpected.*/unexpected/&apos; $Workdir/testmangfailed 2&gt;&amp;1 | tee $Workdir/testmangfailed2
+
+echo &quot;/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:28: error: SHA256Tests.testBasics : XCTAssertEqual failed
+/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:28: error: SHA256Tests.testBasics : XCTAssertEqual failed
+/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:28: error: SHA256Tests.testBasics : XCTAssertEqual failed
+/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:28: error: SHA256Tests.testBasics : XCTAssertEqual failed
+/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:28: error: SHA256Tests.testBasics : XCTAssertEqual failed
+/home/test/workspace/Swift_4.0.3_Ubuntu16.04/swift4/swiftpm/Tests/BasicTests/SHA256Tests.swift:37: error: SHA256Tests.testBasics : XCTAssertEqual failed
+Test Case &apos;SHA256Tests.testBasics&apos; failed
+Test Suite &apos;SHA256Tests&apos; failed
+Test Suite &apos;Selected tests&apos; failed
+         Executed 1 test, with 6 failures (0 unexpected
 &quot;&gt;$Workdir/expectedfailuremang
- 
-diff -u --ignore-all-space -B &lt;(sort $Workdir/expectedfailuremang) &lt;(sort $Workdir/testmangfailed1)</command>
+
+
+diff -u --ignore-all-space -B &lt;(sort $Workdir/expectedfailuremang) &lt;(sort $Workdir/testmangfailed2)
+  </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

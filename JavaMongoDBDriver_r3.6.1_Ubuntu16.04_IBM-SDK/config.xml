@@ -25,6 +25,7 @@
       <command>#Install dependencies
 sudo apt-get update
 sudo apt-get install -y git wget tar
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 
 #Set Environmental Variables
 export JAVA_HOME=/opt/ibm/java-s390x-80
