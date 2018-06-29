@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh6.9_4096</assignedNode>
+  <assignedNode>dc2_rh6.9_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -30,13 +30,13 @@
 export WS=`pwd`
 ###Build protobuf-3.0.0
       
-   ###Install dependencies
-      sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel bison binutils-devel patch
+###Install dependencies
+sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel bison binutils-devel patch
 
 
 #Build GCC
-export WORK_DIR=`pwd`
-cd $WORK_DIR
+
+cd $WS
 
 wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
 bunzip2 gcc-4.8.2.tar.bz2
@@ -44,7 +44,7 @@ tar xvf gcc-4.8.2.tar
 cd gcc-4.8.2/
 ###Automatically download all missing prerequisites
 ./contrib/download_prerequisites
-cd $WORK_DIR
+cd $WS
 ### Build directory and configure gcc to build
 mkdir gccbuild
 cd gccbuild/
@@ -58,12 +58,12 @@ export PATH=$HOME/install/gcc-4.8.2/bin:$PATH
 gcc --version
 
 
-        ### get code 
-        cd $WS
-        sudo rm -vrf protobuf
-        git clone git://github.com/google/protobuf.git
-        cd protobuf
-        git checkout v3.0.0
+### get code 
+cd $WS
+sudo rm -vrf protobuf
+git clone git://github.com/google/protobuf.git
+cd protobuf
+git checkout v3.0.0
    
 sudo rm -rf autogen.patch add_func.patch
  
@@ -100,10 +100,10 @@ patch $WS/protobuf/autogen.sh &lt; autogen.patch
 
 git diff
    
-         #Generate and then run the configuration
-        cd $WS/protobuf/
-        ./autogen.sh &amp;&amp; ./configure 
-        
+ #Generate and then run the configuration
+cd $WS/protobuf/
+./autogen.sh &amp;&amp; ./configure 
+
   
   
 echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
@@ -111,11 +111,11 @@ index a0116a60..5317590e 100644
 --- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
 +++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
 @@ -127,7 +127,23 @@ inline Atomic64 NoBarrier_CompareAndSwap(volatile Atomic64* ptr,
-                               __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+       __ATOMIC_RELAXED, __ATOMIC_RELAXED);
    return old_value;
  }
 +inline Atomic64 NoBarrier_AtomicIncrement(volatile Atomic64* ptr,
-+                                                    Atomic64 increment) {
++    Atomic64 increment) {
 +       return __atomic_add_fetch(ptr, increment, __ATOMIC_RELAXED);
 +}
 +
@@ -124,7 +124,7 @@ index a0116a60..5317590e 100644
 +}
 
 +inline Atomic64 NoBarrier_AtomicExchange(volatile Atomic64* ptr,
-+                                                    Atomic64 new_value) {
++    Atomic64 new_value) {
 +       return __atomic_exchange_n(ptr, new_value, __ATOMIC_RELAXED);
 +}
 +
@@ -135,22 +135,22 @@ index a0116a60..5317590e 100644
 
  }  // namespace internal&apos; &gt; add_func.patch
    
-         
+ 
  patch $WS/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
-        
+
  
  git diff
  
 
-        #Build and test
-        cd $WS/protobuf/
-        make &amp;&amp; make check
-        
-        #Install Protobuf and verify the installation
-        sudo make install
-        export LD_LIBRARY_PATH=/usr/local/lib
-        export PATH=$PATH:/usr/local/bin
-        protoc --version</command>
+#Build and test
+cd $WS/protobuf/
+make &amp;&amp; make check
+
+#Install Protobuf and verify the installation
+sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib
+export PATH=$PATH:/usr/local/bin
+protoc --version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

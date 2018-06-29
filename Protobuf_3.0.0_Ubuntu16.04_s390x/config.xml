@@ -9,7 +9,8 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <canRoam>true</canRoam>
+  <assignedNode>dockercloud_ubuntu16.04</assignedNode>
+  <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
@@ -29,17 +30,17 @@
 export WS=`pwd`
 ###Build protobuf-3.0.0
       
-      ###Install dependencies
+###Install dependencies
     
-        sudo apt-get update -y 
-        sudo apt-get install -y tar wget autoconf libtool automake g++ make git bzip2 curl unzip zlib1g-dev patch
+sudo apt-get update -y 
+sudo apt-get install -y tar wget autoconf libtool automake g++ make git bzip2 curl unzip zlib1g-dev patch
         
-        ### get code 
-        cd $WS
-        sudo rm -vrf protobuf
-        git clone git://github.com/google/protobuf.git
-        cd protobuf
-        git checkout v3.0.0
+### get code 
+cd $WS
+sudo rm -vrf protobuf
+git clone git://github.com/google/protobuf.git
+cd protobuf
+git checkout v3.0.0
    
 sudo rm -rf autogen.patch add_func.patch
  
@@ -68,18 +69,18 @@ index 5b4c29f8..c01a7ad7 100755
 + mv googletest-release-1.7.0 gmock/gtest
  fi
 
- set -ex&apos; &gt; autogen.patch
+set -ex&apos; &gt; autogen.patch
    
    
    
-  patch $WS/protobuf/autogen.sh &lt; autogen.patch
+patch $WS/protobuf/autogen.sh &lt; autogen.patch
 
 
 git diff
    
-         #Generate and then run the configuration
-        cd $WS/protobuf/
-        ./autogen.sh &amp;&amp; ./configure 
+#Generate and then run the configuration
+cd $WS/protobuf/
+./autogen.sh &amp;&amp; ./configure 
         
   
   
@@ -113,21 +114,21 @@ index a0116a60..5317590e 100644
  }  // namespace internal&apos; &gt; add_func.patch
    
          
-    patch $WS/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
+patch $WS/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
         
  
- git diff
+git diff
  
 
-        #Build and test
-        cd $WS/protobuf/
-        make &amp;&amp; make check
+#Build and test
+cd $WS/protobuf/
+make &amp;&amp; make check
         
-        #Install Protobuf and verify the installation
-        sudo make install
-        export LD_LIBRARY_PATH=/usr/local/lib
-        export PATH=$PATH:/usr/local/bin
-        protoc --version
+#Install Protobuf and verify the installation
+sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib
+export PATH=$PATH:/usr/local/bin
+protoc --version
 
 </command>
     </hudson.tasks.Shell>

@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud</assignedNode>
+  <assignedNode>dockercloud_sles11-sp4-8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -37,8 +37,7 @@ sudo zypper install -y tar awk wget-openssl1 curl-openssl1 autoconf libtool auto
 
 
 #Build GCC
-export WORK_DIR=`pwd`
-cd $WORK_DIR
+cd $WS
 
 wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
 bunzip2 gcc-4.8.2.tar.bz2
@@ -46,7 +45,7 @@ tar xvf gcc-4.8.2.tar
 cd gcc-4.8.2/
 ###Automatically download all missing prerequisites
 ./contrib/download_prerequisites
-cd $WORK_DIR
+cd $WS
 # Build directory and configure gcc to build
 mkdir gccbuild
 cd gccbuild/

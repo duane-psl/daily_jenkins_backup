@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
+  <assignedNode>dc2_ub16.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -33,10 +33,57 @@ export WS=`pwd`
 
 sudo apt-get update -y 
 sudo apt-get install -y git wget
-sudo apt-get install -y protobuf-compiler
+#sudo apt-get install -y protobuf-compiler
 
-        export PATH=$PATH:/usr/bin
-        protoc --version
+        #export PATH=$PATH:/usr/bin
+       # protoc --version
+
+
+#Install Protobuff
+#Install dependencies
+sudo apt-get install -y tar wget autoconf libtool automake g++ make git bzip2 curl unzip zlib1g-dev patch
+
+# get code 
+git clone https://github.com/google/protobuf.git
+cd protobuf
+git checkout v3.5.1
+
+echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
+index 0b0b06c..95f2338 100644
+--- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
++++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
+@@ -146,6 +146,15 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
+   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+ }
+
++inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
++                                       Atomic64 old_value,
++                                       Atomic64 new_value) {
++  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
++                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
++  return old_value;
++}
++
++
+ #endif // defined(__LP64__)
+
+
+ }  // namespace internal&apos; &gt; add_func.patch
+ 
+patch $WS/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
+
+#Generate and then run the configuration
+./autogen.sh &amp;&amp; ./configure 
+
+#Build and test
+make &amp;&amp; make check 
+
+#Install Protobuf and verify the installation
+sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib
+export PATH=$PATH:/usr/local/bin
+protoc --version
+
 
 ###Set env variables
 sudo apt-get install -y openjdk-8-jdk
@@ -61,12 +108,13 @@ rm -rf incubator-geode
 rm -rf /home/test/.gradle
 git clone https://github.com/apache/incubator-geode.git
 cd incubator-geode/
-git checkout rel/v1.4.0
+git checkout rel/v1.6.0
 
 
-mkdir -p /home/test/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protoc/3.0.0
+mkdir -p /home/test/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protoc/3.5.1
 
-cp /usr/bin/protoc /home/test/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protoc/3.0.0/protoc-3.0.0-linux-s390x_64.exe
+cp /usr/local/bin/protoc /home/test/.gradle/caches/modules-2/files-2.1/com.google.protobuf/protoc/3.5.1/protoc-3.5.1-linux-s390x_64.exe
+
 
 sudo -E sed -i &apos;37d&apos; $WS/incubator-geode/geode-protobuf-messages/build.gradle 
 

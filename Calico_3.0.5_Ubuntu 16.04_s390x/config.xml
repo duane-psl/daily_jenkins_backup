@@ -33,7 +33,7 @@ sudo apt-get update
 sudo apt-get install -y docker-ce
 
 sudo service docker restart
-sleep 10s
+sleep 50s
 sudo service docker status
 
 sudo sudo chmod ugo+rw /var/run/docker.sock
@@ -52,6 +52,24 @@ export PATH=$GOROOT/bin:$PATH
 export PATH=$GOPATH/bin:$PATH
 go version
                  sudo free -mh&amp;&amp; sudo sync &amp;&amp; sudo sh -c &apos;echo 3 &gt; /proc/sys/vm/drop_caches&apos; &amp;&amp; sudo free -mh
+#-----------------------------------------------------------------------------------------------------------------------
+               
+            
+cd $GOPATH
+mkdir -p $GOPATH/src/github.com/coreos
+cd $GOPATH/src/github.com/coreos
+git clone git://github.com/coreos/etcd
+cd etcd
+git checkout v3.3.2
+
+mkdir -p $GOPATH/etcd_temp
+export ETCD_DATA_DIR=$GOPATH/etcd_temp
+export ETCD_UNSUPPORTED_ARCH=s390x
+
+cd $GOPATH/src/github.com/coreos/etcd
+./build                 
+  
+
 #------------------------------------------Build go-build-v0.13--------------------------------------------------------
 
 git clone https://github.com/projectcalico/go-build $GOPATH/src/github.com/projectcalico/go-build
@@ -495,8 +513,8 @@ ARCH=s390x make docker-image
 docker tag calico/kube-controllers-s390x quay.io/calico/kube-controllers:v2.0.3
         echo &quot;Running system tests. Testlog saved in $GOPATH/testlog&quot;
           
-	    cd $GOPATH/src/github.com/projectcalico/calico/calico_node  
-        ARCH=s390x make st 2&gt;&amp;1 | tee $GOPATH/testlog_latest
+	    #cd $GOPATH/src/github.com/projectcalico/calico/calico_node  
+        #ARCH=s390x make st 2&gt;&amp;1 | tee $GOPATH/testlog_latest
 #--------------------------------------------------------------------------------------------------
 docker images| tee images.txt
 #--------------------------------------------------------------------------------------------------</command>
