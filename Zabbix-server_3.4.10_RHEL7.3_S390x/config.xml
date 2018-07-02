@@ -100,7 +100,7 @@ fi
 
 #Restart httpd server
 sudo httpd -k restart 
-
+sleep 50s
 #Store expected setup page
 cd $HOME
 cat &lt;&lt;&apos;EOF&apos; &gt; expected_setup

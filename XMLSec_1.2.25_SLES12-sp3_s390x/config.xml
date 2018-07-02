@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;xmlsec1&quot;
-published_version=&quot;1.2.25&quot;
+published_version=&quot;1.2.26&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -61,7 +61,7 @@ cd $src_dir
 #Download XMLSec source code
 git clone git://github.com/lsh123/xmlsec.git
 cd xmlsec
-git checkout xmlsec-1_2_25
+git checkout xmlsec-1_2_26
 
 #Generate and then run the configuration
 ./autogen.sh 
@@ -76,7 +76,7 @@ sudo make install
 export PATH=/usr/local/bin/:$PATH
 export LD_LIBRARY_PATH=/usr/local/lib
 
-xmlsec1 --version | grep 1.2.25</command>
+xmlsec1 --version | grep 1.2.26</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

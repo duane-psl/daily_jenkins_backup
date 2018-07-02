@@ -41,7 +41,7 @@ git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/hek
 cd $GOPATH/src/github.com/heketi/heketi
 git checkout v6.0.0
 make
-make test
+#make test
 
 # verify
 cd $GOPATH/src/github.com/heketi/heketi

@@ -9,28 +9,28 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 14 * * 3</spec>
+      <spec>H 9 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 14 * * 3</spec>
+      <spec>H 9 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;consul&quot;
-published_version=&quot;1.0.6&quot;
+      <command> #Set the below parameters manually
+package_name=&quot;zabbix-agent&quot;
+published_version=&quot;3.4.10&quot;
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x/18.x 
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
 	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
@@ -48,72 +48,29 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-
-# Install dependencies
-sudo apt-get update 
-sudo apt-get install -y gcc git make tar unzip vim wget zip curl golang-1.9
-
-export GOPATH=$PWD
-export PATH=$GOPATH/bin:$PATH
-export PATH=/usr/lib/go-1.9/bin:$PATH
-go version
-
-mkdir -p $GOPATH/src/github.com/hashicorp
-cd $GOPATH/src/github.com/hashicorp
-git clone https://github.com/hashicorp/consul.git
-cd consul &amp;&amp; git checkout tags/v1.0.6
-go get github.com/mitchellh/gox
-
-# Add changes added in https://github.com/mitchellh/gox/pull/85 to Consul code
-cd $GOPATH/src/github.com/mitchellh/gox
-git checkout v0.4.0
-wget https://github.com/mitchellh/gox/pull/85.patch
-git config user.email &quot;kbhute@github.com&quot;
-git config user.name &quot;kbhute&quot;
-
-git am 85.patch
-
-# Recompile gox
-cd $GOPATH/src/github.com/mitchellh
-go get github.com/mitchellh/iochan
-go install ./...
-
-# Build Consul
-cd $GOPATH/src/github.com/hashicorp/consul
-gox -os=linux -arch=s390x -output=s390x/consul
-
-#Run test cases (Optional)
-#Testcases need host to be run.
-#cd $GOPATH/src/github.com/hashicorp/consul/
-#make test 2&gt;&amp;1 | tee maketestlog
+#------------------------------------------------------------------------------------
 
 
-# Testing
-cd $GOPATH/src/github.com/hashicorp/consul/s390x/
-nohup ./consul agent -dev &amp;
-sleep 50s
-cd $GOPATH/src/github.com/hashicorp/consul/s390x/
-./consul members
+export WORK_DIR=`pwd`
+
+ sudo apt-get -y update
+ sudo apt-get install -y tar wget make gcc libpcre3-dev
+ wget https://excellmedia.dl.sourceforge.net/project/zabbix/ZABBIX%20Latest%20Stable/3.4.10/zabbix-3.4.10.tar.gz -O zabbix-3.4.10.tar.gz
+ tar -xvf zabbix-3.4.10.tar.gz
+ cd zabbix-3.4.10
+ ./configure --enable-agent
+ make
+ sudo make install
+ export PATH=$PATH:/usr/sbin  
+ sudo groupadd zabbix | echo &quot;group already exist&quot;
+ sudo useradd -g zabbix zabbix | echo &quot;user already exist&quot;
 
 
-pgrep -d&quot; &quot; -f &quot;consul&quot; | xargs kill;
-cd $GOPATH/src/github.com/hashicorp/consul/s390x/
-sudo rm -rf /etc/consul.d
-sudo mkdir /etc/consul.d
-
-echo &apos;{&quot;service&quot;: {&quot;name&quot;: &quot;web&quot;, &quot;tags&quot;: [&quot;rails&quot;], &quot;port&quot;: 80}}&apos; \
-    | sudo tee /etc/consul.d/web.json
-    
-    
-cd $GOPATH/src/github.com/hashicorp/consul/s390x/
-nohup ./consul agent -dev -config-dir=/etc/consul.d &amp;
-sleep 50s
-
-
-curl http://localhost:8500/v1/catalog/service/web 
-
-pgrep -d&quot; &quot; -f &quot;consul&quot; | xargs kill;
-ps -aef</command>
+ export PATH=$PATH:/usr/local/sbin/
+ zabbix_agentd  
+ sleep 25s
+ zabbix_get -s 127.0.0.1 -k &quot;agent.version&quot; 
+ sudo pkill zabbix</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -138,7 +95,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@cgopi</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

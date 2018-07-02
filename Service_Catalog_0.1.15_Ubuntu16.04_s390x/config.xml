@@ -107,9 +107,9 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>@vibhuti.sawant</room>
+      <room>@abhays</room>
       <startNotification>false</startNotification>
-      <notifySuccess>false</notifySuccess>
+      <notifySuccess>true</notifySuccess>
       <notifyAborted>false</notifyAborted>
       <notifyNotBuilt>false</notifyNotBuilt>
       <notifyUnstable>false</notifyUnstable>

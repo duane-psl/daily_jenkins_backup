@@ -27,8 +27,9 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>#source /home/test/.bashrc
 
+sudo apt-get update
 sudo apt-get install -y gcc tar git wget libncurses5-dev libncurses5 make
 
 wget ftp://iptraf.seul.org/pub/iptraf/iptraf-3.0.0.tar.gz
