@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,9 +18,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
+      <command>
+#Set the below parameters manually
 package_name=&quot;postgresql&quot;
-published_version=&quot;10.3&quot;
+published_version=&quot;10.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -57,7 +58,7 @@ cd /home/test/
 rm -rf  postgres
 git clone git://github.com/postgres/postgres.git
 cd postgres
-git checkout REL_10_3
+git checkout REL_10_4
 
 
 # Configure, build and test the build 

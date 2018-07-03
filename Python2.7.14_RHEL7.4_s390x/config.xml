@@ -72,7 +72,7 @@ make test 2&gt;&amp;1 | tee testlog
 grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
 
 #Store tests expected to fail and intermittent tests
-echo &quot;test_bz2&quot; &gt;expected
+echo &quot;test_multiprocessing&quot; &gt;expected
 
 #Diff between expected and actual failures
 diff -u expected failures | tee diff_

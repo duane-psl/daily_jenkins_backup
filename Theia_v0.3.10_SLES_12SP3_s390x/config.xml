@@ -44,13 +44,11 @@ go version
 
 #Install Nodejs
 cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/8.9.0.0/linux/s390x/ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin
-chmod +x ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$HOME/ibm/node\n-fileOverwrite_$HOME/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin -f installer.properties -i silent 
-export PATH=$PATH:$HOME/ibm/node/bin
+wget https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-s390x.tar.gz
+tar xzf node-v8.9.4-linux-s390x.tar.gz
+export PATH=$WORK_DIR/node-v8.9.4-linux-s390x/bin:$PATH
 node -v
+
 
 #Installing PhantomJS
 sudo zypper install -y gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel python python-devel python-setuptools git xorg-x11-devel xorg-x11-essentials xorg-x11-fonts xorg-x11 xorg-x11-util-devel libXfont-devel libXfont1 python-pytz

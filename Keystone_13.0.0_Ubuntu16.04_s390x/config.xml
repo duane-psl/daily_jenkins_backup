@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;keystone&quot;
-published_version=&quot;11.0.3&quot;
+published_version=&quot;13.0.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -52,7 +52,7 @@ fi
 sudo apt-get update 
 export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get install -y mysql-server
-sudo apt-get install -y libpq-dev build-essential libncurses-dev git wget cmake gcc make tar libpcre3-dev bison scons libboost-dev libboost-program-options-dev openssl dh-autoreconf libssl-dev python-setuptools python-lxml curl python-ldap python-dev libxslt-dev net-tools libffi-dev apache2-dev python-mysqldb apache2 libapache2-mod-wsgi python-pkgconfig  
+sudo apt-get install -y libpq-dev build-essential libncurses-dev git wget cmake gcc make tar libpcre3-dev bison scons libboost-dev libboost-program-options-dev openssl dh-autoreconf libssl-dev python-setuptools python-lxml curl python-ldap python-dev libxslt-dev net-tools libffi-dev apache2-dev python-mysqldb apache2 libapache2-mod-wsgi python-pkgconfig
 sudo easy_install pip    
 sudo pip install --upgrade setuptools
 sudo pip install cryptography mod_wsgi python-memcached functools32 python-openstackclient requests pika==0.10.0
@@ -90,9 +90,9 @@ sudo /usr/bin/mysql -e &quot;GRANT ALL PRIVILEGES ON keystone.* TO &apos;keyston
 cd ~
 git clone https://github.com/openstack/keystone.git
 cd keystone/
-git checkout 11.0.3
-sudo pip install -r requirements.txt
-sudo pip install -r test-requirements.txt 
+git checkout 13.0.0
+sudo pip install --ignore-installed -r requirements.txt
+sudo pip install --ignore-installed -r test-requirements.txt 
 sudo python setup.py install
 
 sudo cp -r etc/ /etc/keystone

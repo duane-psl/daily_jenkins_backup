@@ -1,6 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
-  <actions/>
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
@@ -9,7 +8,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,10 +17,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;postgresql&quot;
-published_version=&quot;10.3&quot;
+published_version=&quot;10.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -41,30 +40,25 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+
 # Install dependencies
-sudo zypper update -y
-sudo zypper install -y git gcc  gcc-c++ make readline-devel  zlib-devel bison flex gcc-locale
-cat /etc/os*
-export PATH=$PATH:/usr/sbin
-echo $PATH
+sudo yum install -y git wget build-essential gcc gcc-c++ make readline-devel zlib-devel bison flex
+
 # Create user group and home directory
 sudo groupadd -r postgres
 
 # Modify users information
 sudo usermod -a -G postgres test 
- 
+
 # Change directory to postgres source code
-cd /home/test/
-rm -rf  postgres
+cd /home/test
 git clone git://github.com/postgres/postgres.git
-cd postgres
-git checkout REL_10_3
-
-
+cd /home/test/postgres    
+git checkout REL_10_4
+   
 # Configure, build and test the build 
 ./configure
 make
-unset LANG
 make check
 
 # Install PostgreSQL as a standard permission user
@@ -97,6 +91,7 @@ chmod  u+x  /home/test/check.sh
 # Script for starting the server
 echo -e &quot;/usr/local/pgsql/bin/postmaster -D /usr/local/pgsql/data  &amp; &gt; /dev/null  &amp;&amp; sleep 5 \n /usr/local/pgsql/bin/psql -w -Utest -dpostgres  -a -f /home/test/commands.sql &gt; /home/test/postgres/log.txt&quot; &gt; /home/test/startserver.sh
 chmod  u+x  /home/test/startserver.sh
+
 sleep 200s
 # Start PostgreSQL server
 /home/test/startserver.sh
@@ -117,8 +112,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -130,7 +124,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@Aditi.Jadhav</room>
+      <room>#loz-jenkins-build,@Aditi.Jadhav </room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
@@ -139,7 +133,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <notifyRepeatedFailure>false</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>

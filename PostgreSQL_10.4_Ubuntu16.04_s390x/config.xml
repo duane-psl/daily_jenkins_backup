@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,10 +18,9 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Set the below parameters manually
+      <command>#Set the below parameters manually
 package_name=&quot;postgresql&quot;
-published_version=&quot;10.3&quot;
+published_version=&quot;10.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -30,7 +29,8 @@ if [ $ID == &quot;rhel&quot; ]; then
 elif [ $ID == &quot;sles&quot; ]; then
 	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
@@ -41,25 +41,29 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+# Install dependencies 
+sudo apt-get update
+sudo apt-get install -y bison flex wget build-essential git gcc make zlib1g-dev libreadline6 libreadline6-dev
 
-# Install dependencies
-sudo yum install -y git wget build-essential gcc gcc-c++ make readline-devel zlib-devel bison flex
-
+export PATH=$PATH:/usr/sbin
+echo $PATH
 # Create user group and home directory
 sudo groupadd -r postgres
 
 # Modify users information
 sudo usermod -a -G postgres test 
-
+ 
 # Change directory to postgres source code
-cd /home/test
+cd /home/test/
+rm -rf  postgres
 git clone git://github.com/postgres/postgres.git
-cd /home/test/postgres    
-git checkout REL_10_3
-   
+cd postgres
+git checkout REL_10_4
+
 # Configure, build and test the build 
 ./configure
 make
+unset LANG
 make check
 
 # Install PostgreSQL as a standard permission user
@@ -98,8 +102,11 @@ sleep 200s
 sleep 200s
 # Check if insert query is succesful for postgres server
 /home/test/check.sh
-sleep 200s
-pgrep -d&quot; &quot; -f &quot;pgsql&quot; | sudo xargs kill || true;</command>
+
+sleep 60s
+ps -aef
+pgrep -d&quot; &quot; -f &quot;pgsql&quot; | sudo xargs kill;
+sleep 60s</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

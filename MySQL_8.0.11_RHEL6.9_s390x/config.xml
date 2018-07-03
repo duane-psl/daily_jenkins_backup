@@ -43,16 +43,24 @@ sudo make install
 export PATH=/opt/gcc4.8/bin:$PATH
 export LD_LIBRARY_PATH=/opt/gcc4.8/lib64/
 
+#Install Openssl
+cd $mysql_home
+git clone git://github.com/openssl/openssl.git &amp;&amp; cd openssl
+git checkout OpenSSL_1_0_2l	 
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make &amp;&amp; sudo make install
+
 # Build and install MySQL
+cd $mysql_home
 git clone git://github.com/mysql/mysql-server.git
 cd mysql-server
-git checkout tags/mysql-5.7.22
+#git checkout tags/mysql-8.0.11
 
 cmake -DCMAKE_C_COMPILER=/opt/gcc4.8/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc4.8/bin/g++ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
 gmake
 
 # Execute test cases
-gmake test
+#gmake test
 sudo gmake install
 
 sudo cp /opt/gcc4.8/lib64/libstdc++.so.6 /usr/lib64/

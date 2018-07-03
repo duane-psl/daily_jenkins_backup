@@ -24,7 +24,7 @@
     <hudson.tasks.Shell>
       <command># Install Pre-Build Dependencies
 sudo apt-get update
-sudo apt-get install -y make gcc tar zip perl-modules-5.22 libyaml-perl libtest-yaml-perl
+sudo apt-get install -y make gcc tar zip perl-modules-5.26 libyaml-perl libtest-yaml-perl libnet-ssleay-perl libcrypt-ssleay-perl
 export Workdir=`pwd`
 # Build and Install Latest CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
@@ -32,6 +32,7 @@ sudo cpan -fi Bundle::CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
 sudo cpan Config::AutoConf
 sudo cpan -fi Path::Tiny
+sudo cpan -fi BSON::XS
 sudo cpan -fi BSON::Decimal128 BSON::Types   
 
 #Build MongoDB 

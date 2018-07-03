@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl11-SP4_2048</assignedNode>
+  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -20,7 +20,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;postgresql&quot;
-published_version=&quot;10.3&quot;
+published_version=&quot;10.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -42,23 +42,23 @@ fi
 
 # Install dependencies
 sudo zypper update -y
-sudo zypper install -y git gcc  gcc-c++ make readline-devel  zlib-devel bison flex awk
-
+sudo zypper install -y git gcc  gcc-c++ make readline-devel  zlib-devel bison flex gcc-locale
+cat /etc/os*
 export PATH=$PATH:/usr/sbin
 echo $PATH
-
 # Create user group and home directory
 sudo groupadd -r postgres
 
 # Modify users information
-sudo usermod -G postgres test
+sudo usermod -a -G postgres test 
  
 # Change directory to postgres source code
 cd /home/test/
 rm -rf  postgres
 git clone git://github.com/postgres/postgres.git
 cd postgres
-git checkout REL_10_3
+git checkout REL_10_4
+
 
 # Configure, build and test the build 
 ./configure
@@ -71,7 +71,7 @@ cd /home/test/postgres
 whoami
 sudo make install
 export PATH=$PATH:/usr/local/pgsql/bin
-
+postgres -V
 echo &quot;Installation Done&quot;
 
 # Create PostgreSQL data directory to store data and make postgres user as the owner
@@ -102,9 +102,8 @@ sleep 200s
 sleep 200s
 # Check if insert query is succesful for postgres server
 /home/test/check.sh
-sleep 30
-ps -aef
-pgrep -d&quot; &quot; -f &quot;pgsql&quot; | sudo xargs kill;</command>
+sleep 200s
+pgrep -d&quot; &quot; -f &quot;pgsql&quot; | sudo xargs kill || true;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
