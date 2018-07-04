@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,29 +18,32 @@
     <hudson.triggers.TimerTrigger>
       <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command># Install dependencies
-sudo zypper update -y
+      <command>export WORK_DIR=`pwd`
+# Install dependencies
+source /home/test/.bashrc
 cat /etc/os*
-sudo zypper install -y git gcc gcc-c++ make cmake bison ncurses-devel wget tar net-tools
+sudo yum install -y git gcc gcc-c++ make libssl-dev cmake bison ncurses-devel perl-Data-Dumper curl wget hostname
+
+
+#Install Openssl
+cd $WORK_DIR
+git clone git://github.com/openssl/openssl.git &amp;&amp; cd openssl
+git checkout OpenSSL_1_0_2l	 
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make &amp;&amp; sudo make install
 
 
 
 # Install MySQL
-cd $WORK
+cd $WORK_DIR
 git clone git://github.com/mysql/mysql-server.git
 cd mysql-server
-git checkout tags/mysql-5.7.22
+git checkout tags/mysql-8.0.11
 
-wget http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.gz
-tar xzf boost_1_59_0.tar.gz
 cmake . -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
 gmake
 
@@ -49,20 +52,21 @@ gmake test
 sudo gmake install
 
 
-# Post installation setup
+
+# Post installation setup 
 if !(getent passwd mysql); then
-   sudo /usr/sbin/useradd mysql
-   sudo /usr/sbin/groupadd mysql
+ sudo useradd mysql
 fi
+
 cd /usr/local/mysql
 sudo chown -R mysql .
 sudo chgrp -R mysql .
 
-nohup sudo bin/mysqld --initialize --user=mysql &amp;
+nohup sudo bin/mysqld --initialize --user=mysql &amp; 
 sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
-sleep 20s
 /usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;
-
+  
+     
 
 
 
@@ -91,7 +95,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room></room>
+      <room>#loz-jenkins-build, @narang</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

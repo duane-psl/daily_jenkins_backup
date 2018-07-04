@@ -4,12 +4,20 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>6</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
       <weight>1</weight>
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh6.9_2048</assignedNode>
+  <assignedNode>dc2_sl11-SP4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -22,62 +30,75 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-export mysql_home=$(pwd)
+      <command>export WORK_DIR=`pwd`
+export DEBIAN_FRONTEND=noninteractive
+export PATH=/usr/sbin/:$PATH
+sudo zypper update -y
+cat /etc/os*
 # Install dependencies
-sudo yum install -y git gcc gcc-c++ make cmake bison ncurses-devel util-linux tar zip wget zlib-devel bzip2.s390x libtool.s390x
-
-wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.3/gcc-4.8.3.tar.bz2
-bunzip2  gcc-4.8.3.tar.bz2
-tar xvf gcc-4.8.3.tar
-cd gcc-4.8.3/
-./contrib/download_prerequisites
-mkdir $mysql_home/gcc-4.8.3/build
-cd $mysql_home/gcc-4.8.3/build
-
-../configure --disable-multilib --disable-checking --enable-languages=c,c++ --enable-multiarch --enable-shared --enable-threads=posix --without-included-gettext --with-system-zlib --prefix=/opt/gcc4.8.3
-
-make 
-sudo make install
-
-export PATH=/opt/gcc4.8.3/bin:$PATH
-export LD_LIBRARY_PATH=/opt/gcc4.8.3/lib64/
+sudo zypper update -y
+sudo zypper install -y gcc-c++ tar wget curl vim gcc make net-snmp net-snmp-devel git automake apache2 apache2-devel \
+libcurl-devel libxml2 libxml2-devel freetype2 freetype2-devel libtool pcre pcre-devel git-core autoconf libexpat-devel libjpeg-devel \
+libpng-devel libmcrypt-devel curl-devel cron openssh libmcrypt-devel libicu-devel pkg-config libxslt-devel gawk wget-openssl1 curl-openssl1
 
 #Install Openssl
-cd $mysql_home
+cd $WORK_DIR
 git clone git://github.com/openssl/openssl.git &amp;&amp; cd openssl
 git checkout OpenSSL_1_0_2l	 
 ./config --prefix=/usr --openssldir=/usr/local/openssl shared
 make &amp;&amp; sudo make install
 
-# Build and install MySQL
-cd $mysql_home
+
+sudo zypper install -y git gcc5 gcc5-c++ make cmake bison ncurses-devel util-linux tar zip wget glibc-devel-32bit zlib-devel cpp gawk
+sudo ln -fs /usr/bin/gcc-5 /usr/bin/gcc
+sudo ln -fs /usr/bin/g++-5 /usr/bin/g++
+sudo ln -fs /usr/bin/gcc /usr/bin/cc
+
+
+#Install cmake
+wget --no-check-certificate http://www.cmake.org/files/v3.3/cmake-3.3.0.tar.gz
+tar xzf cmake-3.3.0.tar.gz
+cd cmake-3.3.0
+./bootstrap --prefix=/usr
+gmake
+sudo gmake install
+cmake --version  
+
+cd $WORK_DIR
+    
+# Install MySQL
+cd $WORK_DIR
 git clone git://github.com/mysql/mysql-server.git
 cd mysql-server
-#git checkout tags/mysql-8.0.11
-
-cmake -DCMAKE_C_COMPILER=/opt/gcc4.8.3/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc4.8.3/bin/g++ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
+git checkout tags/mysql-8.0.11
+wget --no-check-certificate https://superb-sea2.dl.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.gz
+tar xzf boost_1_59_0.tar.gz
+cmake -DCMAKE_C_COMPILER=/usr/bin/cc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
 gmake
 
 # Execute test cases
-#gmake test
+gmake test
 sudo gmake install
 
-sudo cp /opt/gcc4.8/lib64/libstdc++.so.6 /usr/lib64/
 
-# Post installation setup 
+# Post installation setup
 if !(getent passwd mysql); then
-    sudo useradd mysql
+   sudo /usr/sbin/useradd mysql
+   sudo /usr/sbin/groupadd mysql
 fi
 cd /usr/local/mysql
 sudo chown -R mysql .
 sudo chgrp -R mysql .
 
 nohup sudo bin/mysqld --initialize --user=mysql &amp;
-
 sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
- 
-/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;</command>
+sleep 20s
+/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

@@ -83,8 +83,8 @@ Geek:Eddy
 
 Make user2 a geek and change the name accordingly :-
 -------------------------------------------------------
-update({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})
-update({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; &quot;Stan the Geek&quot;}})
+replace_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})
+replace_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; &quot;Stan the Geek&quot;}})
 
 Search again for the geeks which should now include user2 :-
 ---------------------------------------------------------------
@@ -94,13 +94,13 @@ sed -i &apos;/^#/ d&apos; $Workdir/generated_output
 sed -i &quot;s/&apos;value&apos; =&gt; &apos;[0-9 a-z]*&apos;/&apos;value&apos;/g&quot; $Workdir/expectedoutput
 sed -i &quot;s/&apos;value&apos; =&gt; &apos;[0-9 a-z]*&apos;/&apos;value&apos;/g&quot; $Workdir/generated_output
 sed -i &apos;26d&apos; $Workdir/expectedoutput
-sed -i &quot;26 i update({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/expectedoutput
+sed -i &quot;26 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/expectedoutput
 sed -i &apos;27d&apos; $Workdir/expectedoutput
-sed -i &quot;27 i update({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/expectedoutput
+sed -i &quot;27 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/expectedoutput
 sed -i &apos;26d&apos; $Workdir/generated_output
-sed -i &quot;26 i update({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/generated_output
+sed -i &quot;26 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/generated_output
 sed -i &apos;27d&apos; $Workdir/generated_output
-sed -i &quot;27 i update({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/generated_output
+sed -i &quot;27 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/generated_output
 diff --ignore-all-space $Workdir/generated_output $Workdir/expectedoutput
 
 if [ &quot;$?&quot; -eq 0 ]; then

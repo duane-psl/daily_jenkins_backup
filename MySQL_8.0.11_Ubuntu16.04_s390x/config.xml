@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh6.9_2048</assignedNode>
+  <assignedNode>dc2_ub16.04_2048||dockercloud_ubuntu16.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -22,48 +22,22 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-export mysql_home=$(pwd)
-# Install dependencies
-sudo yum install -y git gcc gcc-c++ make cmake bison ncurses-devel util-linux tar zip wget zlib-devel bzip2.s390x libtool.s390x
+      <command># Install dependencies
+sudo apt-get update -y
+sudo apt-get install -y git make cmake gcc g++ libncurses5-dev bison openssl libssl-dev
 
-wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.3/gcc-4.8.3.tar.bz2
-bunzip2  gcc-4.8.3.tar.bz2
-tar xvf gcc-4.8.3.tar
-cd gcc-4.8.3/
-./contrib/download_prerequisites
-mkdir $mysql_home/gcc-4.8.3/build
-cd $mysql_home/gcc-4.8.3/build
-
-../configure --disable-multilib --disable-checking --enable-languages=c,c++ --enable-multiarch --enable-shared --enable-threads=posix --without-included-gettext --with-system-zlib --prefix=/opt/gcc4.8.3
-
-make 
-sudo make install
-
-export PATH=/opt/gcc4.8.3/bin:$PATH
-export LD_LIBRARY_PATH=/opt/gcc4.8.3/lib64/
-
-#Install Openssl
-cd $mysql_home
-git clone git://github.com/openssl/openssl.git &amp;&amp; cd openssl
-git checkout OpenSSL_1_0_2l	 
-./config --prefix=/usr --openssldir=/usr/local/openssl shared
-make &amp;&amp; sudo make install
-
-# Build and install MySQL
-cd $mysql_home
-git clone git://github.com/mysql/mysql-server.git
+# Build and install MySQL 
+git clone https://github.com/mysql/mysql-server.git
 cd mysql-server
-#git checkout tags/mysql-8.0.11
+git checkout tags/mysql-8.0.11
 
-cmake -DCMAKE_C_COMPILER=/opt/gcc4.8.3/bin/gcc -DCMAKE_CXX_COMPILER=/opt/gcc4.8.3/bin/g++ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
-gmake
+cmake . -DDOWNLOAD_BOOST=1 -DWITH_BOOST=.
+make 
 
 # Execute test cases
-#gmake test
-sudo gmake install
+make test
 
-sudo cp /opt/gcc4.8/lib64/libstdc++.so.6 /usr/lib64/
+sudo make install
 
 # Post installation setup 
 if !(getent passwd mysql); then
@@ -73,11 +47,12 @@ cd /usr/local/mysql
 sudo chown -R mysql .
 sudo chgrp -R mysql .
 
-nohup sudo bin/mysqld --initialize --user=mysql &amp;
-
+nohup sudo bin/mysqld --initialize --user=mysql &amp; 
 sudo /usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
- 
-/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;</command>
+/usr/local/mysql/bin/mysqladmin --version --password=grep &apos;root@localhost:&apos; /home/test/nohup.out | sed &apos;s/^.*: //&apos;
+  
+     
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
