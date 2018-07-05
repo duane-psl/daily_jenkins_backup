@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Building PythonMongoDBDriver 3.6.1 on Ubuntu16.04</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,54 +9,53 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>preeti_slessp3||dockercloud_sles12-sp3</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 1 * * 6</spec>
+      <spec>H 13 * * 5 </spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 1 * * 6</spec>
+      <spec>H 13 * * 5 </spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command># Install Python MongoDB Driver and its dependencies
-sudo apt-get update
-sudo apt-get install -y git openssl libssh-dev python python-openssl python-setuptools python-dev gcc
-sudo easy_install pip
+      <command>sudo zypper ref
+sudo zypper up -y
+
+# Install Python MongoDB Driver and its dependencies
+sudo zypper install -y git wget python-xml python-devel python-cffi openssl-devel libffi-devel gcc
+
+# Install the build dependent packages 
+wget https://bootstrap.pypa.io/ez_setup.py &amp;&amp; sudo python ez_setup.py
+sudo easy_install pip==1.2.1
+
 python -V 
 pip --version
 
+cd ..
 git clone git://github.com/mongodb/mongo-python-driver.git pymongo
 cd pymongo
 git checkout 3.6.1
 sudo python setup.py install
 
-# Install mongodb server 3.6.2
-sudo apt-get install -y wget
-wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.6/multiverse/binary-s390x/mongodb-enterprise-server_3.6.2_s390x.deb
-sudo dpkg -i --force-all mongodb-enterprise-server_3.6.2_s390x.deb
-sudo apt-get install -y -f
+# dependencies for mongoDB Server
+sudo zypper install -y wget net-snmp cyrus-sasl cyrus-sasl-plain cyrus-sasl-gssapi timezone
+
+#Install the MongoDb Server
+wget https://repo.mongodb.com/zypper/suse/12/mongodb-enterprise/3.6/s390x/RPMS/mongodb-enterprise-server-3.6.1-1.suse12.s390x.rpm
+sudo rpm -Uvh mongodb-enterprise-server-3.6.1-1.suse12.s390x.rpm
 sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
 
-#Install MongoDB server 3.5.3
-#sudo apt-get install -y wget
-#wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.5/multiverse/binary-s390x/mongodb-enterprise-unstable-server_3.5.3_s390x.deb
-#sudo dpkg -i --force-all mongodb-enterprise-unstable-server_3.5.3_s390x.deb 
-#sudo apt-get install -y -f
-#sudo mkdir -p db
-#sudo /usr/bin/mongod --dbpath db &amp;
-#sleep 40s
-
-# Run Tests
+# Run Test
 export DB_IP=127.0.0.1
 sudo -E python setup.py test
 
@@ -129,10 +128,11 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -144,7 +144,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@preeti.khorjuvenkar</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -81,22 +81,17 @@ git checkout v5.7.3
 sed -i -e &quot;s/-march=native/-march=z196/&quot; build_tools/build_detect_platform
 sed -i -e &quot;s/-momit-leaf-frame-pointer/-DDUMBDUMMY/&quot; Makefile
 PORTABLE=1 make shared_lib
-make rocksdbjava
+make rocksdbjava 
 cd $WORK_DIR/rocksdb/java/target/
-cp rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3-linux64.jar.or
+cp rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3-linux64.jar.backup
 jar -xf rocksdbjni-5.7.3-linux64.jar
 cp librocksdbjni-linux64.so librocksdbjni-linux32.so
 jar -ufv rocksdbjni-5.7.3-linux64.jar librocksdbjni-linux32.so
 jar -tf rocksdbjni-5.7.3-linux64.jar
-cp rocksdbjni-5.7.3-linux64.jar /home/test/
-cd /home/test
 mv rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3.jar
-
-
-cp -vf /home/test/rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.11/
-cp -vf /home/test/rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11/
-
-cp -vf /home/test/rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/e3aa988ff3e0ba70a63a00ecdc96d5d6c97ba385/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.11/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11/
+cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/421b44ad957a2b6cce5adedc204db551831b553d/
 #========Workaround part finished=========================================
 
 cd $WORK_DIR/kafka

@@ -9,53 +9,45 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_slessp3||dockercloud_sles12-sp3</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 5 </spec>
+      <spec>H 1 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5 </spec>
+      <spec>H 1 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo zypper ref
-sudo zypper up -y
+      <command># Install Python MongoDB Driver and its dependencies
+source /home/test/.bashrc
+# Install Python MongoDB Driver
+sudo yum install -y git openssl openssl-devel pyOpenSSL  python-devel python-setuptools python-setuptools-devel python-virtualenv libffi-devel gcc
+sudo easy_install pip
 
-# Install Python MongoDB Driver and its dependencies
-sudo zypper install -y git wget python-xml python-devel python-cffi openssl-devel libffi-devel gcc
+#Dependency for MongoDB server
+sudo yum install -y wget
 
-# Install the build dependent packages 
-wget https://bootstrap.pypa.io/ez_setup.py &amp;&amp; sudo python ez_setup.py
-sudo easy_install pip==1.2.1
-
-python -V 
-pip --version
-
-cd ..
 git clone git://github.com/mongodb/mongo-python-driver.git pymongo
 cd pymongo
 git checkout 3.6.1
 sudo python setup.py install
 
-# dependencies for mongoDB Server
-sudo zypper install -y wget net-snmp cyrus-sasl cyrus-sasl-plain cyrus-sasl-gssapi timezone
-
-#Install the MongoDb Server
-wget https://repo.mongodb.com/zypper/suse/12/mongodb-enterprise/3.6/s390x/RPMS/mongodb-enterprise-server-3.6.1-1.suse12.s390x.rpm
-sudo rpm -Uvh mongodb-enterprise-server-3.6.1-1.suse12.s390x.rpm
+#Start the MongoDB server
+wget https://repo.mongodb.com/yum/redhat/7/mongodb-enterprise/3.6/s390x/RPMS/mongodb-enterprise-server-3.6.1-1.el7.s390x.rpm
+sudo yum --nogpgcheck localinstall -y mongodb-enterprise-server-3.6.1-1.el7.s390x.rpm
 sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
 
-# Run Test
+# Run Tests
 export DB_IP=127.0.0.1
 sudo -E python setup.py test
 
@@ -131,8 +123,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -144,7 +135,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ketank,@preeti.khorjuvenkar</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

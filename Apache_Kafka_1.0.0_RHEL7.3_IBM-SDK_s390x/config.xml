@@ -16,10 +16,10 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 1 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 1 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -96,9 +96,9 @@ gradle test --continue 2&gt;&amp;1 | tee testlog.log
 sed -i &apos;s/Xloggc/Xverbosegclog/&apos; bin/kafka-run-class.sh
 
 
-nohup bin/zookeeper-server-start.sh -daemon config/zookeeper.properties &amp;
+nohup bin/zookeeper-server-start.sh config/zookeeper.properties &amp;
 sleep 5m
-nohup bin/kafka-server-start.sh -daemon config/server.properties &amp;
+nohup bin/kafka-server-start.sh config/server.properties &amp;
 sleep 5m
 ps -aux
 

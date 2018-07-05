@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>Abhay_Jenkins_Slave</assignedNode>
+  <assignedNode>dockercloud_rhel7.4-8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,8 +28,8 @@
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 sudo yum install -y git wget unzip java-1.8.0-ibm-devel.s390x java-1.8.0-ibm.s390x
-export WORK_DIR=`pwd`
 export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
+export WORK_DIR=`pwd`
 cat /etc/os*
 
 #Install gradle
@@ -85,8 +85,8 @@ cp librocksdbjni-linux64.so librocksdbjni-linux32.so
 jar -ufv rocksdbjni-5.7.3-linux64.jar librocksdbjni-linux32.so
 jar -tf rocksdbjni-5.7.3-linux64.jar
 mv rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3.jar
-cp -vf rocksdbjni-5.7.3.jar /&lt;source_root&gt;/kafka/streams/examples/build/dependant-libs-2.11.11/
-cp -vf rocksdbjni-5.7.3.jar /&lt;source_root&gt;/kafka/streams/build/dependant-libs-2.11.11/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.11/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11/
 cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/421b44ad957a2b6cce5adedc204db551831b553d/
 #========Workaround part finished=========================================
 
@@ -111,7 +111,18 @@ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test &lt; /tm
 sleep 5m
 
 
-bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4</command>
+bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4 &gt; $WORK_DIR/output.txt
+cat $WORK_DIR/output.txt
+echo &quot;Welcome to Apache Kafka with Linux on z Systems&quot; &gt;&gt; expectedoutput.txt
+grep &quot;Welcome to Apache Kafka with Linux on z Systems&quot; $WORK_DIR/output.txt &gt; actualoutput.txt
+cat expectedoutput.txt
+cat actualoutput.txt
+kill -9 $(ps aux | grep &apos;kafka&apos; | awk &apos;{print $2}&apos;)| awk &apos;{print $2}&apos;
+if diff -u -w expectedoutput.txt actualoutput.txt ; then
+    echo &quot;Success&quot;
+else    
+	exit 1
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

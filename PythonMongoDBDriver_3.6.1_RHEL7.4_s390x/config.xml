@@ -9,14 +9,14 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 1 * * 6</spec>
+      <spec>H 1 * * 1</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
       <spec>H 1 * * 6</spec>
@@ -27,31 +27,27 @@
   <builders>
     <hudson.tasks.Shell>
       <command># Install Python MongoDB Driver and its dependencies
-sudo apt-get update
-sudo apt-get install -y git openssl libssh-dev python python-openssl python-setuptools python-dev gcc
+source /home/test/.bashrc
+# Install Python MongoDB Driver
+sudo yum install -y git openssl openssl-devel pyOpenSSL  python-devel python-setuptools python-setuptools-devel python-virtualenv libffi-devel gcc
+sudo easy_install pip
 
-
-#sudo /usr/local/bin/easy_install pip
-sudo apt-get install -y python-pip
-python -V 
-pip --version
+#Dependency for MongoDB server
+sudo yum install -y wget
 
 git clone git://github.com/mongodb/mongo-python-driver.git pymongo
 cd pymongo
 git checkout 3.6.1
 sudo python setup.py install
 
-: &apos;
-# Install mongodb server 3.6.2
-sudo apt-get install -y wget
-wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.6/multiverse/binary-s390x/mongodb-enterprise-server_3.6.2_s390x.deb
-sudo dpkg -i --force-all mongodb-enterprise-server_3.6.2_s390x.deb
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -f
-##sudo chmod 777 /etc/timezone
-##sudo echo -e &quot;Asia/Kolkata&quot; &gt;&gt; /etc/timezone 
+
+#Start the MongoDB server
+wget https://repo.mongodb.com/yum/redhat/7/mongodb-enterprise/3.6/s390x/RPMS/mongodb-enterprise-server-3.6.1-1.el7.s390x.rpm
+sudo yum --nogpgcheck localinstall -y mongodb-enterprise-server-3.6.1-1.el7.s390x.rpm
 sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
+
 
 # Run Tests
 export DB_IP=127.0.0.1
@@ -116,7 +112,7 @@ if [ &quot;$?&quot; -eq 0 ]; then
 else
   exit 1
 fi
-&apos;</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -126,9 +122,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -141,7 +137,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ketank,@preeti.khorjuvenkar</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

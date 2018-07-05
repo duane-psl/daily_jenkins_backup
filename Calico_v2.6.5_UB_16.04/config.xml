@@ -1,0 +1,952 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>Calico_v2.6.5_UB_16.04</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H H * * *</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>export WORKDIR=$PWD
+
+# Get dependencies
+sudo apt-get update &amp;&amp; \
+sudo apt-get install -y git curl tar gcc wget make 
+
+cd $WORKDIR &amp;&amp; rm -rf calicoscript303 &amp;&amp; mkdir calicoscript303 &amp;&amp; cd calicoscript303
+
+
+wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
+sudo tar xf go1.9.2.linux-s390x.tar.gz
+
+export GOPATH=$PWD
+export GOROOT=$PWD/go
+export PATH=$GOROOT/bin:$PATH
+go version
+
+# Get the docker-ce and start the service
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository &quot;deb [arch=s390x] https://download.docker.com/linux/ubuntu  $(lsb_release -cs) stable&quot;
+sudo apt-get update
+sudo apt-get install -y docker-ce
+sudo service docker start
+sudo sleep 120s 
+sudo whoami
+sudo ps -aux
+sudo docker ps
+sudo service docker status
+sudo chmod ugo+rw /var/run/docker.sock
+
+
+##Go-build
+git clone https://github.com/projectcalico/go-build $GOPATH/src/github.com/projectcalico/go-build
+cd $GOPATH/src/github.com/projectcalico/go-build
+git checkout v0.9
+
+#################################################################################################
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.s390x
+FROM s390x/golang:1.9.2-alpine3.6
+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+# Install su-exec for use in the entrypoint.sh (so processes run as the right user)
+# Install bash for the entry script (and because it&apos;s generally useful)
+# Install curl to download glide
+# Install git for fetching Go dependencies
+# Install ssh for fetching Go dependencies
+# Install mercurial for fetching go dependencies
+# Install wget for fetching glibc
+# Install make for building things
+# Install util-linux for column command (used for output formatting).
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini
+RUN apk upgrade --no-cache
+
+# Disable ssh host key checking
+RUN echo &apos;Host *&apos; &gt;&gt; /etc/ssh/ssh_config
+RUN echo &apos;    StrictHostKeyChecking no&apos; &gt;&gt; /etc/ssh/ssh_config
+
+# Install glibc
+RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
+RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk
+RUN apk add glibc-2.23-r3.apk
+
+# Disable cgo so that binaries we build will be fully static.
+ENV CGO_ENABLED=0
+
+# Recompile the standard library with cgo disabled.  This prevents the standard library from being
+# marked stale, causing full rebuilds every time.
+RUN go install -v std
+
+# Install glide
+RUN go get github.com/Masterminds/glide
+ENV GLIDE_HOME /home/user/.glide
+
+# Install ginkgo CLI tool for running tests
+RUN go get github.com/onsi/ginkgo/ginkgo
+
+# Install linting tools.  We pin gometalinter to a working master revision to pick up
+# a go v1.9 compatibility patch that hasn&apos;t been released.
+RUN go get -u -d github.com/alecthomas/gometalinter &amp;&amp; \
+    cd /go/src/github.com/alecthomas/gometalinter &amp;&amp; \
+    git checkout cc4415ed09f7073d595ee504cad4d98b71a3038e &amp;&amp; \
+    go install github.com/alecthomas/gometalinter
+RUN ln -s `which gometalinter` /usr/local/bin/gometalinter
+RUN gometalinter --install
+
+# Install license checking tool.
+RUN go get github.com/pmezard/licenses
+
+# Install tool to merge coverage reports.
+RUN go get github.com/wadey/gocovmerge
+
+RUN go get github.com/mikefarah/yaml
+
+# Install patched version of goveralls (upstream is bugged if not used from Travis).
+RUN go get -u -d github.com/fasaxc/goveralls &amp;&amp; \
+    cd /go/src/github.com/fasaxc/goveralls &amp;&amp; \
+    git checkout tags/v0.0.1-smc &amp;&amp; \
+    go install github.com/fasaxc/goveralls
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT [&quot;/sbin/tini&quot;, &quot;--&quot;, &quot;/usr/local/bin/entrypoint.sh&quot;]
+EOF
+##########################################################################################################
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index 3b95bf1..d8037d6 100644
+--- a/Makefile
++++ b/Makefile
+@@ -4,3 +4,6 @@ calico/go-build:
+
+ calico/go-build-ppc64le:
+	docker build --pull -t calico/go-build-ppc64le -f Dockerfile.ppc64le .
++
++calico/go-build-s390x:
++	docker build --pull -t calico/go-build-s390x -f Dockerfile.s390x .
+EOF
+
+patch &lt;Makefile.patch
+
+make calico/go-build-s390x
+docker tag calico/go-build-s390x:latest calico/go-build:latest
+
+#Build calicoctl
+git clone https://github.com/projectcalico/calicoctl $GOPATH/src/github.com/projectcalico/calicoctl
+cd $GOPATH/src/github.com/projectcalico/calicoctl
+git checkout v1.6.4
+
+echo &quot;test&quot;
+
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index def2d87..e6847bc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -80,9 +80,16 @@ dist/calicoctl: $(CALICOCTL_FILES) vendor
+ 	$(MAKE) dist/calicoctl-linux-amd64
+ 	mv dist/calicoctl-linux-amd64 dist/calicoctl
+ 
++dist/calicoctl-s390x: $(CALICOCTL_FILES) vendor
++	$(MAKE) dist/calicoctl-linux-s390x
++	mv dist/calicoctl-linux-s390x dist/calicoctl
++
+ dist/calicoctl-linux-amd64: $(CALICOCTL_FILES) vendor
+ 	$(MAKE) OS=linux ARCH=amd64 binary-containerized
+ 
++dist/calicoctl-linux-s390x: $(CALICOCTL_FILES) vendor
++	$(MAKE) OS=linux ARCH=s390x binary-containerized
++
+ dist/calicoctl-darwin-amd64: $(CALICOCTL_FILES) vendor
+ 	$(MAKE) OS=darwin ARCH=amd64 binary-containerized
+ 
+EOF
+
+patch &lt; Makefile.patch
+
+cd $GOPATH/src/github.com/projectcalico/calicoctl
+
+cd calicoctl
+
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.calicoctl.patch
+diff --git a/calicoctl/Dockerfile.calicoctl b/calicoctl/Dockerfile.calicoctl
+index a1a4678..c6e707a 100644
+--- a/calicoctl/Dockerfile.calicoctl
++++ b/calicoctl/Dockerfile.calicoctl
+@@ -1,4 +1,4 @@
+-FROM alpine:3.4
++FROM s390x/alpine:3.6
+ MAINTAINER Tom Denham &lt;tom@projectcalico.org&gt;
+
+ ADD dist/calicoctl ./calicoctl
+@@ -6,16 +6,6 @@ ADD dist/calicoctl ./calicoctl
+ ENV CALICO_CTL_CONTAINER=TRUE
+ ENV PATH=$PATH:/
+
+-# glibc and libltdl are needed by docker command line tool
+-ENV GLIBC_VERSION 2.23-r3
+-RUN apk add --no-cache libltdl
+-RUN apk add --no-cache --update wget openssl ca-certificates &amp;&amp; \
+-  wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub &amp;&amp; \
+-  wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk &amp;&amp; \
+-  wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk &amp;&amp; \
+-  apk add glibc-${GLIBC_VERSION}.apk glibc-bin-${GLIBC_VERSION}.apk &amp;&amp; \
+-  rm -f glibc-${GLIBC_VERSION}.apk glibc-bin-${GLIBC_VERSION}.apk &amp;&amp; \
+-  apk del openssl ca-certificates wget
+
+ WORKDIR /root
+ ENTRYPOINT [&quot;/calicoctl&quot;]
+EOF
+
+patch &lt; Dockerfile.calicoctl.patch
+
+cd $GOPATH/src/github.com/projectcalico/calicoctl
+docker tag calico/go-build calico/go-build:v0.8
+make  dist/calicoctl-s390x
+
+make  calico/ctl
+docker tag calico/ctl calico/ctl:v1.6.4
+
+########################################################################
+#Build Bird
+git clone https://github.com/projectcalico/bird $GOPATH/src/github.com/projectcalico/bird
+cd $GOPATH/src/github.com/projectcalico/bird
+git checkout v0.3.2
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-s390x
+FROM s390x/alpine:3.6
+MAINTAINER Tom Denham &lt;tom@projectcalico.org&gt;
+
+RUN apk update
+RUN apk add alpine-sdk linux-headers autoconf flex bison ncurses-dev readline-dev
+
+WORKDIR /code
+EOF
+
+cat &lt;&lt; &apos;EOF&apos; &gt; build.sh.patch
+diff --git a/build.sh b/build.sh
+index cca3381..b939d0d 100755
+--- a/build.sh
++++ b/build.sh
+@@ -14,6 +14,10 @@ if [ $ARCH = ppc64le ]; then
+        ARCHTAG=-ppc64le
+ fi
+
++if [ $ARCH = s390x ]; then
++        ARCHTAG=-s390x
++fi
++
+ DIST=dist/$ARCH
+
+ docker build -t birdbuild$ARCHTAG -f Dockerfile$ARCHTAG .
+EOF
+
+patch &lt; build.sh.patch
+
+ARCH=s390x ./build.sh
+
+
+########################################################################################
+#build confd
+git clone https://github.com/projectcalico/confd $GOPATH/src/github.com/projectcalico/confd
+cd $GOPATH/src/github.com/projectcalico/confd
+git checkout v0.12.1-calico-0.4.4
+
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+diff --git a/Dockerfile b/Dockerfile
+index ac19b33..28125ff 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -11,7 +11,7 @@
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+-FROM alpine
++FROM s390x/alpine:3.6
+ LABEL maintainer &quot;Casey Davenport &lt;casey@tigera.io&gt;&quot;
+
+ # Copy in the binary.
+EOF
+
+patch &lt; Dockerfile.patch
+
+cd $GOPATH/src/github.com/projectcalico/confd
+make container
+
+########################################################################################
+
+#Build lib-nework
+
+docker tag calico/go-build:latest calico/go-build:v0.9
+docker tag calico/go-build:latest calico/go-build:v0.12
+git clone https://github.com/projectcalico/libnetwork-plugin $GOPATH/src/github.com/projectcalico/libnetwork-plugin
+cd $GOPATH/src/github.com/projectcalico/libnetwork-plugin
+git checkout v1.1.3
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-s390x
+FROM s390x/alpine:3.6
+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+ADD dist/s390x/libnetwork-plugin /libnetwork-plugin
+ENTRYPOINT [&quot;/libnetwork-plugin&quot;]
+EOF
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index c52fcad..d09f5c1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -17,6 +17,14 @@ ifeq ($(ARCH),ppc64le)
+        DIND_IMAGE?=ppc64le/docker:dind
+ endif
+
++ifeq ($(ARCH),s390x)
++       ARCHTAG:=-s390x
++       GO_BUILD_VER?=latest
++       BUSYBOX_IMAGE?=s390x/busybox:latest
++       DIND_IMAGE?=x390x/docker:dind
++endif
++
++
+ # Disable make&apos;s implicit rules, which are not useful for golang, and slow down the build
+ # considerably.
+ .SUFFIXES:
+EOF
+
+patch &lt; Makefile.patch
+
+ARCH=s390x make calico/libnetwork-plugin-s390x
+
+
+
+##############################################################################################################################
+#------------------------------------------------Build protobuf----------------------------------------------------------
+git clone https://github.com/tigera/docker-protobuf $GOPATH/src/github.com/projectcalico/docker-protobuf
+cd  $GOPATH/src/github.com/projectcalico/docker-protobuf
+cp Dockerfile Dockerfile-s390x
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+@@ -1,6 +1,6 @@
+-FROM golang:1.9.2
++FROM s390x/golang:1.9.2
+
+-MAINTAINER Shaun Crampton &lt;shaun@tigera.io&gt;
++MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+ RUN apt-get update &amp;&amp; apt-get install -y git make autoconf automake libtool unzip
+
+
+EOF
+
+patch Dockerfile-s390x &lt; Dockerfile.patch
+
+docker build -t calico/protoc .
+docker tag calico/protoc calico/protoc-s390x
+
+
+##############################################################################################################################
+#Build Felix
+git clone https://github.com/projectcalico/felix $GOPATH/src/github.com/projectcalico/felix
+cd $GOPATH/src/github.com/projectcalico/felix
+git checkout 2.6.7
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index 39c5f34..97e6e7c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -59,6 +59,11 @@ ifeq ($(ARCH),ppc64le)
+ GO_BUILD_VER:=latest
+ endif
+
++ifeq ($(ARCH),s390x)
++GO_BUILD_VER:=latest
++endif
++
++
+ GO_BUILD_CONTAINER?=calico/go-build$(ARCHTAG):$(GO_BUILD_VER)
+
+ help:
+EOF
+
+patch &lt; Makefile.patch
+ 
+cd docker-image
+ 
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-s390x
+FROM s390x/alpine:3.6
+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+# Since our binary isn&apos;t designed to run as PID 1, run it via the tini init daemon.
+RUN apk --no-cache add --update tini
+ENTRYPOINT [&quot;/sbin/tini&quot;, &quot;--&quot;]
+
+# Install Felix&apos;s dependencies.
+RUN apk --no-cache add ip6tables ipset iputils iproute2 conntrack-tools
+
+ADD felix.cfg /etc/calico/felix.cfg
+
+# Put out binary in /code rather than directly in /usr/bin.  This allows the downstream builds
+# to more easily extract the Felix build artefacts from the container.
+RUN mkdir /code
+ADD bin/calico-felix /code
+WORKDIR /code
+RUN ln -s /code/calico-felix /usr/bin
+
+# Run felix by default
+CMD [&quot;calico-felix&quot;]
+EOF
+
+
+
+cd $GOPATH/src/github.com/projectcalico/felix
+ARCH=s390x make calico/felix
+
+###############################################################################################
+#Build calico-bgp-daemon
+git clone https://github.com/projectcalico/calico-bgp-daemon $GOPATH/src/github.com/projectcalico/calico-bgp-daemon
+cd $GOPATH/src/github.com/projectcalico/calico-bgp-daemon
+git checkout v0.2.2
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+diff --git a/Dockerfile b/Dockerfile
+index afa9033..a08c7a4 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -1,4 +1,4 @@
+-FROM alpine:3.4
++FROM s390x/alpine:3.6
+
+ MAINTAINER Gunjan Patel &lt;gunjan@tigera.io&gt;
+
+EOF
+
+patch &lt; Dockerfile.patch
+
+make build-containerized
+
+
+#############################################################################################################
+
+#Build Typha
+git clone https://github.com/projectcalico/typha $GOPATH/src/github.com/projectcalico/typha
+cd $GOPATH/src/github.com/projectcalico/typha
+git checkout v0.5.7
+
+cd  docker-image
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+diff --git a/Dockerfile b/Dockerfile
+index a49c9b0..dee68b3 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -1,4 +1,4 @@
+-FROM alpine:3.4
++FROM s390x/alpine:3.6
+ MAINTAINER Shaun Crampton &lt;shaun@tigera.io&gt;
+
+ # Since our binary isn&apos;t designed to run as PID 1, run it via the tini init daemon.
+EOF
+
+patch &lt; Dockerfile.patch
+
+cd $GOPATH/src/github.com/projectcalico/typha
+make calico/typha
+
+#################################################################################################
+#ETCD
+#build etcd
+cd $GOPATH/src/github.com/projectcalico/
+git clone https://github.com/coreos/etcd
+cd etcd
+git checkout v3.3.1
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-release.patch
+diff --git a/Dockerfile-release b/Dockerfile-release
+index 736445f..77aa7c3 100644
+--- a/Dockerfile-release
++++ b/Dockerfile-release
+@@ -1,7 +1,8 @@
+-FROM alpine:latest
++FROM s390x/alpine:3.6
+
+-ADD etcd /usr/local/bin/
+-ADD etcdctl /usr/local/bin/
++ADD bin/etcd /usr/local/bin/
++ADD bin/etcdctl /usr/local/bin/
++ENV ETCD_UNSUPPORTED_ARCH=s390x
+ RUN mkdir -p /var/etcd/
+ RUN mkdir -p /var/lib/etcd/
+ 
+EOF
+
+patch &lt; Dockerfile-release.patch
+
+./build
+docker build -f Dockerfile-release  -t quay.io/coreos/etcd .
+cd bin
+tar cvf etcd-v3.3.1-linux-s390x.tar etcd etcdctl
+gzip etcd-v3.3.1-linux-s390x.tar
+####################################################################################################################
+#DIND
+
+git clone https://github.com/projectcalico/dind $GOPATH/src/github.com/projectcalico/dind
+cd $GOPATH/src/github.com/projectcalico/dind
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-s390x
+FROM s390x/docker:17-dind
+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+RUN apk add --update iptables ip6tables ipset iproute2 curl busybox-extras &amp;&amp; \
+echo &apos;hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4&apos; &gt;&gt; /etc/nsswitch.conf &amp;&amp; \
+rm -rf /var/cache/apk/*
+EOF
+
+docker build -t calico/dind -f Dockerfile-s390x .
+########################################################################################################################
+
+#Build image calico/node
+git clone https://github.com/projectcalico/calico $GOPATH/src/github.com/projectcalico/calico
+cd $GOPATH/src/github.com/projectcalico/calico
+git checkout v2.6.10
+
+cd calico_node
+
+##########################################################################################
+cat &lt;&lt; &apos;EOF&apos; &gt;Dockerfile.patch
+diff --git a/Dockerfile b/Dockerfile
+index 9720e5e..4481c39 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -11,27 +11,14 @@
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+-FROM alpine
++FROM s390x/alpine:3.6
+ MAINTAINER Tom Denham &lt;tom@projectcalico.org&gt;
+
+ # Set the minimum Docker API version required for libnetwork.
+ ENV DOCKER_API_VERSION 1.21
+
+-# Download and install glibc for use by non-static binaries that require it.
+-RUN apk --no-cache add wget ca-certificates libgcc &amp;&amp; \
+-    wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub &amp;&amp; \
+-    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk &amp;&amp; \
+-    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-bin-2.23-r3.apk &amp;&amp; \
+-    apk add glibc-2.23-r3.apk glibc-bin-2.23-r3.apk &amp;&amp; \
+-    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc/usr/lib &amp;&amp; \
+-    apk del wget &amp;&amp; \
+-    rm -f glibc-2.23-r3.apk glibc-bin-2.23-r3.apk
+-
+-# Install runit from the community repository, as its not yet available in global
+-RUN apk add --no-cache --repository &quot;http://alpine.gliderlabs.com/alpine/edge/community&quot; runit
+-
+ # Install remaining runtime deps required for felix from the global repository
+-RUN apk add --no-cache ip6tables ipset iputils iproute2 conntrack-tools
++RUN apk add --no-cache ip6tables ipset iputils iproute2 conntrack-tools runit file
+
+ # Copy in the filesystem - this contains felix, bird, calico-bgp-daemon etc...
+ COPY filesystem /
+EOF
+###########################################################################################################
+
+patch &lt; Dockerfile.patch
+
+
+
+
+####################################################################################################################
+cat &lt;&lt; &apos;EOF&apos; &gt;Makefile.patch
+diff --git a/calico_node/Makefile b/calico_node/Makefile
+index 4ab6b1b..f95a6ad 100644
+--- a/calico_node/Makefile
++++ b/calico_node/Makefile
+@@ -202,7 +202,6 @@ $(NODE_CONTAINER_BIN_DIR)/confd:
+ 	-docker rm -f calico-confd
+ 	# Latest confd binaries are stored in automated builds of calico/confd.
+ 	# To get them, we create (but don&apos;t start) a container from that image.
+-	docker pull $(CONFD_CONTAINER_NAME)
+ 	docker create --name calico-confd $(CONFD_CONTAINER_NAME)
+ 	# Then we copy the files out of the container.  Since docker preserves
+ 	# mtimes on its copy, check the file really did appear, then touch it
+@@ -238,7 +237,7 @@ $(NODE_CONTAINER_BIN_DIR)/allocate-ipip-addr: dist/allocate-ipip-addr
+ ## Build startup.go
+ .PHONY: startup
+ startup:
+-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -i -o dist/startup $(LDFLAGS) startup/startup.go
++	GOOS=linux GOARCH=s390x CGO_ENABLED=0 go build -v -i -o dist/startup $(LDFLAGS) startup/startup.go
+ 
+ dist/startup: $(STARTUP_FILES) vendor
+ 	mkdir -p dist
+@@ -257,7 +256,7 @@ dist/startup: $(STARTUP_FILES) vendor
+ ## Build allocate_ipip_addr.go
+ .PHONY: allocate-ipip-addr
+ allocate-ipip-addr:
+-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -i -o dist/allocate-ipip-addr $(LDFLAGS) allocateipip/allocate_ipip_addr.go
++	GOOS=linux GOARCH=s390x CGO_ENABLED=0 go build -v -i -o dist/allocate-ipip-addr $(LDFLAGS) allocateipip/allocate_ipip_addr.go
+ 
+ dist/allocate-ipip-addr: $(ALLOCATE_IPIP_FILES) vendor
+ 	mkdir -p dist
+@@ -320,11 +319,9 @@ certs/.certificates.created:
+ 	touch certs/.certificates.created
+ 
+ busybox.tar:
+-	docker pull busybox:latest
+ 	docker save --output busybox.tar busybox:latest
+ 
+ routereflector.tar:
+-	docker pull calico/routereflector:$(RR_VER)
+ 	docker save --output routereflector.tar calico/routereflector:$(RR_VER)
+ 
+ workload.tar:
+@@ -639,17 +636,14 @@ $(RELEASE_DIR_IMAGES)/calico-node.tar:
+ 
+ $(RELEASE_DIR_IMAGES)/calico-typha.tar:
+ 	mkdir -p $(RELEASE_DIR_IMAGES)
+-	docker pull calico/typha:$(TYPHA_VER)
+ 	docker save --output $@ calico/typha:$(TYPHA_VER)
+ 
+ $(RELEASE_DIR_IMAGES)/calico-cni.tar:
+ 	mkdir -p $(RELEASE_DIR_IMAGES)
+-	docker pull calico/cni:$(CNI_VER)
+ 	docker save --output $@ calico/cni:$(CNI_VER)
+ 
+ $(RELEASE_DIR_IMAGES)/calico-kube-controllers.tar:
+ 	mkdir -p $(RELEASE_DIR_IMAGES)
+-	docker pull calico/kube-controllers:$(KUBE_CONTROLLERS_VER)
+ 	docker save --output $@ calico/kube-controllers:$(KUBE_CONTROLLERS_VER)
+ 
+ $(RELEASE_DIR_BIN)/%:
+EOF
+
+patch &lt; Makefile.patch
+
+
+go get gopkg.in/mikefarah/yq.v1
+cd $GOPATH/bin
+ln -s yq.v1 yaml
+export PATH=$PATH:$GOPATH/bin 
+
+#build calico/node image
+cd $GOPATH/src/github.com/projectcalico/calico/calico_node
+make dist/calicoctl
+mkdir filesystem/bin
+cp $GOPATH/src/github.com/projectcalico/bird/dist/s390x/* filesystem/bin
+cp $GOPATH/src/github.com/projectcalico/confd/bin/confd filesystem/bin
+cp $GOPATH/src/github.com/projectcalico/libnetwork-plugin/dist/s390x/libnetwork-plugin filesystem/bin
+cp $GOPATH/src/github.com/projectcalico/felix/bin/calico-felix filesystem/bin
+cp $GOPATH/src/github.com/projectcalico/calico-bgp-daemon/dist/* filesystem/bin
+make calico/node
+
+docker tag  calico/node quay.io/calico/node:v2.6.10
+
+#########################################################################################################################
+
+#build CNI
+
+sudo mkdir -p /opt/cni/bin
+git clone https://github.com/projectcalico/cni-plugin.git $GOPATH/src/github.com/projectcalico/cni-plugin
+cd $GOPATH/src/github.com/projectcalico/cni-plugin
+git checkout v1.11.6
+mkdir dist
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index 2a6b29a..9266093 100644
+--- a/Makefile
++++ b/Makefile
+@@ -111,7 +111,7 @@ fetch-cni-bins: dist/flannel dist/loopback dist/host-local dist/portmap
+ 
+ dist/flannel dist/loopback dist/host-local dist/portmap:
+ 	mkdir -p dist
+-	$(CURL) -L --retry 5 https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-amd64-$(CNI_VERSION).tgz | tar -xz -C dist ./flannel ./loopback ./host-local ./portmap
++	$(CURL) -L --retry 5 https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-s390x-$(CNI_VERSION).tgz | tar -xz -C dist ./flannel ./loopback ./host-local ./portmap
+ 
+ # Useful for CI but currently slow for local development because the
+ # .go-pkg-cache can&apos;t be used (since tests run as root)
+EOF
+
+patch &lt; Makefile.patch
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+diff --git a/Dockerfile b/Dockerfile
+index f9b92f0..ecd9389 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -1,4 +1,4 @@
+-FROM busybox
++FROM s390x/busybox
+ 
+ LABEL maintainer &quot;Tom Denham &lt;tom@tigera.io&gt;&quot;
+ 
+EOF
+
+patch &lt; Dockerfile.patch
+
+make docker-image
+sudo cp dist/* /opt/cni/bin
+docker tag calico/cni:latest quay.io/calico/cni:v1.11.6
+
+
+###################################################################################################################E#
+
+#Build routereflector
+
+git clone https://github.com/projectcalico/bird.git $GOPATH/src/github.com/projectcalico/routereflector
+cd $GOPATH/src/github.com/projectcalico/routereflector
+git checkout rr-v0.4.2
+cd build_routereflector/
+cp $GOPATH/src/github.com/projectcalico/bird/dist/s390x/* image/
+cp $GOPATH/src/github.com/projectcalico/confd/bin/confd  image/
+docker tag calico/confd calico/confd:v1.0.0-beta1-4-g4619952
+
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
+diff --git a/build_routereflector/Dockerfile b/build_routereflector/Dockerfile
+index f2d5513..7a92fb9 100644
+--- a/build_routereflector/Dockerfile
++++ b/build_routereflector/Dockerfile
+@@ -14,7 +14,10 @@
+ 
+ # For details and docs - see https://github.com/phusion/baseimage-docker#getting_started
+ 
+-FROM ubuntu:14.04
++FROM s390x/ubuntu:16.04
++
++RUN apt-get update &amp;&amp; \
++       apt-get install -y python3-minimal
+ 
+ CMD [&quot;/sbin/my_init&quot;]
+
+EOF
+
+patch &lt;  Dockerfile.patch
+
+
+cd image
+cat &lt;&lt; &apos;EOF&apos; &gt; install.sh.patch
+index afd17c5..207ecdb 100755
+--- a/image/install.sh
++++ b/image/install.sh
+@@ -16,10 +16,6 @@ $minimal_apt_get_install apt-transport-https ca-certificates
+ # Install add-apt-repository
+ $minimal_apt_get_install software-properties-common
+
+-# Find the list of packages just installed - these can be deleted later.
+-grep -Fxvf  /tmp/base.txt &lt;(dpkg -l | grep ^ii | sed &apos;s_  _\t_g&apos; | cut \
+--f 2) &gt;/tmp/add-apt.txt
+-
+ # Add new repos and update again
+ LC_ALL=C.UTF-8 LANG=C.UTF-8 add-apt-repository -y ppa:cz.nic-labs/bird
+ apt-get update
+@@ -29,8 +25,7 @@ apt-get update
+ # - packages required by felix
+ # - pip (which includes various setuptools package discovery).
+ $minimal_apt_get_install \
+-        bird \
+-        bird6
++        bird
+
+ # Create the config directory for confd
+ mkdir config
+EOF
+
+patch &lt;install.sh.patch
+
+cat &lt;&lt; &apos;EOF&apos; &gt; cleanup.sh.patch
+index 3271cb3..409fb14 100755
+--- a/image/cleanup.sh
++++ b/image/cleanup.sh
+@@ -5,8 +5,6 @@ set -x
+ # Remove extra packages using dpkg rather than apt-get - this prevents us from
+ # deleting dependent packages that we still require.
+ # - Remove any temporary packages installed in the install.sh script.
+-echo &quot;Removing extra packages&quot;
+-cat /tmp/add-apt.txt | xargs xargs dpkg -r --force-depends
+
+ # Remove any other junk created during installation that is not required.
+ apt-get clean
+EOF
+
+patch &lt;cleanup.sh.patch
+
+
+cd $GOPATH/src/github.com/projectcalico/routereflector/build_routereflector/ 
+make
+docker tag calico/routereflector:latest calico/routereflector:v0.4.2
+
+#####################################################################################################
+
+
+#build calico-test
+cd $GOPATH/src/github.com/projectcalico/calico/calico_node/calico_test/
+mkdir pkg
+cp $GOPATH/src/github.com/projectcalico/etcd/bin/etcd-v3.3.1-linux-s390x.tar.gz pkg
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.calico_test.patch
+diff --git a/calico_node/calico_test/Dockerfile.calico_test b/calico_node/calico_test/Dockerfile.calico_test
+index 55d5c12..75192e8 100644
+--- a/calico_node/calico_test/Dockerfile.calico_test
++++ b/calico_node/calico_test/Dockerfile.calico_test
+@@ -32,7 +32,7 @@
+ # - eliminate most isolation, (--uts=host --pid=host --net=host --privileged)
+ # - volume mount your ST source code
+ # - run &apos;nosetests&apos;
+-FROM docker:1.13.0
++FROM s390x/docker:18.03.0
+ MAINTAINER Tom Denham &lt;tom@projectcalico.org&gt;
+
+ # Running STs in this container requires that it has all dependencies installed
+@@ -45,11 +45,13 @@ RUN apk add --update python python-dev py2-pip py-setuptools openssl-dev libffi-
+ COPY requirements.txt /requirements.txt
+ RUN pip install -r /requirements.txt
+
++RUN apk update \
++&amp;&amp;   apk add ca-certificates wget \
++&amp;&amp;   update-ca-certificates
++
+ # Install etcdctl
+-RUN wget https://github.com/coreos/etcd/releases/download/v2.3.3/etcd-v2.3.3-linux-amd64.tar.gz &amp;&amp; \
+-    tar -xzf etcd-v2.3.3-linux-amd64.tar.gz &amp;&amp; \
+-    cd etcd-v2.3.3-linux-amd64 &amp;&amp; \
+-    ln -s etcdctl /usr/local/bin/
++COPY pkg /pkg/
++RUN tar -xzf pkg/etcd-v3.3.1-linux-s390x.tar.gz -C /usr/local/bin/
+
+ # The container is used by mounting the code-under-test to /code
+ WORKDIR /code/
+EOF
+patch &lt;Dockerfile.calico_test.patch
+
+
+cd $GOPATH/src/github.com/projectcalico/calico/calico_node
+cp dist/calicoctl dist/calicoctl-v1.0.2
+docker pull s390x/busybox
+docker tag s390x/busybox busybox
+docker pull s390x/nginx
+docker tag s390x/nginx nginx
+docker tag calico/routereflector calico/routereflector:v0.4.2
+docker tag calico/cni calico/cni:v1.11.6
+
+
+cat &lt;&lt; &apos;EOF&apos; &gt; workload/Dockerfile.patch
+diff --git a/calico_node/workload/Dockerfile b/calico_node/workload/Dockerfile
+index 4145451..dda2915 100644
+--- a/calico_node/workload/Dockerfile
++++ b/calico_node/workload/Dockerfile
+@@ -1,4 +1,4 @@
+-FROM alpine:3.4
++FROM s390x/alpine:3.6
+ RUN apk add --no-cache \
+     python \
+     netcat-openbsd
+EOF
+
+cd workload
+patch &lt;Dockerfile.patch
+
+
+##################################################################################################################
+
+
+#K8s-policy
+git clone https://github.com/projectcalico/k8s-policy.git $GOPATH/src/github.com/projectcalico/k8s-policy
+cd $GOPATH/src/github.com/projectcalico/k8s-policy
+git checkout v1.0.4
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile.patch
+diff --git a/Makefile b/Makefile
+index d012fc8..5073c19 100644
+--- a/Makefile
++++ b/Makefile
+@@ -11,6 +11,11 @@ ifeq ($(ARCH),ppc64le)
+         ARCHTAG:=-ppc64le
+ endif
+ 
++ifeq ($(ARCH),s390x)
++        ARCHTAG:=-s390x
++endif
++
++
+ HYPERKUBE_IMAGE?=gcr.io/google_containers/hyperkube-$(ARCH):v1.8.0-beta.1
+ ETCD_IMAGE?=quay.io/coreos/etcd:v3.2.5$(ARCHTAG)
+ 
+EOF
+
+patch &lt; Makefile.patch
+
+cat &lt;&lt; &apos;EOF&apos; &gt;Dockerfile-s390x
+# Copyright 2015-2017 Tigera, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+FROM s390x/alpine:3.6
+LABEL maintainer &quot;LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)&quot;
+
+ADD dist/kube-controllers-linux-s390x /usr/bin/kube-controllers
+ENTRYPOINT [&quot;/usr/bin/kube-controllers&quot;]
+EOF
+
+docker tag calico/go-build calico/go-build-s390x:v0.8
+ARCH=s390x make docker-image
+docker tag calico/kube-controllers-s390x quay.io/calico/kube-controllers:v1.0.4
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>@vibhuti.sawant</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

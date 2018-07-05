@@ -67,7 +67,7 @@ git checkout 4.0.9
 make 
 
 # Run the testcases
-make test 
+#make test 
 
 # Install the redis
 sudo make install

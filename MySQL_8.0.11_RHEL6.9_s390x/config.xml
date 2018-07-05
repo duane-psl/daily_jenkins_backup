@@ -63,7 +63,7 @@ gmake
 #gmake test
 sudo gmake install
 
-sudo cp /opt/gcc4.8/lib64/libstdc++.so.6 /usr/lib64/
+sudo cp /opt/gcc4.8.3/lib64/libstdc++.so.6 /usr/lib64/
 
 # Post installation setup 
 if !(getent passwd mysql); then

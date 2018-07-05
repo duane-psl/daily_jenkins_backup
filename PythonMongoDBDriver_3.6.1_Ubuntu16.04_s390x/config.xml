@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>Building PythonMongoDBDriver 3.6.1 on Ubuntu16.04</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_rh6.9||dockercloud_rhel6.9</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,50 +26,37 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORKDIR=`pwd`
-source /home/test/.bashrc
-# Install Python MongoDB Driver
-sudo yum install -y git python-devel python-setuptools python-setuptools-devel python-virtualenv curl gcc
+      <command># Install Python MongoDB Driver and its dependencies
+sudo apt-get update
+sudo apt-get install -y git openssl libssh-dev python python-openssl python-setuptools python-dev gcc
+sudo easy_install pip
+python -V 
+pip --version
 
-
-# Install Python 
-# Python 2.7.14
-cd $WORKDIR
-sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-tar -xvf Python-2.7.14.tar.xz
-cd Python-2.7.14
-./configure --prefix=/usr/local --exec-prefix=/usr/local
-make
-sudo make install
-export PATH=/usr/local/bin:$PATH
-sudo /usr/sbin/update-alternatives --install /usr/bin/python python /usr/local/bin/python 10
-sudo /usr/sbin/update-alternatives --display python
-python -V
- 
-# Install Pip
-sudo env PATH=$PATH python -m ensurepip
-pip -V
-
-# Download Pymongo source and Install
-cd $WORKDIR
 git clone git://github.com/mongodb/mongo-python-driver.git pymongo
 cd pymongo
 git checkout 3.6.1
 sudo python setup.py install
 
-# Start mongodb server
-cd $WORKDIR
-sudo yum install -y wget
-wget https://repo.mongodb.com/yum/redhat/6/mongodb-enterprise/3.6/s390x/RPMS/mongodb-enterprise-server-3.6.2-1.el6.s390x.rpm
-sudo yum --nogpgcheck localinstall -y mongodb-enterprise-server-3.6.2-1.el6.s390x.rpm
+# Install mongodb server 3.6.2
+sudo apt-get install -y wget
+wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.6/multiverse/binary-s390x/mongodb-enterprise-server_3.6.2_s390x.deb
+sudo dpkg -i --force-all mongodb-enterprise-server_3.6.2_s390x.deb
+sudo apt-get install -y -f
 sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
 
+#Install MongoDB server 3.5.3
+#sudo apt-get install -y wget
+#wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.5/multiverse/binary-s390x/mongodb-enterprise-unstable-server_3.5.3_s390x.deb
+#sudo dpkg -i --force-all mongodb-enterprise-unstable-server_3.5.3_s390x.deb 
+#sudo apt-get install -y -f
+#sudo mkdir -p db
+#sudo /usr/bin/mongod --dbpath db &amp;
+#sleep 40s
+
 # Run Tests
-sudo yum install -y python-argparse.noarch
-cd $WORKDIR/pymongo
 export DB_IP=127.0.0.1
 sudo -E python setup.py test
 
@@ -142,12 +129,10 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -159,7 +144,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@ketank,@preeti.khorjuvenkar</room>
+      <room>#loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
