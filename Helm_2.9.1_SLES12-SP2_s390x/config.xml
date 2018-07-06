@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>preeti_sles_12SP2 || dc2_sl12-SP2_4096 || dockercloud_sles12-sp2-8192</assignedNode>
+  <assignedNode>dc2_sl12-SP2_4096 || dockercloud_sles12-sp2-8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -133,7 +133,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank</room>
+      <room>#loz-jenkins-build,@srajmane</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

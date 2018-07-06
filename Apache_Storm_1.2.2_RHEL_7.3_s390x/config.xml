@@ -32,7 +32,7 @@ rm -rf ./*
 export WORK_DIR=`pwd`
 
 #Install dependencies
-sudo yum install git tar java-1.8.0-openjdk-devel.s390x wget which unzip
+sudo yum install -y git tar java-1.8.0-openjdk-devel.s390x wget which unzip
 
 #build maven 3.2.5
 wget -q http://www.eu.apache.org/dist/maven/maven-3/3.2.5/binaries/apache-maven-3.2.5-bin.tar.gz

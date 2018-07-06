@@ -32,7 +32,7 @@ rm -rf ./*
 export WORK_DIR=`pwd`
 
 #Install dependencies
-sudo yum install -y git tar java-1.8.0-openjdk-devel wget which
+sudo yum install -y git tar java-1.8.0-openjdk-devel.s390x wget which unzip
 
 #build maven 3.2.5
 wget -q http://www.eu.apache.org/dist/maven/maven-3/3.2.5/binaries/apache-maven-3.2.5-bin.tar.gz
@@ -65,7 +65,7 @@ wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.26.1/install.sh | 
 cd $WORK_DIR
 git clone -q https://github.com/apache/storm.git  
 cd storm  
-git checkout tags/v1.1.1
+git checkout tags/v1.2.2
 
 #Increase nimbus-test timeout
 sed -i &apos;s/while-timeout 5000/while-timeout 500000/g&apos; storm-core/test/clj/org/apache/storm/nimbus_test.clj

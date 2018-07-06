@@ -48,15 +48,13 @@ fi
 export work_dir=`pwd`
 
 sudo zypper up -y
-sudo zypper install -y git wget unzip java-1_8_0-openjdk-devel make gcc-c++ netcat-openbsd
+sudo zypper install -y git tar wget unzip java-1_8_0-openjdk-devel make gcc-c++ netcat-openbsd
 
 #Install Nodejs
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.2.0/linux/s390x/ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-chmod +x ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$work_dir/ibm/node\n-fileOverwrite_$work_dir/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin -f installer.properties -i silent
-export PATH=$PATH:$work_dir/ibm/node/bin
+wget https://nodejs.org/dist/v6.12.2/node-v6.12.2-linux-s390x.tar.gz
+tar zxvf node-v6.12.2-linux-s390x.tar.gz
+
+export PATH=$PATH:$work_dir/node-v6.12.2-linux-s390x/bin
 node -v
 
 #Download Statsd source code
@@ -106,7 +104,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@preeti.khorjuvenkar,@ketank</room>
+      <room>#loz-jenkins-build,@snalkar</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
