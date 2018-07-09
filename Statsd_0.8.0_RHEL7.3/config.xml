@@ -48,7 +48,7 @@ fi
 #-----------------------------------------------------------------------------------------
 export work_dir=`pwd`
 
-sudo yum install -y git wget unzip hostname make gcc-c++ nc java-1.8.0-openjdk-devel.s390x   
+sudo yum install -y git tar wget unzip hostname make gcc-c++ nc   
 
 #Install Nodejs
 wget https://nodejs.org/dist/v6.12.2/node-v6.12.2-linux-s390x.tar.gz
