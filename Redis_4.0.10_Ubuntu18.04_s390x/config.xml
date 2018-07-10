@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,10 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Check if published version is already present in repo 
+      <command>#Check if published version is already present in repo 
 package_name=&quot;redis&quot;
-published_version=&quot;4.0.9&quot;
+published_version=&quot;4.0.10&quot;
+
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
 if [ $ID == &quot;rhel&quot; ]; then
@@ -54,20 +54,23 @@ fi
 
 #==============================================================================================#
 
-source /home/test/.bashrc
 # Install dependencies
-sudo yum install -y gcc gcc-c++ make which git tcl
+cat /etc/issue
+sudo apt-get update
+sudo apt-get install -y gcc g++ make tcl git
 
+sudo rm -rf redis
 #Get the source code
 git clone https://github.com/antirez/redis.git
 cd redis
-git checkout 4.0.9
+git checkout 4.0.10
 
 # Build redis 
-make 
+make distclean
+make
 
 # Run the testcases
-make test 
+#make test 
 
 # Install the redis
 sudo make install
@@ -82,6 +85,7 @@ if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &q
 then
     exit 1
 fi
+
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -92,9 +96,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -115,9 +119,9 @@ it.getComputer().doDoDelete()
       <notifyUnstable>false</notifyUnstable>
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
-      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyBackToNormal>false</notifyBackToNormal>
       <notifyRepeatedFailure>true</notifyRepeatedFailure>
-      <includeTestSummary>false</includeTestSummary>
+      <includeTestSummary>true</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>
       <includeCustomMessage>false</includeCustomMessage>

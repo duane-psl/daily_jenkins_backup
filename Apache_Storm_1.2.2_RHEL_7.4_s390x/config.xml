@@ -41,12 +41,10 @@ export PATH=$PWD/apache-maven-3.2.5/bin:$PATH
 
 #install IBM SDK for node js
 cd $WORK_DIR
-wget -q http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.13.0.0/linux/s390x/ibm-6.13.0.0-node-v6.13.0-linux-s390x.bin
-chmod +x ibm-6.13.0.0-node-v6.13.0-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.13.0.0-node-v6.13.0-linux-s390x.bin -f installer.properties -i silent
-export PATH=$WORK_DIR/ibm/node/bin:$PATH
+wget https://nodejs.org/dist/v8.11.3/node-v8.11.3-linux-s390x.tar.gz
+tar xvf node-v8.11.3-linux-s390x.tar.gz
+mv node-v8.11.3-linux-s390x nodejs
+export PATH=$WORK_DIR/nodejs/bin:$PATH
 
 #set environment variables
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk

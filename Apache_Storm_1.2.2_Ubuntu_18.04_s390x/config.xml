@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,61 +26,63 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo zypper update -y
-sudo zypper install -y git java-1_8_0-openjdk tar wget which curl awk
+      <command>
+sudo apt-get update
+sudo apt-get install -y git tar ant wget openjdk-8-jdk curl gpgv nodejs gnupg2 python
 
 rm -rf source_root
 mkdir source_root
 cd source_root
 export WORK_DIR=`pwd`
 
-#build maven 3.2.5
-wget http://www.eu.apache.org/dist/maven/maven-3/3.2.5/binaries/apache-maven-3.2.5-bin.tar.gz
-tar -xzf apache-maven-3.2.5-bin.tar.gz
-export PATH=$PWD/apache-maven-3.2.5/bin:$PATH
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-s390x
+export PATH=$JAVA_HOME/bin:$PATH
 
-#install IBM SDK for node js
-cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.2.0/linux/s390x/ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-chmod +x ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin -f installer.properties -i silent
+#sudo ln -sf `which nodejs` /usr/local/bin/node
 
-export PATH=$WORK_DIR/ibm/node/bin:$PATH
+#GPG_TTY=$(tty)
+#export GPG_TTY
+#generate gpg key
+#cat &gt;gen-key-script &lt;&lt;EOF
+#     %echo Generating a basic OpenPGP key
+#     Key-Type: DSA
+ #    Key-Length: 1024
+#     Subkey-Type: ELG-E
+#     Subkey-Length: 1024
+#     Name-Real: Joe Tester
+#     Name-Comment: with stupid passphrase
+#     Name-Email: joe@foo.bar
+#     Expire-Date: 0
+#     Passphrase: abc
+#     %pubring foo.pub
+#     %secring foo.sec
+#     # Do a commit here, so that we can later print &quot;done&quot; :-)
+#     %commit
+#     %echo done
+#EOF
+
+#gpg --batch --gen-key gen-key-script
 
 #Install rvm and nvm
 cd $HOME
-curl -L https://get.rvm.io | bash -s stable --autolibs=enabled &amp;&amp; source $HOME/.profile  
+curl -L https://get.rvm.io | bash -s stable --autolibs=enabled &amp;&amp; . $HOME/.profile  
 command curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -  
-wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.26.1/install.sh | bash &amp;&amp; source $HOME/.bashrc
+wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.26.1/install.sh | bash &amp;&amp; . $HOME/.bashrc
 
-#set environment variables
-export JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
-export PATH=$JAVA_HOME/bin:$PATH:$M2_HOME/bin
+
 export _JAVA_OPTIONS=-Xmx4096m
-export JVM_ARGS=&quot;-Xms4096m -Xmx4096m&quot;
+export JVM_ARGS=&quot;-Xms4096m -Xmx4096m&quot;    
 export MAVEN_OPTS=&quot;-Xms4096m -Xmx8192m -Xss4096k&quot;
 
-#Download source and build. Skipping test due to random intermittent failures
 cd $WORK_DIR
 git clone https://github.com/apache/storm.git  
 cd storm  
-git checkout tags/v1.1.1
-mvn -B clean install -DskipTests
-
-#generate gpg key
-echo &quot;Key-Type: 1
-Key-Length: 2048
-Subkey-Type: 1
-Subkey-Length: 2048
-Name-Real: Root Superuser
-Name-Email: root@handbook.westarete.com
-Expire-Date: 0&quot; &gt; gen-key-script
-gpg --batch --gen-key gen-key-script
+git checkout tags/v1.2.2
+#Skipping test due to random intermittent failures
+mvn -B clean install -DskipTests 
 
 #create binary distribution
-cd storm-dist/binary &amp;&amp; mvn -B package</command>
+cd storm-dist/binary &amp;&amp; mvn -B package -Dgpg.skip=true</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -114,7 +116,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <notifyRepeatedFailure>false</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>

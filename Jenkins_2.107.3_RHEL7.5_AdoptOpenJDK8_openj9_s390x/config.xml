@@ -58,12 +58,11 @@ mvn --version
 #cat installer.properties
 #./ibm-8.9.4.0-node-v8.9.4-linux-s390x.bin -f installer.properties -i silent
 
-wget https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-s390x.tar.gz
-tar -xvf node-v8.9.4-linux-s390x.tar.gz
+    wget https://nodejs.org/dist/v6.12.0/node-v6.12.0-linux-s390x.tar.gz
+tar -xvf node-v6.12.0-linux-s390x.tar.gz
 
-export PATH=$PATH:$WORK_DIR/node-v8.9.4-linux-s390x/bin
+export PATH=$PATH:$WORK_DIR/node-v6.12.0-linux-s390x/bin
 node -v
-
 
 
 cd $WORK_DIR

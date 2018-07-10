@@ -49,7 +49,7 @@ fi
 #-----------------------------------------------------------------------------------------
 export work_dir=`pwd`
 
-sudo apt-get install -y git tar wget unzip hostname  openjdk-8-jdk python g++ make  netcat
+sudo apt-get install -y git tar wget unzip hostname python g++ make  netcat
 
 
 #Install Nodejs

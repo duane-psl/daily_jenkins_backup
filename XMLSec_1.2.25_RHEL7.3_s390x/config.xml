@@ -29,7 +29,7 @@
       <command> source /home/test/.bashrc
 #Check if published version is already present in repo 
 package_name=&quot;xmlsec&quot;
-published_version=&quot;1.2.26&quot;
+published_version=&quot;1.2.25&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -62,7 +62,7 @@ export src_dir=$(pwd)
 #Download XMLSec source code
 git clone git://github.com/lsh123/xmlsec.git
 cd xmlsec
-git checkout xmlsec-1_2_26
+git checkout xmlsec-1_2_25
 
 #Generate and then run the configuration
 ./autogen.sh
@@ -73,7 +73,7 @@ make check
 
 #Install XMLSec and verify the installation
 sudo make install
-xmlsec1 --version | grep 1.2.26</command>
+xmlsec1 --version | grep 1.2.25</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;xmlsec&quot;
-published_version=&quot;1.2.26&quot;
+published_version=&quot;1.2.25&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -58,7 +58,7 @@ sudo apt-get install -y git make libtool libtool-bin libxslt1-dev autoconf libxm
 #Download XMLSec source code
 git clone git://github.com/lsh123/xmlsec.git
 cd xmlsec
-git checkout xmlsec-1_2_26
+git checkout xmlsec-1_2_25
 
 #Generate and then run the configuration
 ./autogen.sh

@@ -48,7 +48,7 @@ fi
 export work_dir=`pwd`
 
 sudo zypper up -y
-sudo zypper install -y git tar wget unzip java-1_8_0-openjdk-devel make gcc-c++ netcat-openbsd
+sudo zypper install -y git tar wget unzip make gcc-c++ netcat-openbsd
 
 #Install Nodejs
 wget https://nodejs.org/dist/v6.12.2/node-v6.12.2-linux-s390x.tar.gz

@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;redis&quot;
-published_version=&quot;4.0.9&quot;
+published_version=&quot;4.0.10&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -61,14 +61,14 @@ sudo zypper install -y gcc gcc-c++ make git tcl gawk which
 #Get the source code
 git clone https://github.com/antirez/redis.git
 cd redis
-git checkout 4.0.9 
+git checkout 4.0.10
 
 # Build redis
 make distclean 
 make
 
 # Run the testcases
-make test
+#make test
  
 # Install the redis
 sudo make install

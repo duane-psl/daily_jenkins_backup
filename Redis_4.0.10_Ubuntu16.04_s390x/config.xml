@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles11-sp4</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;redis&quot;
-published_version=&quot;4.0.9&quot;
+published_version=&quot;4.0.10&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -55,26 +55,27 @@ fi
 #==============================================================================================#
 
 # Install dependencies
-sudo zypper up -y
-sudo zypper install -y gcc gcc-c++ make git tcl gawk
+cat /etc/issue
+sudo apt-get update
+sudo apt-get install -y gcc g++ make tcl git
 
+sudo rm -rf redis
 #Get the source code
-git clone git://github.com/antirez/redis.git
+git clone https://github.com/antirez/redis.git
 cd redis
-git checkout 4.0.9
+git checkout 4.0.10
 
-# Build redis
-make distclean 
+# Build redis 
+make distclean
 make
 
 # Run the testcases
-make test
- 
+#make test 
+
 # Install the redis
 sudo make install
 
 # Start server
-export PATH=/usr/local/bin:$PATH
 redis-server &amp;
 
 sleep 10s
@@ -84,10 +85,6 @@ if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &q
 then
     exit 1
 fi
-
-
-
-
 
 </command>
     </hudson.tasks.Shell>
@@ -122,9 +119,9 @@ it.getComputer().doDoDelete()
       <notifyUnstable>false</notifyUnstable>
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
-      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyBackToNormal>false</notifyBackToNormal>
       <notifyRepeatedFailure>true</notifyRepeatedFailure>
-      <includeTestSummary>false</includeTestSummary>
+      <includeTestSummary>true</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>
       <includeCustomMessage>false</includeCustomMessage>
