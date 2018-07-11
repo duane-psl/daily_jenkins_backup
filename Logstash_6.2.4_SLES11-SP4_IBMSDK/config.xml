@@ -58,15 +58,12 @@ sudo zypper install -y wget tar gcc make unzip awk wget-openssl1
 
 # Install Java
 
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin
+wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.17/linux/s390x/ibm-java-s390x-sdk-8.0-5.17.bin
 wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
 tail -n +3 installer.properties.java | tee installer.properties
 cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.16.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.16.bin -r installer.properties
-
-
-#Set Environment Variables
+chmod +x ibm-java-s390x-sdk-8.0-5.17.bin
+sudo ./ibm-java-s390x-sdk-8.0-5.17.bin -r installer.properties
 export JAVA_HOME=/opt/ibm/java
 export PATH=$JAVA_HOME/bin:$PATH
 java -version

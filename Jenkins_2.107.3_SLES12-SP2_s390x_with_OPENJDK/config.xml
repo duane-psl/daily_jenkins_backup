@@ -11,7 +11,7 @@
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>dc2_sl12-SP2_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -47,15 +47,11 @@ export PATH=$PATH:$WORK_DIR/apache-maven-3.3.9/bin
 mvn --version
 
 
-    wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.0.0/linux/s390x/ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
-    chmod +x ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin
-    echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-    cat installer.properties
-    ./ibm-6.12.0.0-node-v6.12.0-linux-s390x.bin -f installer.properties -i silent
-    
-    export PATH=$PATH:$WORK_DIR/ibm/node/bin
-    node -v
+        wget https://nodejs.org/dist/v6.12.0/node-v6.12.0-linux-s390x.tar.gz
+tar -xvf node-v6.12.0-linux-s390x.tar.gz
 
+export PATH=$PATH:$WORK_DIR/node-v6.12.0-linux-s390x/bin
+node -v
 
 cd $WORK_DIR
 sudo rm -rf jenkins

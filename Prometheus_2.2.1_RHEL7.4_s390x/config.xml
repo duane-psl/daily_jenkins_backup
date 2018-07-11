@@ -47,7 +47,6 @@ export PATH=$PATH:$GOPATH/bin
 # Prometheus
 mkdir -p $GOPATH/src/github.com/prometheus
 cd $GOPATH/src/github.com/prometheus
-git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
 git clone https://github.com/prometheus/prometheus.git
 cd prometheus
 git checkout v2.2.1

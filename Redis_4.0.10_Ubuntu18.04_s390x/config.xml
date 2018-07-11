@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub18.04_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -53,11 +53,12 @@ fi
 
 
 #==============================================================================================#
+export DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
 cat /etc/issue
 sudo apt-get update
-sudo apt-get install -y gcc g++ make tcl git
+sudo -E apt-get install -y gcc g++ make tcl git
 
 sudo rm -rf redis
 #Get the source code
