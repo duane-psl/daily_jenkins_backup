@@ -28,22 +28,25 @@
     <hudson.tasks.Shell>
       <command># Install Pre-Build Dependencies
 sudo apt-get update
-sudo apt-get install -y make gcc tar zip perl-modules-5.22 libyaml-perl libtest-yaml-perl libnet-ssleay-perl libcrypt-ssleay-perl
+sudo apt-get install -y make gcc tar build-essential git zip perl-modules-5.22 libyaml-perl libtest-yaml-perl 
 export Workdir=`pwd`
+
 # Build and Install Latest CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
 sudo cpan -fi Bundle::CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
 sudo cpan Config::AutoConf
 sudo cpan -fi Path::Tiny
-sudo cpan -fi BSON::XS
-sudo cpan -fi BSON::Decimal128 BSON::Types   
+   
 
-#Build MongoDB 
-sudo cpan MongoDB
+# Build and Install Dependencies required to run Tests using CPAN
+sudo cpan -fi Authen::SASL::SASLprep Authen::SCRAM::Client
+sudo cpan -fi JSON::XS
+sudo cpan -fi BSON
+sudo cpan -fi Class::XSAccessor JSON::MaybeXS namespace::clean boolean UUID::URandom Moo Moo::Role Net::DNS Safe::Isa Sub::Quote Tie::IxHash Type::Library Type::Tiny::XS Type::Utils Types::Standard Encode Digest::MD5 Math::BigInt MIME::Base64  
 
-
-# Verification
+# Start Mongodb server
+cd $Workdir
 sudo apt-get install -y wget
 wget https://repo.mongodb.com/apt/ubuntu/dists/xenial/mongodb-enterprise/3.5/multiverse/binary-s390x/mongodb-enterprise-unstable-server_3.5.3_s390x.deb
 sudo dpkg -i --force-all mongodb-enterprise-unstable-server_3.5.3_s390x.deb 
@@ -52,8 +55,23 @@ sudo mkdir -p db
 sudo /usr/bin/mongod --dbpath db &amp;
 sleep 40s
 
-# For testing purpose, using hostname as 127.0.0.1 or localhost in test_MongoDB.pl as we start mongodb server in same job.
+# Build perl MongoDB driver
+cd $Workdir
+git clone git://github.com/mongodb/mongo-perl-driver
+cd mongo-perl-driver/ 
+git checkout v2.0.0
+perl Makefile.PL
+make
 
+# Tests need mongodb server
+export MONGOD=localhost:27017
+make test 2&gt;&amp;1 | tee -a test.log
+
+# Install driver 
+sudo make install
+
+# For testing purpose, using hostname as localhost in file test_MongoDb.pl as mongodb server started on localhost vm.
+cd $Workdir
 chmod 755 test_MongoDB.pl
 perl -wc test_MongoDB.pl
 perl test_MongoDB.pl 2&gt;&amp;1 | tee $Workdir/generated_output
@@ -83,24 +101,25 @@ Geek:Eddy
 
 Make user2 a geek and change the name accordingly :-
 -------------------------------------------------------
-replace_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})
-replace_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; &quot;Stan the Geek&quot;}})
+update_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})
+update_one({&quot;_id&quot; =&gt; 559cf20179e8d86f4956d612}, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; &quot;Stan the Geek&quot;}})
 
 Search again for the geeks which should now include user2 :-
 ---------------------------------------------------------------
 Geek:Eddy
 Geek:Stan the Geek&quot; &gt;$Workdir/expectedoutput
 sed -i &apos;/^#/ d&apos; $Workdir/generated_output
+sed -i &apos;/^MongoDB::DocumentError/d&apos; $Workdir/generated_output
 sed -i &quot;s/&apos;value&apos; =&gt; &apos;[0-9 a-z]*&apos;/&apos;value&apos;/g&quot; $Workdir/expectedoutput
 sed -i &quot;s/&apos;value&apos; =&gt; &apos;[0-9 a-z]*&apos;/&apos;value&apos;/g&quot; $Workdir/generated_output
 sed -i &apos;26d&apos; $Workdir/expectedoutput
-sed -i &quot;26 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/expectedoutput
+sed -i &quot;26 i update_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/expectedoutput
 sed -i &apos;27d&apos; $Workdir/expectedoutput
-sed -i &quot;27 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/expectedoutput
+sed -i &quot;27 i update_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/expectedoutput
 sed -i &apos;26d&apos; $Workdir/generated_output
-sed -i &quot;26 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/generated_output
+sed -i &quot;26 i update_one({\&quot;_id\&quot; =&gt; }, {&apos;push&apos; =&gt; {&apos;likes&apos; =&gt; &apos;math&apos;}})&quot; $Workdir/generated_output
 sed -i &apos;27d&apos; $Workdir/generated_output
-sed -i &quot;27 i replace_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/generated_output
+sed -i &quot;27 i update_one({\&quot;_id\&quot; =&gt; }, {&apos;set&apos; =&gt; {&apos;name&apos; =&gt; \&quot;Stan the Geek\&quot;}})&quot; $Workdir/generated_output
 diff --ignore-all-space $Workdir/generated_output $Workdir/expectedoutput
 
 if [ &quot;$?&quot; -eq 0 ]; then
@@ -109,10 +128,7 @@ if [ &quot;$?&quot; -eq 0 ]; then
   exit 0
 else
   exit 1
-fi
-
-
-</command>
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
