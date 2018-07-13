@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_rh7.3_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,9 +26,10 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
 package_name=&quot;r-base&quot;
-published_version=&quot;3.4.3&quot;
+published_version=&quot;3.5.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,32 +50,36 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 ########################
-
-sudo apt-get update
-sudo apt-get install -y wget tar gcc g++ ratfor gfortran-4.8 libx11-dev make r-base libcurl4-openssl-dev locales
+# Install dependencies
+sudo yum install -y wget tar make rpm-build help2man zlib-devel xz-devel ncurses-devel cairo-devel gcc-c++ libcurl-devel libjpeg-devel libpng-devel libtiff-devel readline-devel fdupes texlive-helvetic texlive-metafont texlive-psnfss texlive-times xdg-utils pango-devel tcl-devel tk-devel xorg-x11-devel perl-macros texinfo gcc-gfortran libXt-devel  perl-Text-Unidecode.noarch bzip2-devel pcre-devel
 
 
 export work_dir=`pwd`
-wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz -O OpenJDK9_s390x_Linux_20180523.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
-export JAVA_HOME=`pwd`/jdk-9+181
+cd $work_dir
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-201818061304/OpenJDK9_s390x_Linux_201818061304.tar.gz
+tar -xvzf OpenJDK9_s390x_Linux_201818061304.tar.gz
+export JAVA_HOME=$work_dir/jdk-9.0.4+11
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-wget https://cran.r-project.org/src/base/R-3/R-3.4.3.tar.gz
-tar zxvf R-3.4.3.tar.gz
-
-cd R-3.4.3
+# Build and Install R
+cd $work_dir
+wget https://cran.r-project.org/src/base/R-3/R-3.5.0.tar.gz
+tar zxvf R-3.5.0.tar.gz
+cd R-3.5.0
 ./configure --with-x=no
 make
 sudo make install
+export PATH=/usr/local/bin:$PATH
 
-sudo locale-gen &quot;en_US.UTF-8&quot;
-sudo locale-gen &quot;en_GB.UTF-8&quot;
+# Execute test cases
 export LANG=&quot;en_US.UTF-8&quot;
-make check
+make check     
 
-echo &quot;sessionInfo()&quot; | R --save</command>
+# Check for version of R-package installed
+echo &quot;sessionInfo()&quot; | R --save
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

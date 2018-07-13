@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096</assignedNode>
+  <assignedNode>dc2_rh6.9_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,11 +29,10 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;r-base&quot;
-published_version=&quot;3.4.3&quot;
+published_version=&quot;3.5.0&quot;
 
-source /home/test/.bashrc
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
+
 if [ $ID == &quot;rhel&quot; ]; then
 	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;sles&quot; ]; then
@@ -51,29 +50,88 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 ########################
+# Install dependencies
+sudo yum install -y wget tar make rpm-build help2man git ncurses-devel cairo-devel gcc-c++ libcurl-devel libjpeg-devel libpng-devel libtiff-devel readline-devel  xdg-utils pango-devel tcl-devel tk-devel  texinfo gcc-gfortran libXt-devel  perl-Text-Unidecode.noarch java-1.8.0-ibm
 
-source /home/test/.bashrc
-sudo yum install -y wget tar make rpm-build help2man zlib-devel xz-devel ncurses-devel cairo-devel gcc-c++ libcurl-devel libjpeg-devel libpng-devel libtiff-devel readline-devel fdupes texlive-helvetic texlive-metafont texlive-psnfss texlive-times xdg-utils pango-devel tcl-devel tk-devel xorg-x11-devel perl-macros texinfo gcc-gfortran libXt-devel  perl-Text-Unidecode.noarch bzip2-devel pcre-devel
-
-
-export work_dir=`pwd`
-wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9_s390x_Linux_20180523.tar.gz -O OpenJDK9_s390x_Linux_20180523.tar.gz
-tar -xvzf OpenJDK9_s390x_Linux_20180523.tar.gz
-export JAVA_HOME=$work_dir/jdk-9+181
+export WORKDIR=`pwd`
+echo $HOME
+wget https://github.com/AdoptOpenJDK/openjdk9-nightly/releases/download/jdk-9%2B181-201818061304/OpenJDK9_s390x_Linux_201818061304.tar.gz
+tar -xvzf OpenJDK9_s390x_Linux_201818061304.tar.gz
+export JAVA_HOME=$WORKDIR/jdk-9.0.4+11
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-wget https://cran.r-project.org/src/base/R-3/R-3.4.3.tar.gz
-tar zxvf R-3.4.3.tar.gz
-cd R-3.4.3
-./configure --with-x=no
-make
-sudo make install
-echo $PATH
-export LANG=&quot;en_US.UTF-8&quot;
-make check     
-echo &quot;sessionInfo()&quot; | R --save
 
+# Set Environment Variables
+export PATH=$HOME/packages/bin:$PATH
+export LD_LIBRARY_PATH=$HOME/packages/lib:$LD_LIBRARY_PATH
+export CFLAGS=&quot;-I$HOME/packages/include&quot;
+export LDFLAGS=&quot;-L$HOME/packages/lib&quot;
+
+# Build and install zlib 
+cd $WORKDIR
+wget https://sourceforge.net/projects/libpng/files/zlib/1.2.11/zlib-1.2.11.tar.gz/download
+tar zxvf download
+cd zlib-1.2.11/
+./configure --prefix=/usr &amp;&amp; make &amp;&amp; sudo make install
+
+# Build and install bzip
+cd $WORKDIR
+wget http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
+tar xzvf bzip2-1.0.6.tar.gz
+cd bzip2-1.0.6
+make &amp;&amp; sudo make install
+
+# Build and install XZ Utils
+cd $WORKDIR
+wget https://distfiles.macports.org/xz/xz-5.2.4.tar.bz2
+tar xjvf xz-5.2.4.tar.bz2
+cd xz-5.2.4
+./configure --prefix=$HOME/packages
+make -j3 &amp;&amp; sudo make install
+
+# Build and install PCRE
+cd $WORKDIR
+wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
+tar xzvf pcre-8.42.tar.gz
+cd pcre-8.42
+./configure --enable-utf8 --prefix=$HOME/packages
+make &amp;&amp; sudo make install
+
+# Build and install OpenSSL
+cd $WORKDIR
+git clone git://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_1_0
+./config enable-shared &amp;&amp; sudo make depend &amp;&amp; make &amp;&amp; sudo make install
+sudo ln -sf /usr/local/ssl/bin/openssl `which openssl`
+export LD_LIBRARY_PATH=$WORKDIR/openssl:$LD_LIBRARY_PATH
+sudo ldconfig
+
+# Build and install curl
+cd $WORKDIR
+wget https://curl.askapache.com/curl-7.60.0.tar.gz
+tar xzvf curl-7.60.0.tar.gz
+cd curl-7.60.0
+LDFLAGS=-R/usr/local/ssl/lib ./configure --with-ssl &amp;&amp; make &amp;&amp; sudo make install
+export LD_LIBRARY_PATH=/home/test/curl-7.60.0/lib/.libs:$LD_LIBRARY_PATH
+sudo ldconfig
+
+# Build and Install R
+cd $WORKDIR
+wget https://cran.r-project.org/src/base/R-3/R-3.5.0.tar.gz
+tar zxvf R-3.5.0.tar.gz
+cd R-3.5.0
+./configure --with-x=no
+make &amp;&amp; sudo make install
+
+# Execute test cases
+export LANG=&quot;en_US.UTF-8&quot;
+export TZ=CET
+make check 2&gt;&amp;1 | tee -a test.log
+
+# Check for version of R-package installed
+echo &quot;sessionInfo()&quot; | R --save
 </command>
     </hudson.tasks.Shell>
   </builders>

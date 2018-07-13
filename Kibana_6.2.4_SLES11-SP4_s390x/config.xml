@@ -33,7 +33,7 @@ sudo zypper install -y awk wget tar curl
 
 #Set Environment Variables
 cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.10/linux/s390x/ibm-java-s390x-sdk-8.0-5.10.bin
+wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.15/linux/s390x/ibm-java-s390x-sdk-8.0-5.15.bin
 wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
 tail -n +3 installer.properties.java | tee installer.properties
 cat installer.properties
