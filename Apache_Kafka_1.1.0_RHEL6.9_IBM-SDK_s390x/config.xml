@@ -42,12 +42,12 @@ unzip gradle-4.2-bin.zip
 cd $WORK_DIR
 git clone https://github.com/apache/kafka
 cd kafka
-git checkout 1.0.0
+git checkout 1.1.0
 
 #Update build parameters
 cp build.gradle build.gradle.orig
-sed -i &apos;354d &apos; build.gradle
-sed -i &quot;354i \      \jvmArgs = [&apos;-Xss256m&apos;] + maxPermSizeArgs&quot; build.gradle
+sed -i &apos;357d &apos; build.gradle
+sed -i &quot;357i \      \jvmArgs = [&apos;-Xss256m&apos;] + maxPermSizeArgs&quot; build.gradle
 git diff 
 
 #Set environment variables
@@ -102,13 +102,14 @@ cp librocksdbjni-linux64.so librocksdbjni-linux32.so
 jar -ufv rocksdbjni-5.7.3-linux64.jar librocksdbjni-linux32.so
 jar -tf rocksdbjni-5.7.3-linux64.jar
 mv rocksdbjni-5.7.3-linux64.jar rocksdbjni-5.7.3.jar
-cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.11/
-cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.11/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/examples/build/dependant-libs-2.11.12/
+cp -vf rocksdbjni-5.7.3.jar $WORK_DIR/kafka/streams/build/dependant-libs-2.11.12/
 cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb/rocksdbjni/5.7.3/421b44ad957a2b6cce5adedc204db551831b553d/
 #========Workaround part finished=========================================
 
-cd $WORK_DIR/kafka
-gradle test --continue 2&gt;&amp;1 | tee testlog.log  
+#moving test command at the end to verify that server start is successful.
+#cd $WORK_DIR/kafka
+#gradle test --continue 2&gt;&amp;1 | tee testlog.log  
 
 sed -i &apos;s/Xloggc/Xverbosegclog/&apos; bin/kafka-run-class.sh
 git diff
@@ -128,7 +129,11 @@ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test &lt; /tm
 sleep 5m
 
 
-bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4</command>
+bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4
+
+
+cd $WORK_DIR/kafka
+gradle test --continue 2&gt;&amp;1 | tee testlog.log  </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
