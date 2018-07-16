@@ -9,33 +9,32 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3-8192MB</assignedNode>
+  <assignedNode>dockercloud_sles11_ibm-8</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 13 * * 1</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-sudo yum install -y git wget unzip java-1.8.0-ibm-devel.s390x java-1.8.0-ibm.s390x
-export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
+      <command>sudo zypper update -y 
+sudo zypper install -y git unzip wget 
 export WORK_DIR=`pwd`
 cat /etc/os*
-
+export JAVA_TOOL_OPTIONS=&quot;-Dcom.ibm.jsse2.overrideDefaultTLS=true&quot;
 #Install gradle
-cd $WORK_DIR
 wget https://services.gradle.org/distributions/gradle-4.2-bin.zip
 unzip gradle-4.2-bin.zip
+
 
 #Build kafka
 cd $WORK_DIR
@@ -51,13 +50,13 @@ git diff
 
 #Set environment variables
 export PATH=$PATH:$WORK_DIR/gradle-4.2/bin
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm
+export JAVA_HOME=/opt/ibm/java-s390x-80
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
 #
 #cp $WORK_DIR/kafka/gradle/dependencies.gradle $WORK_DIR/kafka/gradle/dependencies.gradle.ori
-#sed -i &quot;s/5.0.1/5.7.2/g&quot; $WORK_DIR/kafka/gradle/dependencies.gradle
+#sed -i &quot;s/5.0.1/5.7.3/g&quot; $WORK_DIR/kafka/gradle/dependencies.gradle
 #Setup Gradle and build the jar files
 gradle
 gradle jar
@@ -69,7 +68,20 @@ git diff
 
 #Note for some test cases from streams:test module need to install rocksdb from source it is work around , 
 #Build rocksdb
-sudo yum install -y snappy snappy-devel bzip2 bzip2-devel curl gcc-c++ make which
+sudo zypper install -y bzip2 curl gcc-c++ make 
+sudo zypper install -y gcc5 gcc5-c++
+sudo rm -rf /usr/bin/gcc /usr/bin/g++ /usr/bin/cc
+sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+sudo ln -s /usr/bin/g++-5 /usr/bin/g++
+sudo ln -s /usr/bin/gcc /usr/bin/cc
+cd $WORK_DIR
+git clone git://github.com/couchbasedeps/snappy.git
+cd snappy &amp;&amp; git checkout 1.1.1
+./configure --prefix=/usr/local --enable-shared --disable-static --disable-dependency-tracking --disable-gtest
+make &amp;&amp; sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+sudo /sbin/ldconfig
+
 cd $WORK_DIR
 git clone git://github.com/facebook/rocksdb.git
 cd rocksdb
@@ -91,14 +103,14 @@ cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb
 #========Workaround part finished=========================================
 
 cd $WORK_DIR/kafka
-#gradle test --continue 2&gt;&amp;1 | tee testlog.log   Moved to the end.
+#gradle test --continue 2&gt;&amp;1 | tee testlog.log  moving to end
 
 sed -i &apos;s/Xloggc/Xverbosegclog/&apos; bin/kafka-run-class.sh
 
 
-nohup bin/zookeeper-server-start.sh config/zookeeper.properties &amp;
+nohup bin/zookeeper-server-start.sh -daemon config/zookeeper.properties &amp;
 sleep 5m
-nohup bin/kafka-server-start.sh config/server.properties &amp;
+nohup bin/kafka-server-start.sh -daemon config/server.properties &amp;
 sleep 5m
 ps -aux
 
@@ -110,20 +122,22 @@ echo -e &quot;Congratulations\nThe build is working\n\nWelcome to Apache Kafka w
 bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test &lt; /tmp/msg.log
 sleep 5m
 
-
 bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning --max-messages 4 &gt; $WORK_DIR/output.txt
+sleep 5m
 cat $WORK_DIR/output.txt
 echo &quot;Welcome to Apache Kafka with Linux on z Systems&quot; &gt;&gt; expectedoutput.txt
 grep &quot;Welcome to Apache Kafka with Linux on z Systems&quot; $WORK_DIR/output.txt &gt; actualoutput.txt
 cat expectedoutput.txt
 cat actualoutput.txt
 
-cd $WORK_DIR/kafka
+
 gradle test --continue 2&gt;&amp;1 | tee testlog.log  
+
 
 kill -9 $(ps aux | grep &apos;kafka&apos; | awk &apos;{print $2}&apos;)| awk &apos;{print $2}&apos;
 if diff -u -w expectedoutput.txt actualoutput.txt ; then
     echo &quot;Success&quot;
+    exit 0
 else    
 	exit 1
 fi</command>
@@ -139,8 +153,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>

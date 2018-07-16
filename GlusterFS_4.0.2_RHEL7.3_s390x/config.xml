@@ -1,0 +1,137 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dc2_rh7.3_4096||dockercloud_rhel7.3</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 17 * * 3</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 17 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>source /home/test/.bashrc
+
+whoami
+yum install -y wget git make gcc-c++ libaio-devel boost-devel expat-devel autoconf autoheader automake libtool flex bison openssl-devel libacl-devel sqlite-devel libxml2-devel python-devel python attr yajl nfs-utils xfsprogs popt-static sysvinit-tools psmisc bc libibverbs-devel librdmacm-devel readline-devel lvm2-devel glib2-devel fuse-devel
+
+export source_root=`pwd`
+
+#Building URCU
+cd $source_root
+git clone git://git.liburcu.org/userspace-rcu.git
+cd userspace-rcu
+./bootstrap 
+./configure
+make
+make install
+ldconfig
+
+#Building thin-provisioning-tools
+cd $source_root
+git clone https://github.com/jthornber/thin-provisioning-tools
+cd thin-provisioning-tools
+autoreconf
+./configure
+make
+make install
+
+#Download and configure source
+cd $source_root
+git clone https://github.com/gluster/glusterfs
+cd glusterfs
+git checkout v4.0.2
+./autogen.sh
+./configure --enable-gnfs
+
+rm contrib/userspace-rcu/rculist-extra.h
+cp /usr/local/include/urcu/rculist.h contrib/userspace-rcu/rculist-extra.h
+
+#Build and install
+make
+make install
+
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ldconfig
+
+#Test cases requires host as some tests fails inside container, hence omitted test execution
+#prerequisites for test
+#zypper install -y gettext-tools libblkid-devel uuid-devel
+#cd $source_root
+#wget -c https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.15.1.tar.gz
+#tar -xvf xfsprogs-4.15.1.tar.gz
+#cd xfsprogs-4.15.1 
+#make
+#make install
+
+#cd $source_root
+#git clone https://github.com/sahlberg/dbench
+#cd dbench
+#./autogen.sh
+#./configure
+#make
+#make install
+
+#Run the GlusterFS Daemon
+glusterd
+ps -aef | grep /usr/local/bin/glusterd
+pgrep -d&quot; &quot; -f &quot;glusterd&quot; | xargs sudo kill;</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+    if(it.name==x){
+it.getComputer().doDoDelete()
+    }
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build,@chandranana.naik,@ketank</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3-8192MB</assignedNode>
+  <assignedNode>dockercloud_rhel7.4-8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -91,14 +91,14 @@ cp -vf rocksdbjni-5.7.3.jar $HOME/.gradle/caches/modules-2/files-2.1/org.rocksdb
 #========Workaround part finished=========================================
 
 cd $WORK_DIR/kafka
-#gradle test --continue 2&gt;&amp;1 | tee testlog.log   Moved to the end.
+#gradle test --continue 2&gt;&amp;1 | tee testlog.log  moved to end
 
 sed -i &apos;s/Xloggc/Xverbosegclog/&apos; bin/kafka-run-class.sh
 
 
-nohup bin/zookeeper-server-start.sh config/zookeeper.properties &amp;
+nohup bin/zookeeper-server-start.sh -daemon config/zookeeper.properties &amp;
 sleep 5m
-nohup bin/kafka-server-start.sh config/server.properties &amp;
+nohup bin/kafka-server-start.sh -daemon config/server.properties &amp;
 sleep 5m
 ps -aux
 
@@ -118,7 +118,6 @@ grep &quot;Welcome to Apache Kafka with Linux on z Systems&quot; $WORK_DIR/outpu
 cat expectedoutput.txt
 cat actualoutput.txt
 
-cd $WORK_DIR/kafka
 gradle test --continue 2&gt;&amp;1 | tee testlog.log  
 
 kill -9 $(ps aux | grep &apos;kafka&apos; | awk &apos;{print $2}&apos;)| awk &apos;{print $2}&apos;
@@ -130,22 +129,6 @@ fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
-      <script plugin="script-security@1.24">
-        <script>import jenkins.model.Jenkins
-
-def x=manager.envVars[&apos;NODE_NAME&apos;]
-Jenkins.instance.slaves.each {
-    if(it.name==x){
-it.getComputer().doDoDelete()
-    }
-}
-</script>
-        <sandbox>false</sandbox>
-      </script>
-      <behavior>0</behavior>
-      <runForMatrixParent>false</runForMatrixParent>
-    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>
