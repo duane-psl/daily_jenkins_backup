@@ -9,82 +9,93 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu18.04</assignedNode>
+  <assignedNode>dockercloud_rhel7.4_root</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 16 * * 1</spec>
+      <spec>H 17 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 16 * * 1</spec>
+      <spec>H 17 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Install dependencies
-sudo -E apt-get update -y
-sudo -E apt-get install -y wget tar 
+      <command>source /home/test/.bashrc
 
+whoami
 
-#Install AdoptJDK
-export WORK_DIR=`pwd`
-cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
+#Install Dependencies 
+yum install -y wget git make gcc-c++ libaio-devel boost-devel expat-devel autoconf autoheader automake libtool flex bison openssl-devel libacl-devel sqlite-devel libxml2-devel python-devel python attr yajl nfs-utils xfsprogs popt-static sysvinit-tools psmisc bc libibverbs-devel librdmacm-devel readline-devel lvm2-devel glib2-devel fuse-devel
 
-#Set Environment Variables
-export JAVA_HOME=$WORK_DIR/jdk-9+181/ 
-export PATH=$JAVA_HOME/bin:$PATH
-java -version 
+export source_root=`pwd`
 
+#Build URCU
+cd $source_root
+git clone git://git.liburcu.org/userspace-rcu.git
+cd userspace-rcu
+./bootstrap 
+./configure
+make
+make install
+ldconfig
 
-#Install Node.js
-cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.2.0/linux/s390x/ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin 
-chmod +x ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin -f installer.properties -i silent
+#Build thin-provisioning-tools
+cd $source_root
+git clone https://github.com/jthornber/thin-provisioning-tools
+cd thin-provisioning-tools
+autoreconf
+./configure
+make
+make install
 
-export PATH=$PATH:$WORK_DIR/ibm/node/bin
-node -v
+#Download and configure source
+cd $source_root
+git clone https://github.com/gluster/glusterfs
+cd glusterfs
+git checkout v4.0.2
+./autogen.sh
+./configure --enable-gnfs
 
-#Get Kibana release package and extract
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/kibana/kibana-6.2.2-linux-x86_64.tar.gz
-tar xvf kibana-6.2.2-linux-x86_64.tar.gz
+rm contrib/userspace-rcu/rculist-extra.h
+cp /usr/local/include/urcu/rculist.h contrib/userspace-rcu/rculist-extra.h
 
+#Build and install
+make
+make install
 
-#Replace Node.js in the package with the installed IBM SDK for Node.js.
-cd kibana-6.2.2-linux-x86_64
-mv node node_old
-ln -s $WORK_DIR/ibm/node  node
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ldconfig
 
- 
-# Start Kibana 
+#Test cases requires host as some tests fails inside container, hence omitted test execution
+#prerequisites for test
+#zypper install -y gettext-tools libblkid-devel uuid-devel
+#cd $source_root
+#wget -c https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.15.1.tar.gz
+#tar -xvf xfsprogs-4.15.1.tar.gz
+#cd xfsprogs-4.15.1 
+#make
+#make install
 
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.2.tar.gz
-tar -xvf elasticsearch-6.2.2.tar.gz
-ls
-nohup elasticsearch-6.2.2/bin/elasticsearch &amp;
-sleep 2m
+#cd $source_root
+#git clone https://github.com/sahlberg/dbench
+#cd dbench
+#./autogen.sh
+#./configure
+#make
+#make install
 
-cd $WORK_DIR/kibana-6.2.2-linux-x86_64
-bin/kibana -H 0.0.0.0 &amp;
+#./run-tests.sh
 
-sleep 2m
-
-curl http://localhost:5601
-
-pgrep -d&quot; &quot; -f &quot;node&quot; | xargs kill;
-pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
-</command>
+#Run the GlusterFS Daemon
+glusterd --version
+glusterd
+pgrep -d&quot; &quot; -f &quot;glusterd&quot; | xargs sudo kill;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

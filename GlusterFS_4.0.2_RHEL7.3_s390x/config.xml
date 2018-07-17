@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096||dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dockercloud_rhel7.3_root-node</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,11 +29,12 @@
       <command>source /home/test/.bashrc
 
 whoami
+#Install Dependencies
 yum install -y wget git make gcc-c++ libaio-devel boost-devel expat-devel autoconf autoheader automake libtool flex bison openssl-devel libacl-devel sqlite-devel libxml2-devel python-devel python attr yajl nfs-utils xfsprogs popt-static sysvinit-tools psmisc bc libibverbs-devel librdmacm-devel readline-devel lvm2-devel glib2-devel fuse-devel
 
 export source_root=`pwd`
 
-#Building URCU
+#Build URCU
 cd $source_root
 git clone git://git.liburcu.org/userspace-rcu.git
 cd userspace-rcu
@@ -43,7 +44,7 @@ make
 make install
 ldconfig
 
-#Building thin-provisioning-tools
+#Build thin-provisioning-tools
 cd $source_root
 git clone https://github.com/jthornber/thin-provisioning-tools
 cd thin-provisioning-tools
@@ -89,8 +90,8 @@ ldconfig
 #make install
 
 #Run the GlusterFS Daemon
+glusterd --version
 glusterd
-ps -aef | grep /usr/local/bin/glusterd
 pgrep -d&quot; &quot; -f &quot;glusterd&quot; | xargs sudo kill;</command>
     </hudson.tasks.Shell>
   </builders>

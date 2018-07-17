@@ -9,81 +9,58 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096 || dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04_root-node</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 16 * * 2</spec>
+      <spec>H 17 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 16 * * 1</spec>
+      <spec>H 17 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Install dependencies
-sudo yum install -y curl wget tar 
+      <command>whoami
 
-#Set environmental variables
-#Install AdoptJDK
-export WORK_DIR=`pwd`
-cd $WORK_DIR
-wget https://github.com/AdoptOpenJDK/openjdk9-releases/releases/download/jdk-9%2B181/OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-tar -xvf OpenJDK9_s390x_Linux_jdk-9.181.tar.gz
-export JAVA_HOME=$WORK_DIR/jdk-9+181/ 
-export PATH=$JAVA_HOME/bin:$PATH
-java -version 
+#Install Dependencies
+apt-get update
+apt-get install -y make automake autoconf libtool flex bison pkg-config libssl-dev libxml2-dev python-dev libaio-dev libibverbs-dev librdmacm-dev libreadline-dev liblvm2-dev libglib2.0-dev liburcu-dev libcmocka-dev libsqlite3-dev libacl1-dev wget tar dbench git xfsprogs attr nfs-common yajl-tools sqlite3 libxml2-utils thin-provisioning-tools bc
 
+#Build and install
+git clone https://github.com/gluster/glusterfs
+cd glusterfs
+git checkout v4.0.2
+./autogen.sh
+./configure --enable-gnfs
 
-#Install Node.js
-#wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.10.3.0/linux/s390x/ibm-6.10.3.0-node-v6.10.3-linux-s390x.bin
-cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/6.12.2.0/linux/s390x/ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin 
-chmod +x ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$WORK_DIR/ibm/node\n-fileOverwrite_$WORK_DIR/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-6.12.2.0-node-v6.12.2-linux-s390x.bin -f installer.properties -i silent
+make
+make install
 
-export PATH=$PATH:$WORK_DIR/ibm/node/bin
-node -v
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ldconfig
 
-#Get Kibana release package and extract
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/kibana/kibana-6.2.2-linux-x86_64.tar.gz
-tar xvf kibana-6.2.2-linux-x86_64.tar.gz
+#Test cases requires host as some tests fails inside container, hence omitted test execution
+#prerequisites for test
+#apt-get install -y gettext libblkid-dev uuid-dev
+#cd $source_root
+#wget -c https://mirrors.edge.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.15.1.tar.gz
+#tar -xvf xfsprogs-4.15.1.tar.gz
+#cd xfsprogs-4.15.1 
+#make
+#make install
 
+#./run-tests.sh
 
-#Replace Node.js in the package with the installed IBM SDK for Node.js.
-cd kibana-6.2.2-linux-x86_64
-mv node node_old
-ln -s $WORK_DIR/ibm/node  node
-
- 
-# Start Kibana 
-
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.2.tar.gz
-tar -xvf elasticsearch-6.2.2.tar.gz
-ls
-nohup elasticsearch-6.2.2/bin/elasticsearch &amp;
-sleep 2m
-
-cd $WORK_DIR/kibana-6.2.2-linux-x86_64
-bin/kibana -H 0.0.0.0 &amp;
-
-sleep 2m
-
-curl http://localhost:5601
-
-pgrep -d&quot; &quot; -f &quot;node&quot; | xargs kill;
-pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
-</command>
+#Run the GlusterFS Daemon
+glusterd --version
+glusterd
+pgrep -d&quot; &quot; -f &quot;glusterd&quot; | xargs sudo kill;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
