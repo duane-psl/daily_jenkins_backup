@@ -30,13 +30,13 @@
 
 #Install dependencies
 source /home/test/.bashrc
-sudo yum install -y git wget gcc make which
+sudo yum install -y git wget gcc make which mercurial
 
 
 #Install Go
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 go version
 
@@ -51,9 +51,9 @@ sh get
 # clone and build the heketi
 git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
 cd $GOPATH/src/github.com/heketi/heketi
-git checkout v6.0.0
+git checkout v7.0.0
 make
-#make test
+make test
 
 # verify
 cd $GOPATH/src/github.com/heketi/heketi

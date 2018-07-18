@@ -9,15 +9,19 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 16 * * 4</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 4</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
@@ -25,13 +29,14 @@
       <command>export WORKSPACE=`pwd`
 
 #Install dependencies
-sudo zypper install -y git wget gcc make tar curl which
+source /home/test/.bashrc
+sudo yum install -y git wget gcc make which mercurial
 
 
 #Install Go
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 go version
 
@@ -40,13 +45,13 @@ sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
 export GOPATH=$WORKSPACE
 mkdir $GOPATH/bin
 export PATH=$GOPATH/bin:$PATH
-wget https://glide.sh/get
+wget https://glide.sh/get 
 sh get
 
 # clone and build the heketi
 git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
 cd $GOPATH/src/github.com/heketi/heketi
-git checkout v6.0.0
+git checkout v7.0.0
 make
 make test
 
@@ -64,7 +69,9 @@ if [[ $Expected_str == *&quot;$Actual_str&quot;* ]]; then
   echo &quot;Same&quot; 
 else	
   exit 1 
-fi</command>
+fi
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

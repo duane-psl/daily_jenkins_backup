@@ -9,14 +9,14 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_2048</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 2 * * 1</spec>
+      <spec>H 12 * * 7</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -24,11 +24,12 @@
     <hudson.tasks.Shell>
       <command>export WORKSPACE=`pwd`
 
-# Install dependencies
-sudo apt-get update &amp;&amp; sudo apt-get install -y git golang-1.9 wget python
+# Install dependencies 
+sudo apt-get update
+sudo apt-get install -y git golang-1.10 wget python mercurial
 
-#Install Go
-export PATH=/usr/lib/go-1.9/bin:$PATH 
+#Install Go	
+export PATH=/usr/lib/go-1.10/bin:$PATH
 export GOPATH=$WORKSPACE
 export PATH=$GOPATH/bin:$PATH
 mkdir $GOPATH/bin
@@ -39,7 +40,7 @@ sh get
 # clone and build the heketi
 git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
 cd $GOPATH/src/github.com/heketi/heketi
-git checkout v6.0.0
+git checkout v7.0.0
 make
 make test
 

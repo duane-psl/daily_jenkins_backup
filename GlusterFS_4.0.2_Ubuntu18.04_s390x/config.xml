@@ -35,7 +35,7 @@ apt-get install -y make automake autoconf libtool flex bison pkg-config libssl1.
 #Download and configure source
 git clone https://github.com/gluster/glusterfs
 cd glusterfs
-git checkout v4.0.1
+git checkout v4.0.2
 ./autogen.sh
 ./configure --enable-gnfs
 

@@ -9,68 +9,79 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORKSPACE=`pwd`
-
-#Install dependencies
-source /home/test/.bashrc
-sudo yum install -y git wget gcc make which
-
-
-#Install Go
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-go version
-
-sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
-
-export GOPATH=$WORKSPACE
-mkdir $GOPATH/bin
-export PATH=$GOPATH/bin:$PATH
-wget https://glide.sh/get 
-sh get
-
-# clone and build the heketi
-git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
-cd $GOPATH/src/github.com/heketi/heketi
-git checkout v6.0.0
-make
-#make test
-
-# verify
-cd $GOPATH/src/github.com/heketi/heketi
-sudo mkdir -p /var/lib/heketi/
-sudo ./heketi --config=etc/heketi.json &amp;
-sleep 15s
-wget http://127.0.0.1:8080/hello
-
-export Expected_str=&quot;Hello from Heketi&quot;
-export Actual_str=$(cat hello)
-
-if [[ $Expected_str == *&quot;$Actual_str&quot;* ]]; then 
-  echo &quot;Same&quot; 
-else	
-  exit 1 
+      <command>source /home/test/.bashrc
+#Check if published version is already present in repo 
+package_name=&quot;redis&quot;
+published_version=&quot;4.0.10&quot;
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+
+#==============================================================================================#
+
+source /home/test/.bashrc
+# Install dependencies
+sudo yum install -y gcc gcc-c++ make which git tcl
+
+#Get the source code
+git clone https://github.com/antirez/redis.git
+cd redis
+git checkout 4.0.10
+
+# Build redis 
+make 
+
+# Run the testcases
+#make test 
+
+# Install the redis
+sudo make install
+
+# Start server
+redis-server &amp;
+
+sleep 10s
+
+# Verification
+if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &quot;OK&quot; ] || [ $(redis-cli get foo) != &quot;bar&quot; ];
+then
+    exit 1
+fi
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -96,7 +107,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

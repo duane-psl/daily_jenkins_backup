@@ -78,8 +78,8 @@ cd /var/www/html
 sudo rm -rf Joomla
 sudo mkdir Joomla
 cd Joomla
-sudo wget -O Joomla_3.8.8-Stable-Full_Package.zip  https://github.com/joomla/joomla-cms/releases/download/3.8.8/Joomla_3.8.8-Stable-Full_Package.zip
-sudo unzip Joomla_3.8.8-Stable-Full_Package.zip
+sudo wget -O Joomla_3.8.10-Stable-Full_Package.zip  https://github.com/joomla/joomla-cms/releases/download/3.8.10/Joomla_3.8.10-Stable-Full_Package.zip
+sudo unzip Joomla_3.8.10-Stable-Full_Package.zip
 sudo chmod a+w /var/www/html/Joomla/
 
 #Rename configuration.php-dist as configuration.php

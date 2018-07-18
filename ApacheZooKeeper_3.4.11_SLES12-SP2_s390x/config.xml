@@ -76,7 +76,7 @@ sudo make distclean
      
 cd $SRCRT/zookeeper
 ant jar
-ant test | tee test.log
+#ant test | tee test.log
 
 # Add conf file
 sudo  bash -c &quot;cat &gt; conf/zoo.cfg&quot; &lt;&lt;&apos;EOF&apos;
@@ -95,6 +95,10 @@ EOF
 sudo bin/zkServer.sh start | tee logfile.log
 
 cat logfile.log | grep STARTED
+
+sudo bin/zkServer.sh status 
+
+ps afx 
 
 </command>
     </hudson.tasks.Shell>

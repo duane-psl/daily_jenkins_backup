@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>dc2_ub18.04_2048||dockercloud_ubuntu18.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -27,14 +27,14 @@ sudo apt-get update
 cat /etc/os*
 sudo apt-get install -y apt-transport-https  ca-certificates  curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository &quot;deb [arch=s390x] https://download.docker.com/linux/ubuntu  $(lsb_release -cs) stable&quot;
+sudo add-apt-repository &quot;deb [arch=s390x] https://download.docker.com/linux/ubuntu artful stable&quot;
 sudo apt-get update
 sudo apt-get install -y docker-ce
 
 sudo service docker start
 sleep 20s
 sudo service docker status
-sudo docker ps 
+
 #Service catalog
 sudo apt-get update
 sudo apt-get install -y git make 
@@ -43,7 +43,7 @@ mkdir -p $GOPATH/src/github.com/kubernetes-incubator
 cd $GOPATH/src/github.com/kubernetes-incubator
 git clone https://github.com/kubernetes-incubator/service-catalog.git
 cd service-catalog
-git checkout v0.1.15
+git checkout v0.1.23
 
 sed -i &apos;15 s/golang/s390x\/golang/&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;/ENV DEP_VERSION/d&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
@@ -58,23 +58,23 @@ sed -i &apos;24i \	\&amp;&amp; cd /src/github.com/coreos \\&apos; $GOPATH/src/gi
 sed -i &apos;25i \	\&amp;&amp; rm -rf etcd \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;26i \	\&amp;&amp; git clone https://github.com/coreos/etcd \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;27i \	\&amp;&amp; cd etcd \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
-sed -i &apos;28i \	\&amp;&amp; git checkout v3.2.7 \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
+sed -i &apos;28i \	\&amp;&amp; git checkout v3.1.10 \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;29i \	\&amp;&amp; mkdir -p /data \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;30i \	\&amp;&amp; ./build \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
 sed -i &apos;31i \	\&amp;&amp; cd bin &amp;&amp; cp -rf etcd etcdctl /usr/bin/&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
-sed -i &apos;42d&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
-sed -i &apos;42i \	\RUN apt-get update &amp;&amp; apt-get install -y python-pip libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev libssl-dev &amp;&amp; \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
-sudo service docker status
+#sed -i &apos;42d&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
+#sed -i &apos;42i \	\RUN apt-get update &amp;&amp; apt-get install -y python-pip libpq-dev python-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libffi-dev libssl-dev &amp;&amp; \\&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/build/build-image/Dockerfile
+
 git diff
 cd $GOPATH/src/github.com/kubernetes-incubator/service-catalog
 sudo -E make build ARCH=s390x 
-export PATH=$GOPATH/src/github.com/kubernetes-incubator/service-catalog/bin:$PATH
+#export PATH=$GOPATH/src/github.com/kubernetes-incubator/service-catalog/bin:$PATH
 
 cd $GOPATH/src/github.com/kubernetes-incubator/service-catalog
 sudo -E make svcat ARCH=s390x
 export PATH=$GOPATH/src/github.com/kubernetes-incubator/service-catalog/bin/svcat:$PATH
 
-sed -i &apos;261 s/-race//&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/Makefile
+sed -i &apos;273 s/-race//&apos; $GOPATH/src/github.com/kubernetes-incubator/service-catalog/Makefile
 git diff
 
 cd $GOPATH/src/github.com/kubernetes-incubator/service-catalog
@@ -91,9 +91,9 @@ sudo -E make test-unit ARCH=s390x
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }
 </script>
         <sandbox>false</sandbox>
@@ -109,7 +109,7 @@ it.getComputer().doDoDelete()
       <botUser>false</botUser>
       <room>@abhays</room>
       <startNotification>false</startNotification>
-      <notifySuccess>true</notifySuccess>
+      <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
       <notifyNotBuilt>false</notifyNotBuilt>
       <notifyUnstable>false</notifyUnstable>
