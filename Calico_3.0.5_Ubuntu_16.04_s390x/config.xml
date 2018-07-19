@@ -22,7 +22,8 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>export WORKDIR=$PWD
+cd $WORKDIR &amp;&amp; rm -rf calicoscript305 &amp;&amp; mkdir calicoscript305 &amp;&amp; cd calicoscript305
 #-----------------------------------------Docker installation-------------------------------------------------------
 sudo apt-get update
 cat /etc/os*

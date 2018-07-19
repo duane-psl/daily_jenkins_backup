@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_rh6.9_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,73 +26,95 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;protobuf&quot;
-published_version=&quot;3.5.1&quot;
+      <command>source /home/test/.bashrc
+package_name=&quot;protobuf-compiler&quot;
+published_version=&quot;3.6.0&quot;
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	sudo apt-get update
-	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
-fi
+available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
+	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-export home_dir=`pwd`
+
+
+source /home/test/.bashrc
 
 #Install dependencies
-sudo apt-get install -y tar wget autoconf libtool automake g++ make git bzip2 curl unzip zlib1g-dev patch
+sudo yum install -y tar wget gcc-c++ make git bzip2 curl unzip zlib zlib-devel bison binutils-devel
 
-# get code 
+export WORK_DIR=`pwd`
+
+#Build Gcc 4.8+ 
+cd $WORK_DIR
+wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
+bunzip2 gcc-4.8.2.tar.bz2
+tar xvf gcc-4.8.2.tar
+cd gcc-4.8.2/
+#Automatically download all missing prerequisites
+./contrib/download_prerequisites
+cd $WORK_DIR
+# Build directory and configure gcc to build
+mkdir gccbuild
+cd gccbuild/
+../gcc-4.8.2/configure --prefix=$HOME/install/gcc-4.8.2 --enable-shared --disable-multilib --enable-threads=posix --with-system-zlib --enable-languages=c,c++
+#Build and install gcc
+make
+sudo make install
+export PATH=$HOME/install/gcc-4.8.2/bin:$PATH
+gcc --version
+
+# Build Autoconf
+cd $WORK_DIR
+wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+tar xvf autoconf-2.69.tar.gz
+cd autoconf-2.69
+./configure
+make &amp;&amp; sudo make install
+autoconf --version
+
+# Build Automake
+cd $WORK_DIR
+wget https://ftp.gnu.org/gnu/automake/automake-1.16.1.tar.gz
+tar xvzf automake-1.16.1.tar.gz
+cd automake-1.16.1
+./configure
+make &amp;&amp; sudo make install
+
+# Build libtool
+cd $WORK_DIR
+wget ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.gz
+tar xvf libtool-2.4.6.tar.gz
+cd libtool-2.4.6
+./configure
+make &amp;&amp; sudo make install
+
+# Clone the protobuf repository and checkout the correct version
+cd $WORK_DIR
 git clone git://github.com/google/protobuf.git
 cd protobuf
-git checkout v3.5.1
+git checkout v3.6.0
+git submodule update --init --recursive
 
-echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-index 0b0b06c..95f2338 100644
---- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-+++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-@@ -146,6 +146,15 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
- }
-
-+inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-+                                       Atomic64 old_value,
-+                                       Atomic64 new_value) {
-+  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
-+                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
-+  return old_value;
-+}
-+
-+
- #endif // defined(__LP64__)
-
-
- }  // namespace internal&apos; &gt; add_func.patch
- 
- patch $home_dir/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
 
 #Generate and then run the configuration
-./autogen.sh &amp;&amp; ./configure 
+./autogen.sh
+./configure
 
 #Build and test
-make &amp;&amp; make check 
+make
+make check
 
 #Install Protobuf and verify the installation
 sudo make install
-export LD_LIBRARY_PATH=/usr/local/lib
+sudo ldconfig # refresh shared library cache.
 export PATH=$PATH:/usr/local/bin
+export LD_LIBRARY_PATH=/usr/local/lib
 protoc --version</command>
     </hudson.tasks.Shell>
   </builders>

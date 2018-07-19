@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 18 * * 5</spec>
+      <spec>H 8 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 18 * * 5</spec>
+      <spec>H 8 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -29,7 +29,7 @@
       <command>
 #Set the below parameters manually
 package_name=&quot;swarm&quot;
-published_version=&quot;1.2.8&quot;
+published_version=&quot;1.2.9&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,32 +50,21 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+#---------------------------------------------------------------------------------------------
 
-src_dir=$PWD
-sudo zypper install -y git wget tar gcc
+export src_dir=`pwd`
 
-###go installation
-sudo zypper install -y tar wget gcc
-cd $src_dir
-
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
-
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-go version
-
-### Git installation
-git --version
-
+sudo apt-get install -y git wget tar golang-1.10
 cd $src_dir
  
 
 export GOPATH=$src_dir
-export PATH=$HOME/go/bin:$PATH:$GOPATH/bin
+export PATH=/usr/lib/go-1.10/bin:$PATH:$GOPATH/bin
 export GOPATH=$GOPATH:$GOPATH/src/github.com/docker/swarm/Godeps/_workspace/
+go version
+git --version
+
+
 
 cd $src_dir
 go get github.com/tools/godep
@@ -88,7 +77,7 @@ cd $src_dir/src/github.com/docker
 
 git clone https://github.com/docker/swarm.git
 cd swarm 
-git checkout v1.2.8
+git checkout v1.2.9
 
 echo $GOROOT
 
@@ -97,6 +86,8 @@ go install github.com/docker/swarm/
 export SWARM_HOST=2375
 
 swarm -v
+
+
 
 
 </command>

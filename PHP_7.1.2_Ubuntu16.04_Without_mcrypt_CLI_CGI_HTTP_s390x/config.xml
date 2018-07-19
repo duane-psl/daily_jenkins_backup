@@ -111,7 +111,7 @@ sudo sed -i &quot;1784i zend_extension=opcache.so&quot; /usr/local/etc/php.ini
 
 php -v
 
-if php -v | grep &quot;Zend OPcache v7.1.2&quot;; then
+if php -v | grep &quot;Zend OPcache v7.2.1&quot;; then
   echo &quot;Done&quot;
 else
   exit 1

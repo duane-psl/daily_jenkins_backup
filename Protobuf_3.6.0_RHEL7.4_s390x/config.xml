@@ -16,10 +16,10 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 17 * * 5</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 17 * * 5</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -28,8 +28,8 @@
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;swarm&quot;
-published_version=&quot;1.2.8&quot;
+package_name=&quot;protobuf-compiler&quot;
+published_version=&quot;3.6.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -41,7 +41,6 @@ elif [ $ID == &quot;ubuntu&quot; ]; then
 	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
-
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
@@ -50,63 +49,34 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+export WORK_DIR=`pwd`
 
-src_dir=$PWD
+#Install the dependencies
+sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel patch
 
-ls $src_dir
+# Clone the protobuf repository and checkout the correct version
+cd $WORK_DIR
+git clone git://github.com/google/protobuf.git
+cd protobuf
+git checkout v3.6.0
+git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
+git submodule update --init --recursive
 
-sudo yum install -y git wget tar
 
-#Go installation 1.9.2
-sudo yum install -y tar wget gcc
-cd $src_dir
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-go version
+# Generate and then run the configuration
+./autogen.sh
+./configure
 
-# Git installation
-git --version
+# Build and test
+make
+make check
 
-cd $src_dir
-
-sudo yum install -y asciidoc-8.6.8-5.el7.noarch openssl-devel curl-devel expat-devel perl-ExtUtils-MakeMaker gettext-devel tar make
-git clone https://github.com/git/git.git
-cd $src_dir/git
-git checkout v1.8.5
-
-ls $src_dir
-
-make prefix=/usr/local &amp;&amp; sudo make prefix=/usr/local install 
-export PATH=/usr/local/bin:$PATH  
-
-export GOPATH=$src_dir
-export PATH=$HOME/go/bin:$PATH:$GOPATH/bin
-export GOPATH=$GOPATH:$GOPATH/src/github.com/docker/swarm/Godeps/_workspace/
-
-cd $src_dir
-go get github.com/tools/godep
-
-ls $src_dir
-
-mkdir -p $src_dir/src/github.com/docker
-
-cd $src_dir/src/github.com/docker
-
-git clone https://github.com/docker/swarm.git
-cd swarm 
-git checkout v1.2.8
-
-echo $GOROOT
-
-go install github.com/docker/swarm/
-
-export SWARM_HOST=2375
-
-swarm -v</command>
+# Install Protobuf and verify the installation
+sudo make install
+sudo ldconfig # Refresh shared library cache. 
+export PATH=$PATH:/usr/local/bin
+export LD_LIBRARY_PATH=/usr/local/lib
+protoc --version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -131,7 +101,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @cgopi</room>
+      <room>#loz-jenkins-build, @faizakht</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

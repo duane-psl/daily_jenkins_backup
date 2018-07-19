@@ -9,102 +9,88 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh6.9_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 8 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 6</spec>
+      <spec>H 8 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-package_name=&quot;protobuf-compiler&quot;
-published_version=&quot;3.5.1&quot;
+      <command>
+#Set the below parameters manually
+package_name=&quot;swarm&quot;
+published_version=&quot;1.2.9&quot;
 
-available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
+	echo &quot;Version $published_version is already available in repo&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+#---------------------------------------------------------------------------------------------
 
+export src_dir=`pwd`
 
-#Install dependencies
-sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel bison binutils-devel patch
-export WORK_DIR=`pwd`
-
-#Build Gcc 4.8+ directly
-cd $WORK_DIR
-wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2
-bunzip2 gcc-4.8.2.tar.bz2
-tar xvf gcc-4.8.2.tar
-cd gcc-4.8.2/
-#Automatically download all missing prerequisites
-./contrib/download_prerequisites
-cd $WORK_DIR
-#Create a build directory and configure gcc to build
-mkdir gccbuild
-cd gccbuild/
-../gcc-4.8.2/configure --prefix=$HOME/install/gcc-4.8.2 --enable-shared --disable-multilib --enable-threads=posix --with-system-zlib --enable-languages=c,c++
-make
-sudo make install
-export PATH=$HOME/install/gcc-4.8.2/bin:$PATH
-gcc --version
-
-# Get code
-cd $WORK_DIR
-git clone git://github.com/google/protobuf.git
-cd protobuf
-git checkout v3.5.1
-
-echo -e &apos;diff --git a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-index 0b0b06c..95f2338 100644
---- a/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-+++ b/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h
-@@ -146,6 +146,15 @@ inline Atomic64 NoBarrier_Load(volatile const Atomic64* ptr) {
-   return __atomic_load_n(ptr, __ATOMIC_RELAXED);
- }
-
-+inline Atomic64 Release_CompareAndSwap(volatile Atomic64* ptr,
-+                                       Atomic64 old_value,
-+                                       Atomic64 new_value) {
-+  __atomic_compare_exchange_n(ptr, &amp;old_value, new_value, false,
-+                              __ATOMIC_RELEASE, __ATOMIC_ACQUIRE);
-+  return old_value;
-+}
-+
-+
- #endif // defined(__LP64__)
-
-
- }  // namespace internal&apos; &gt; add_func.patch
+sudo apt-get install -y git wget tar golang-1.10
+cd $src_dir
  
-patch $WORK_DIR/protobuf/src/google/protobuf/stubs/atomicops_internals_generic_gcc.h &lt; add_func.patch
 
-#Generate and then run the configuration
-./autogen.sh
-./configure
+export GOPATH=$src_dir
+export PATH=/usr/lib/go-1.10/bin:$PATH:$GOPATH/bin
+export GOPATH=$GOPATH:$GOPATH/src/github.com/docker/swarm/Godeps/_workspace/
+go version
+git --version
 
-#Build and test
-make
-make check
-sudo make install
-export LD_LIBRARY_PATH=/usr/local/lib
-protoc --version</command>
+
+
+cd $src_dir
+go get github.com/tools/godep
+
+ls $src_dir
+
+mkdir -p $src_dir/src/github.com/docker
+
+cd $src_dir/src/github.com/docker
+
+git clone https://github.com/docker/swarm.git
+cd swarm 
+git checkout v1.2.9
+
+echo $GOROOT
+
+go install github.com/docker/swarm/
+
+export SWARM_HOST=2375
+
+swarm -v
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -114,9 +100,9 @@ protoc --version</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -129,7 +115,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @faizakht</room>
+      <room>#loz-jenkins-build, @cgopi</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
