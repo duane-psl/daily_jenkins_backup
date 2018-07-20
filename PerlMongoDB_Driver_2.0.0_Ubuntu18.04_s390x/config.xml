@@ -24,8 +24,9 @@
     <hudson.tasks.Shell>
       <command># Install Pre-Build Dependencies
 sudo apt-get update
-sudo apt-get install -y make gcc tar zip perl-modules-5.26 libyaml-perl libtest-yaml-perl libnet-ssleay-perl libcrypt-ssleay-perl
+sudo apt-get install -y make gcc tar build-essential git zip perl-modules-5.26 libyaml-perl libtest-yaml-perl 
 export Workdir=`pwd`
+
 # Build and Install Latest CPAN
 perl -MCPAN -le &apos;print &quot;CPAN Version -&gt; $CPAN::VERSION&quot;&apos;
 sudo cpan -fi Bundle::CPAN
@@ -124,8 +125,6 @@ if [ &quot;$?&quot; -eq 0 ]; then
 else
   exit 1
 fi
-
-
 </command>
     </hudson.tasks.Shell>
   </builders>

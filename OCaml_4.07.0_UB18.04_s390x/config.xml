@@ -9,72 +9,67 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 5</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-cat /etc/os*
-sudo yum install -y tar wget gcc
+      <command>#Check if published version is already present in repo 
+package_name=&quot;ocaml&quot;
+published_version=&quot;4.07.0&quot;
 
-export GOPATH=`pwd`
-cd $GOPATH
-#Install GO
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-export PATH=$PATH:/usr/local/go/bin
-go version
-
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
 
 
-cd $GOPATH
-#Install Terraform
-sudo yum install -y git wget make zip file which
-export PATH=$GOPATH/bin:$PATH
-mkdir -p $GOPATH/src/github.com/hashicorp
-cd $GOPATH/src/github.com/hashicorp
-rm -rf terraform
-git clone https://github.com/hashicorp/terraform.git
-cd terraform/
-git checkout v0.11.7
-
-# While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
-make 2&gt;&amp;1 | tee -a test_logs
-cat test_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee -a test.txt
-
-while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; sleep 20s; done &lt; test.txt 2&gt;&amp;1 | tee -a individual_test_log
-count=$(grep FAIL individual_test_log | wc -l)
-while [ $count -gt 0 ]
-do
-   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee -a individual_test_log
-   count=$(grep FAIL individual_test_log | wc -l)
-done
-
-#Build terraform
-
-XC_OS=linux XC_ARCH=s390x make bin
-
-file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
 
 
-#Verification
-terraform --version | grep 0.11.7
-echo &quot;1 + 5&quot; | terraform console
+#==============================================================================================#
 
+sudo apt-get update
+sudo apt-get install -y gcc make git
+git clone git://github.com/ocaml/ocaml.git
+cd ocaml 
+git checkout 4.07.0
 
+./configure
+make world
+make opt
+make opt.opt
+umask 022
+sudo make install
 
+ocaml_version=`/usr/local/bin/ocaml --version`
+ocaml_new_version=&quot;The OCaml toplevel, version 4.07.0&quot;
+
+if [[ $ocaml_version == $ocaml_new_version ]]; then exit 0; else exit 1; fi
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -88,8 +83,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -101,7 +95,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -47,11 +47,43 @@ sudo apt-get install -y autoconf automake bison flex gcc git libbz2-dev libcurl4
                      libmysqlclient-dev libpcre3-dev libpng-dev libpq-dev libreadline-dev libsasl2-dev \
                      libsnmp-dev libssl-dev libtool-bin libxml2-dev libxpm-dev libxslt1-dev libzip-dev make \
                      openssl pkg-config re2c snmp-mibs-downloader unixodbc-dev vim curl 
+         
 # Get the source code      
 cd $WORK_DIR
 git clone https://github.com/php/php-src.git
 cd php-src
-git checkout tags/php-7.1.2   
+git checkout tags/php-7.2.1
+
+#Applying following patch
+sudo sed -i &apos;531d&apos; ext/mbstring/oniguruma/src/regint.h
+sudo sed -i &apos;531i typedef int StateCheckNumType;&apos; ext/mbstring/oniguruma/src/regint.h
+
+sudo sed -i &apos;778d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;778i if (WIFEXITED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;796d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;796i if (WIFSTOPPED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;814d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;814i if (WIFSIGNALED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;831d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;831i if (WIFCONTINUED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;850d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;850i RETURN_LONG(WEXITSTATUS((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;868d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;868i RETURN_LONG(WTERMSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;886d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;886i RETURN_LONG(WSTOPSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;1630d&apos; ext/standard/streamsfuncs.c
+sudo sed -i &apos;1630i php_socket_t fileno;&apos; ext/standard/streamsfuncs.c
+
+sudo sed -i &apos;109d&apos; main/php_globals.h
+sudo sed -i &apos;109i zend_bool ignore_user_abort;&apos; main/php_globals.h
 
 # Symlink LDAP libraries and GMP header
 sudo ln -sf /usr/lib/s390x-linux-gnu/libldap.so /usr/lib/libldap.so
@@ -70,10 +102,11 @@ cd $WORK_DIR/php-src
 make clean
 make -j$(cat /proc/cpuinfo | grep processor | wc -l)
 
- 
+# Run test cases
 make test 
 #(**NOTE:There are few test case failures which are also observed on Intel x86 platform. These failures can be ignored.)
 
+#Install PHP
 sudo make install
 sudo install -m644 php.ini-production /usr/local/etc/php.ini
 sudo sed -i &apos;s@php/includes&quot;@&amp;\ninclude_path = &quot;.:/usr/local/lib/php&quot;@&apos; /usr/local/etc/php.ini
@@ -104,6 +137,7 @@ sudo cp $WORK_DIR/php-src/sapi/fpm/php-fpm.service.in /lib/systemd/system/php-fp
 sudo systemctl enable php-fpm.service
 #sudo systemctl daemon-reload (**NOTE-This command worked on host not in container)
 #sudo systemctl start php-fpm.service (**NOTE-This command worked on host not in container)
+
 #Zend OPcache
 #Modify the file /usr/local/etc/php.ini to enable Zend OPcache:
 sudo cp /usr/local/etc/php.ini /usr/local/etc/php.ini.orig
@@ -117,6 +151,7 @@ else
   exit 1
 fi 
 
+#Apache
 sudo chmod 766 /etc/apache2/apache2.conf 
 cd /etc/apache2
 
@@ -124,10 +159,11 @@ sudo echo -e &quot;&lt;FilesMatch \.php$&gt;&quot; &gt;&gt; apache2.conf
 sudo echo -e &quot;SetHandler application/x-httpd-php&quot; &gt;&gt; apache2.conf
 sudo echo -e &quot;&lt;/FilesMatch&gt;&quot; &gt;&gt; apache2.conf
 
- sudo a2dismod mpm_event
- sudo a2enmod mpm_prefork
- sudo service apache2 start
+sudo a2dismod mpm_event
+sudo a2enmod mpm_prefork
+sudo service apache2 start
 
+#Verify if PHP works
 cd /var/www/html
 sudo touch testphp.php
 

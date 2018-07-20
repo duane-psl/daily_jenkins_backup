@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>PHP Without mcrypt and intl extensions (CLI, CGI and HTTP)</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,58 +9,111 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_rh6.9_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 18 * * 2</spec>
+      <spec>H 13 * * 2</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 18 * * 2</spec>
+      <spec>H 13 * * 2</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORK_DIR=`pwd`
+      <command>source /home/test/.bashrc
 
-# Install dependencies
-export PATH=/usr/local/bin:$PATH
-echo $PATH
-sudo zypper install -y autoconf automake flex bison bzip2 cyrus-sasl-devel \
-                       freetype2-devel gcc gcc-c++ gdbm-devel git gmp-devel libdb-4_8-devel libcurl-devel \
-                       libjpeg62-devel libmysqlclient-devel libopenssl-devel libpng16-compat-devel libpng16-devel \
-                       libpq5 libtool libxml2-devel libXpm-devel libxslt-devel make net-snmp-devel openldap2-devel pcre-devel \
-                       pkg-config postgresql94-devel readline-devel unixODBC-devel vim wget curl
-# Get the source code      
+export WORK_DIR=`pwd`
+sudo yum install -y autoconf automake bison flex bzip2-devel curl-devel freetype-devel gcc gcc-c++ gdbm-devel git gmp-devel libdbi libjpeg-turbo-devel libpng-devel libtool libxml2-devel libXpm-devel libxslt-devel make mysql-devel net-snmp-devel openldap-devel openssl-devel pcre-devel pkgconfig postgresql-devel readline-devel unixODBC-devel vim wget tar
+
+#Build autoconf v2.69
+cd $WORK_DIR
+wget https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+tar xvf autoconf-2.69.tar.gz
+cd autoconf-2.69
+./configure
+make &amp;&amp; sudo make install
+
+##Download Source
 cd $WORK_DIR
 git clone https://github.com/php/php-src.git
 cd php-src
-git checkout tags/php-7.1.2   
+git checkout tags/php-7.2.1
 
-# Symlink LDAP libraries and GMP header
+#Applying following patch
+sudo sed -i &apos;531d&apos; ext/mbstring/oniguruma/src/regint.h
+sudo sed -i &apos;531i typedef int StateCheckNumType;&apos; ext/mbstring/oniguruma/src/regint.h
+
+sudo sed -i &apos;778d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;778i if (WIFEXITED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;796d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;796i if (WIFSTOPPED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;814d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;814i if (WIFSIGNALED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;831d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;831i if (WIFCONTINUED((int)status_word))&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;850d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;850i RETURN_LONG(WEXITSTATUS((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;868d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;868i RETURN_LONG(WTERMSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;886d&apos; ext/pcntl/pcntl.c
+sudo sed -i &apos;886i RETURN_LONG(WSTOPSIG((int)status_word));&apos; ext/pcntl/pcntl.c
+
+sudo sed -i &apos;1630d&apos; ext/standard/streamsfuncs.c
+sudo sed -i &apos;1630i php_socket_t fileno;&apos; ext/standard/streamsfuncs.c
+
+sudo sed -i &apos;109d&apos; main/php_globals.h
+sudo sed -i &apos;109i zend_bool ignore_user_abort;&apos; main/php_globals.h
+
+#Symlink LDAP libraries and GMP header
 sudo ln -sf /usr/lib64/libldap.so /usr/lib/libldap.so
 sudo ln -sf /usr/lib64/liblber.so /usr/lib/liblber.so
-#Build PHP
+sudo ln -sf /usr/include/gmp-s390x.h /usr/include/gmp.h
 
+#Install libmcrypt and libmcrypt-devel
+cd $WORK_DIR
+wget ftp://rpmfind.net/linux/fedora-secondary/releases/28/Everything/s390x/os/Packages/l/libmcrypt-2.5.8-22.fc28.s390x.rpm
+wget ftp://rpmfind.net/linux/fedora-secondary/releases/28/Everything/s390x/os/Packages/l/libmcrypt-devel-2.5.8-22.fc28.s390x.rpm
+sudo rpm -ivh libmcrypt-2.5.8-22.fc28.s390x.rpm
+sudo rpm -ivh libmcrypt-devel-2.5.8-22.fc28.s390x.rpm
+
+#Build ICU
+cd $WORK_DIR
+wget http://download.icu-project.org/files/icu4c/58.2/icu4c-58_2-src.tgz
+tar zxf icu4c-58_2-src.tgz
+cd icu/source
+./configure --prefix=/usr/local &amp;&amp; make
+sudo make install
+
+#Build PHP
 #a. Without mcrypt and intl extensions:
-#CLI and CGI SAPIs and HTTP
-sudo zypper install -y apache2 apache2-devel which w3m
+#CLI and CGI SAPIs and HTTP - Install Apache with development headers
+
+sudo yum install -y httpd httpd-devel
+
 #Build with apxs2
 cd $WORK_DIR/php-src
 ./buildconf --force
-./configure --datadir=/usr/local/share/php --localstatedir=/var --mandir=/usr/local/share/man --prefix=/usr/local --sysconfdir=/usr/local/etc --enable-bcmath --enable-calendar --enable-ctype --with-curl --enable-dba=shared --enable-exif --enable-filter --enable-flatfile --enable-fpm --enable-ftp --enable-gd-native-ttf --enable-inifile --enable-mbstring --enable-mysqlnd --enable-opcache --enable-pcntl --enable-shmop --enable-simplexml --enable-sockets --enable-sysvsem --enable-sysvshm --enable-sysvmsg --enable-xmlreader --enable-xmlwriter --enable-zend-signals --enable-zip --disable-phpdbg --disable-phpdbg-webhelper --with-apxs2=/usr/bin/apxs2 --with-bz2 --with-config-file-path=/usr/local/etc --with-config-file-scan-dir=/usr/local/etc/conf.d --with-fpm-group=www-data --with-fpm-user=www-data --with-freetype-dir --with-gd --with-gdbm --with-gettext --with-gmp --with-iconv --with-jpeg-dir --with-kerberos --with-ldap --with-ldap-sasl --with-mysql-sock=/var/lib/mysql/mysql.sock --with-mysqli=mysqlnd --with-openssl --with-pcre-regex --with-pdo-mysql=mysqlnd --with-pdo-odbc=unixODBC,/usr --with-pdo-pgsql --with-pdo-sqlite --with-pgsql --with-png-dir --with-readline --with-snmp --with-sqlite3 --with-unixODBC=/usr --with-xpm-dir=/usr --with-xsl --with-zlib --without-pcre-jit
+./configure --datadir=/usr/local/share/php --localstatedir=/var --mandir=/usr/local/share/man --prefix=/usr/local --sysconfdir=/usr/local/etc --enable-bcmath --enable-calendar --enable-ctype --with-curl --enable-dba=shared --enable-exif --enable-filter --enable-flatfile --enable-fpm --enable-ftp --enable-gd-native-ttf --enable-inifile --enable-mbstring --enable-mysqlnd --enable-opcache --enable-pcntl --enable-shmop --enable-simplexml --enable-sockets --enable-sysvsem --enable-sysvshm --enable-sysvmsg --enable-xmlreader --enable-xmlwriter --enable-zend-signals --enable-zip --disable-phpdbg --disable-phpdbg-webhelper --with-apxs2 --with-bz2 --with-config-file-path=/usr/local/etc --with-config-file-scan-dir=/usr/local/etc/conf.d --with-fpm-group=apache --with-fpm-user=apache --with-freetype-dir --with-gd --with-gdbm --with-gettext --with-gmp --with-iconv --with-jpeg-dir --with-kerberos --with-ldap --with-ldap-sasl --with-mysql-sock=/var/lib/mysql/mysql.sock --with-mysqli=mysqlnd --with-openssl --with-pcre-regex --with-pdo-mysql=mysqlnd --with-pdo-odbc=unixODBC,/usr --with-pdo-pgsql --with-pdo-sqlite --with-pgsql --with-png-dir --with-readline --with-snmp --with-sqlite3 --with-unixODBC=/usr --with-xpm-dir=/usr --with-xsl --with-zlib --without-pcre-jit
 make clean
 make -j$(cat /proc/cpuinfo | grep processor | wc -l)
 
- 
+#Run tests 
 make test 
 #(**NOTE:There are few test case failures which are also observed on Intel x86 platform. These failures can be ignored.)
 
+#Install PHP
 sudo make install
 sudo install -m644 php.ini-production /usr/local/etc/php.ini
 sudo sed -i &apos;s@php/includes&quot;@&amp;\ninclude_path = &quot;.:/usr/local/lib/php&quot;@&apos; /usr/local/etc/php.ini
@@ -87,40 +140,36 @@ sudo sed -i &apos;12d&apos; php-fpm.service.in
 sudo sed -i &quot;12i ExecStart=/usr/local/sbin/php-fpm --nodaemonize --fpm-config /usr/local/etc/php-fpm.conf&quot; php-fpm.service.in
 
 cd $WORK_DIR/php-src
-
-sudo cp $WORK_DIR/php-src/sapi/fpm/php-fpm.service.in /usr/lib/systemd/system/php-fpm.service
+sudo cp $WORK_DIR/php-src/sapi/fpm/php-fpm.service.in /lib/systemd/system/php-fpm.service
 sudo systemctl enable php-fpm.service
 #sudo systemctl daemon-reload (**NOTE-This command worked on host not in container)
 #sudo systemctl start php-fpm.service (**NOTE-This command worked on host not in container)
+
 #Zend OPcache
 #Modify the file /usr/local/etc/php.ini to enable Zend OPcache:
 sudo cp /usr/local/etc/php.ini /usr/local/etc/php.ini.orig
 sudo sed -i &quot;1784i zend_extension=opcache.so&quot; /usr/local/etc/php.ini
 
 php -v
-if php -v | grep &quot;Zend OPcache v7.1.2&quot;; then
+if php -v | grep &quot;Zend OPcache v7.2.1&quot;; then
   echo &quot;Done&quot;
 else
   exit 1
 fi 
 
-sudo chmod 766 /etc/apache2/httpd.conf
-cd /etc/apache2/
+#Apache
+sudo chmod 766 /etc/httpd/conf/httpd.conf
+cd /etc/httpd/conf
 
-
-sudo echo -e &quot;LoadModule php7_module /usr/lib64/apache2/libphp7.so&quot; &gt;&gt; httpd.conf
 sudo echo -e &quot;&lt;FilesMatch \.php$&gt;&quot; &gt;&gt; httpd.conf 
 sudo echo -e &quot;SetHandler application/x-httpd-php&quot; &gt;&gt; httpd.conf 
 sudo echo -e &quot;&lt;/FilesMatch&gt;&quot; &gt;&gt; httpd.conf 
-sudo sed -i &apos;207d&apos;  /etc/apache2/httpd.conf 
+#sudo systemctl restart httpd command worked on host
+sudo /usr/sbin/httpd -D BACKGROUND 
+sleep 40s
 
 
-sudo a2enmod mpm_prefork
-
-sudo /usr/sbin/httpd -k restart
-sleep 45s
-
-cd /srv/www/htdocs
+cd /var/www/html
 sudo touch info.php
 
 sudo chmod 766 info.php
@@ -130,9 +179,9 @@ sudo echo -e &quot;?&gt;&quot; &gt;&gt; info.php
    
 cat -n info.php
  
-
+#sudo systemctl restart httpd --command worked on host  
+sudo httpd -k restart 
 curl http://127.0.0.1:80/info.php
-
 
 </command>
     </hudson.tasks.Shell>
@@ -159,29 +208,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@duaned</room>
-      <startNotification>false</startNotification>
-      <notifySuccess>false</notifySuccess>
-      <notifyAborted>false</notifyAborted>
-      <notifyNotBuilt>false</notifyNotBuilt>
-      <notifyUnstable>false</notifyUnstable>
-      <notifyRegression>false</notifyRegression>
-      <notifyFailure>true</notifyFailure>
-      <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>true</notifyRepeatedFailure>
-      <includeTestSummary>false</includeTestSummary>
-      <includeFailedTests>false</includeFailedTests>
-      <commitInfoChoice>NONE</commitInfoChoice>
-      <includeCustomMessage>false</includeCustomMessage>
-      <customMessage></customMessage>
-    </jenkins.plugins.slack.SlackNotifier>
-    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
-      <baseUrl></baseUrl>
-      <teamDomain></teamDomain>
-      <authToken></authToken>
-      <authTokenCredentialId></authTokenCredentialId>
-      <botUser>false</botUser>
-      <room>#loz-jenkins-build,@duaned</room>
+      <room>#loz-jenkins-build,@duaned,@chandranana.naik,@ketank</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

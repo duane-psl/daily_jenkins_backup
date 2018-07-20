@@ -17,7 +17,7 @@
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>4.06.1</name>
+        <name>4.07.0</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -43,7 +43,7 @@
     <hudson.tasks.Shell>
       <command> #Check if published version is already present in repo 
 package_name=&quot;ocaml&quot;
-published_version=&quot;4.06.0&quot;
+published_version=&quot;4.07.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -83,7 +83,7 @@ sudo make install
 
 
 ocaml_version=`/usr/local/bin/ocaml --version`
-ocaml_new_version=&quot;The OCaml toplevel, version 4.06.1&quot;
+ocaml_new_version=&quot;The OCaml toplevel, version 4.07.0&quot;
 
 if [[ $ocaml_version == $ocaml_new_version ]]; then exit 0; else exit 1; fi</command>
     </hudson.tasks.Shell>

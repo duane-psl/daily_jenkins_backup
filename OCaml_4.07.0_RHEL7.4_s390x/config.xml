@@ -24,7 +24,7 @@
     <submoduleCfg class="list"/>
     <extensions/>
   </scm>
-  <assignedNode>dc2_sl11-SP4_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -41,10 +41,37 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
-sudo zypper update -y 
- 
-sudo zypper install -y gcc make git awk
+      <command>source /home/test/.bashrc
+#Check if published version is already present in repo 
+package_name=&quot;ocaml&quot;
+published_version=&quot;4.07.0&quot;
+
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+
+echo &quot;Available version: $available_version&quot;
+#==============================================================================================#
+
+sudo yum install -y gcc make
 
 ./configure
 make world
@@ -53,8 +80,7 @@ make opt.opt
 umask 022
 sudo make install
 
-
-ocaml_version=`/usr/local/bin/ocaml --version`
+ocaml_version=`ocaml --version`
 ocaml_new_version=&quot;The OCaml toplevel, version 4.07.0&quot;
 
 if [[ $ocaml_version == $ocaml_new_version ]]; then exit 0; else exit 1; fi</command>

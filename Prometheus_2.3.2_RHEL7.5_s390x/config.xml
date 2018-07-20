@@ -9,55 +9,55 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl11-SP4_4096</assignedNode>
+  <assignedNode>dc2_rh7.5_4096</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 15 * * 5</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export BUILDDIR=`pwd`
+      <command>source /home/test/.bashrc
 # Install dependencies
-sudo zypper update -y
-sudo zypper install -y make cmake gcc48 gcc48-c++ wget tar git  
-sudo ln -sf /usr/bin/gcc-4.8 /usr/bin/gcc       
 
+cat /etc/redhat-release
+sudo yum install -y make cmake gcc wget tar git curl # curl is only for verification
 
+export BUILDDIR=`pwd`
 # Install go
-sudo zypper install -y tar wget gcc
+sudo yum install -y tar wget gcc
 wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
 chmod ugo+r go1.10.1.linux-s390x.tar.gz
 sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
+export PATH=/usr/local/go/bin:$PATH
+sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
 go version
 
-#Set environment variables
+
+# Set environment variables
 export GOPATH=$BUILDDIR
-export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:$GOPATH/bin 
+
 
 # Prometheus
 mkdir -p $GOPATH/src/github.com/prometheus
 cd $GOPATH/src/github.com/prometheus
-git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
 git clone https://github.com/prometheus/prometheus.git
 cd prometheus
-git checkout v2.2.1
+git checkout v2.3.2
 make build
 
-#Run tests
+# Run the testcases
 line1=-race
 line2=
-sed -i &quot;60s/$line1/$line2/&quot; Makefile
+sed -i &quot;62s/$line1/$line2/&quot; Makefile.common
+make test
 
-#make test |tee testlogs
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:
   scrape_interval:     15s # By default, scrape targets every 15 seconds.
@@ -81,17 +81,32 @@ scrape_configs:
 EOF
 
 ./prometheus --config.file=prometheus.yml &amp;
-sleep 20
-wget  http://127.0.0.1:9090 
+sleep 20s
+curl  http://127.0.0.1:9090 
 
 pgrep -d&quot; &quot; -f &quot;prometheus&quot; | sudo xargs kill;
 
-sleep 20
+sleep 20s
 ./prometheus --version
 </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+    if(it.name==x){
+it.getComputer().doDoDelete()
+    }
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

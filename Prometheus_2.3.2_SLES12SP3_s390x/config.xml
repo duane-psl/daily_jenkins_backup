@@ -9,25 +9,24 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl11-SP4_4096</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 15 * * 5</spec>
+      <spec>H 1 * * 6</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>export BUILDDIR=`pwd`
-# Install dependencies
 sudo zypper update -y
-sudo zypper install -y make cmake gcc48 gcc48-c++ wget tar git  
-sudo ln -sf /usr/bin/gcc-4.8 /usr/bin/gcc       
-
+cat /etc/issue
+# Install dependencies
+sudo zypper install -y make cmake gcc gcc-c++ wget tar git curl  # curl is only for verification       
 
 # Install go
 sudo zypper install -y tar wget gcc
@@ -46,18 +45,17 @@ export PATH=$PATH:$GOPATH/bin
 # Prometheus
 mkdir -p $GOPATH/src/github.com/prometheus
 cd $GOPATH/src/github.com/prometheus
-git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
 git clone https://github.com/prometheus/prometheus.git
 cd prometheus
-git checkout v2.2.1
+git checkout v2.3.2
 make build
 
-#Run tests
+# Run the testcases
 line1=-race
 line2=
-sed -i &quot;60s/$line1/$line2/&quot; Makefile
+sed -i &quot;62s/$line1/$line2/&quot; Makefile.common
+make test
 
-#make test |tee testlogs
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:
   scrape_interval:     15s # By default, scrape targets every 15 seconds.
@@ -81,13 +79,14 @@ scrape_configs:
 EOF
 
 ./prometheus --config.file=prometheus.yml &amp;
-sleep 20
-wget  http://127.0.0.1:9090 
+sleep 20s
+curl  http://127.0.0.1:9090 
 
 pgrep -d&quot; &quot; -f &quot;prometheus&quot; | sudo xargs kill;
 
-sleep 20
+sleep 20s
 ./prometheus --version
+
 </command>
     </hudson.tasks.Shell>
   </builders>
