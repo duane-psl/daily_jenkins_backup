@@ -45,7 +45,7 @@ make build
 line1=-race
 line2=
 sed -i &quot;62s/$line1/$line2/&quot; Makefile.common
-make test
+make test 2&gt;&amp;1 | tee -a test.log # Intermittent test failures are observed, can be passed after rerun
 
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:

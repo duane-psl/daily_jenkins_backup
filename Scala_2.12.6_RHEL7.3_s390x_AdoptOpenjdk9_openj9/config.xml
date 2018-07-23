@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_4096</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,66 +27,83 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
+#Check if published version is already present in repo 
+package_name=&quot;scala&quot;
+published_version=&quot;2.12.6&quot;
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+
+#==============================================================================================#
+
+
+
 # Install dependencies
-#sudo yum install -y git tar wget java-1.8.0-openjdk-devel patch which subversion-devel
-sudo yum install -y git tar wget java-1.8.0-openjdk-devel patch which
-#subversion-devel is the dependency of mesos
+sudo yum install -y wget tar
 
-# Set environment variables
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0
-export PATH=/usr/lib/jvm/java-1.8.0/bin:$PATH
-export SBT_OPTS=&quot;-Xmx4g&quot;
+export work_dir=`pwd`
+wget https://github.com/AdoptOpenJDK/openjdk9-openj9-nightly/releases/download/jdk-9%2B181-20180523/OpenJDK9-OPENJ9_s390x_Linux_20180523.tar.gz
+tar -xf OpenJDK9-OPENJ9_s390x_Linux_20180523.tar.gz
+export JAVA_HOME=`pwd`/jdk-9.0.4+12
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-# Install sbt
-wget https://dl.bintray.com/sbt/native-packages/sbt/0.13.11/sbt-0.13.11.tgz
-tar -zxvf sbt-0.13.11.tgz
-export PWD=`pwd`
-export PATH=$PWD/sbt/bin:$PATH
-export SBT_OPTS=&quot;-Xmx4g&quot;
+# Download and install Scala
+wget http://www.scala-lang.org/files/archive/scala-2.12.6.rpm
+sudo rpm -ivh scala-2.12.6.rpm
 
-export MOUNT_DIR=/home/test/work/Mesos_for_Marathon/RHEL7.3/IBM
-ls $MOUNT_DIR
-#Copy all the required binaries.
-sudo cp $MOUNT_DIR/libmesos-1.2.0.so /usr/local/lib/
-sudo cp $MOUNT_DIR/libmesos.la /usr/local/lib/
-sudo cp $MOUNT_DIR/libmesos.so /usr/local/lib/
-sudo cp -r $MOUNT_DIR/mesos /usr/local/lib/
+# Check Scala binary and compiler version
+scala -version
+scalac -version
 
-# Build Marathon
-git clone https://github.com/mesosphere/marathon.git
-cd marathon
-git checkout v1.4.5
-sbt assembly
-sed -i &quot;s/shasum/sha1sum/&quot; ./bin/build-distribution
-./bin/build-distribution
-cd ../
+# Testing Scala Sample Program
+echo &apos;
+    object HelloWorld
+    {
+        def main(args: Array[String]) {
+            println(&quot;Hello, world!&quot;)
+        }
+    }
+&apos; &gt; HelloWorld.scala
 
-# Start Zookeper service
-git clone https://github.com/apache/mesos
-cd mesos/
-git checkout 1.2.0
-cd 3rdparty/
-tar zxf zookeeper-3.4.8.tar.gz
-ls
-cd zookeeper-3.4.8
-sudo cp conf/zoo_sample.cfg conf/zoo.cfg
-sudo env PATH=$PATH ./bin/zkServer.sh start 
-sleep 20
-cd ../../../
 
-# Start Marathon service
-cd marathon
-sudo env PATH=$PATH nohup ./bin/start --master local --zk zk://127.0.0.1:2181/marathon &amp;
-sleep 100
-wget http://127.0.0.1:8080
+# Compile the Test Program
+scalac HelloWorld.scala 
 
-sleep 60s
-ps -aef 
+# Execute the test program
+scala HelloWorld &gt; test_result.txt
+    
+       
+# Following ouput should be observed:
+# Hello, world!
+echo &apos;Hello, world!&apos; &gt; expected_result.txt
 
-pgrep -d&quot; &quot; -f &quot;marathon&quot; | sudo xargs kill;
+result=`diff test_result.txt expected_result.txt`
 
-sleep 20s
-ps -aef</command>
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -99,8 +116,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -112,7 +128,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@preeti.khorjuvenkar</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

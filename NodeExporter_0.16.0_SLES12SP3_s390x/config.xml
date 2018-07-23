@@ -9,43 +9,86 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub18.04_4096</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 19 * * 6</spec>
+      <spec>H 6 * * 3</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Install dependencies
-sudo apt-get update -y
-sudo apt-cache policy prometheus
-sudo apt-get install -y make cmake gcc g++ curl wget tar git golang-1.10
+      <command>#Set the below parameters manually
+package_name=&quot;Prometheus-node-exporter&quot;
+published_version=&quot;0.16.0&quot;
+
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Available version: $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+#-------------------------------------------------------------------------------------------------------------------------
+
+
+export BUILDDIR=`pwd`
+
+# Install dependencies
+sudo zypper install -y make cmake gcc gcc-c++ wget tar git glibc-static      
+
+# Install go
+wget https://storage.googleapis.com/golang/go1.10.linux-s390x.tar.gz 
+chmod ugo+r go1.10.linux-s390x.tar.gz  
+sudo tar -C /usr/local -xzf go1.10.linux-s390x.tar.gz   
+export PATH=$PATH:/usr/local/go/bin  
+sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc   
+
+
 
 # Set environment variables
-export BUILDDIR=`pwd`
 export GOPATH=$BUILDDIR
-export PATH=$PATH:$GOPATH/bin:/usr/lib/go-1.10/bin
+export PATH=$PATH:$GOPATH/bin 
+
 go version
 
-# Prometheus
 mkdir -p $GOPATH/src/github.com/prometheus
 cd $GOPATH/src/github.com/prometheus
+git clone https://github.com/prometheus/node_exporter    
+cd node_exporter   
+git checkout v0.16.0  
+make build   
+make test  
+
+
+# Install Prometheus
+#sudo zypper install -y make cmake gcc gcc-c++ wget tar git     - already installed
+# Prometheus
+#rm -rf $GOPATH/src/github.com/prometheus
+mkdir -p $GOPATH/src/github.com/prometheus
+cd $GOPATH/src/github.com/prometheus
+git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
 git clone https://github.com/prometheus/prometheus.git
 cd prometheus
-git checkout v2.3.2
+git checkout v2.3.1
 make build
-
-# Run the testcases
-line1=-race
-line2=
-sed -i &quot;62s/$line1/$line2/&quot; Makefile.common
-make test 2&gt;&amp;1 | tee -a test.log # Intermittent test failures are observed, can be passed after rerun
 
 sudo bash -c &quot;cat &gt; prometheus.yml&quot; &lt;&lt;&apos;EOF&apos; 
 global:
@@ -67,18 +110,31 @@ scrape_configs:
 
     static_configs:
       - targets: [&apos;localhost:9090&apos;]
+      
+  - job_name: &apos;node&apos;
+    scrape_interval: 15s
+    static_configs:
+      - targets: [&apos;localhost:9100&apos;]         
 EOF
 
+#Start node_exporter
+cd $GOPATH/src/github.com/prometheus/node_exporter  
+./node_exporter  &amp;
+
+#Start Prometheus
+cd $GOPATH/src/github.com/prometheus/prometheus
 ./prometheus --config.file=prometheus.yml &amp;
-sleep 20s
-curl  http://127.0.0.1:9090 
+sleep 60
+wget  http://127.0.0.1:9090 
 
-pgrep -d&quot; &quot; -f &quot;prometheus&quot; | sudo xargs kill;
+cat index.html
 
-sleep 20s
-./prometheus --version
+cd ..
 
-</command>
+wget http://127.0.0.1:9100/metrics 
+cat metrics
+
+cat metrics | grep node</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -103,7 +159,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build, @agautam</room>
+      <room>#loz-jenkins-build, @nbhave</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

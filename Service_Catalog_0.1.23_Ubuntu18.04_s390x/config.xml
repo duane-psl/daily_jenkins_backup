@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub18.04_4096</assignedNode>
+  <assignedNode>Abhay_Ub1804</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -85,22 +85,6 @@ sudo -E make test-unit ARCH=s390x
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
-      <script plugin="script-security@1.24">
-        <script>import jenkins.model.Jenkins
-
-def x=manager.envVars[&apos;NODE_NAME&apos;]
-Jenkins.instance.slaves.each {
-    if(it.name==x){
-it.getComputer().doDoDelete()
-    }
-}
-</script>
-        <sandbox>false</sandbox>
-      </script>
-      <behavior>0</behavior>
-      <runForMatrixParent>false</runForMatrixParent>
-    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

@@ -17,7 +17,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp3_8192</assignedNode>
+  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -33,11 +33,11 @@
       <command>sudo zypper up -y
 sudo zypper install -y tar wget git telnet java-1_8_0-ibm  java-1_8_0-ibm-devel
 
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.10/linux/s390x/ibm-java-sdk-8.0-5.10-s390x-archive.bin
+wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin 
 wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
 tail -n +3 installer.properties.java | tee installer.properties
-chmod +x ibm-java-sdk-8.0-5.10-s390x-archive.bin
-./ibm-java-sdk-8.0-5.10-s390x-archive.bin -r installer.properties
+chmod +x ibm-java-sdk-8.0-5.16-s390x-archive.bin
+./ibm-java-sdk-8.0-5.16-s390x-archive.bin -r installer.properties
 
 
 export WORK_DIR=`pwd`

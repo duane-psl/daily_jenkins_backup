@@ -40,7 +40,7 @@ sudo cpan -fi Path::Tiny
 
 # Build and Install Dependencies required to run Tests using CPAN
 sudo cpan -fi Authen::SASL::SASLprep Authen::SCRAM::Client
-sudo cpan -fi JSON::XS
+sudo cpan -fi Canary::Stability JSON::XS
 sudo cpan -fi BSON
 sudo cpan -fi Class::XSAccessor JSON::MaybeXS namespace::clean boolean UUID::URandom Moo Moo::Role Net::DNS Safe::Isa Sub::Quote Tie::IxHash Type::Library Type::Tiny::XS Type::Utils Types::Standard Encode Digest::MD5 Math::BigInt MIME::Base64
 
