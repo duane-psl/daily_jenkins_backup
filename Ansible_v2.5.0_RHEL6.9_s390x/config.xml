@@ -31,7 +31,7 @@ export Ansible_home=`pwd`
 
 #Set the below parameters manually
 package_name=&quot;ansible&quot;
-published_version=&quot;2.5.0&quot;
+published_version=&quot;2.6.1&quot;
 
 available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
@@ -47,14 +47,14 @@ fi
 cd $Ansible_home
 rm -rf ansible
 #Install the dependencies
-sudo yum install -y git wget tar svn bzip2 unzip gcc make which autoconf net-tools ssh python-setuptools sqlite-devel openldap-devel libxslt-devel openssl-devel libffi-devel openssl systemd-devel systemd ncurses-devel bzip2-devel  zlib zlib-devel systemd-devel patch xz
+sudo yum install -y git svn bzip2 unzip gcc autoconf net-tools ssh python-setuptools sqlite-devel openldap-devel libxslt-devel libffi-devel openssl systemd-devel systemd zlib systemd-devel patch vim
 
-# Install Python 2.7.14
+# Install Python 2.7.15
 cd $Ansible_home
-sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-tar -xvf Python-2.7.14.tar.xz
-cd Python-2.7.14
+sudo yum install -y gcc gcc-c++ make ncurses wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb bzip2
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 make
 sudo make install
@@ -67,26 +67,8 @@ python -V
 sudo env PATH=$PATH python -m ensurepip
 sudo env PATH=$PATH pip install --upgrade pip 
 
-#Get the source-code
-cd $Ansible_home
-git clone https://github.com/ansible/ansible.git
-cd ansible
-git checkout v2.5.0
-
-#Setup the environment and get Ansible modules:
-source ./hacking/env-setup
-git submodule update --init --recursive
-source ./hacking/env-setup -q
-
-#Ansible uses the following Python modules which need to be installed:
-
-sudo env PATH=$PATH python -m pip install paramiko PyYAML jinja2 httplib2 passlib nose mock mercurial six patch django==1.11.7 call coverage coveralls funcsigs cryptography==2.0.3 pycrypto boto3 botocore readline  pytest-xdist pytest-mock boto redis s3 placebo netaddr pyVmomi xmljson f5-sdk packaging
-
 #Install ansible
-sudo env PATH=$PATH make install
-
-#Run tests
-make tests 
+sudo env PATH=$PATH pip install ansible
 
 ansible --version
 

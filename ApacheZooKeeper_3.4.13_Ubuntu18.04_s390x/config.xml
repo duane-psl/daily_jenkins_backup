@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp3</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;zookeeper&quot;
-published_version=&quot;3.4.11&quot;
+published_version=&quot;3.4.13&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,55 +49,59 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-sudo zypper install -y git ant ant-junit cppunit-devel cppunit-devel-doc gcc-c++ make autoconf libtool wget tar 
-# removed patch and net-tools.
+export WORK_DIR=`pwd`
+sudo apt-get update
+sudo apt-get install -y ant dh-autoreconf wget make git openjdk-8-jdk libtool m4 automake autoconf
 
-rm -rf source_root
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-s390x
+
 mkdir source_root
-cd source_root
-export SRCRT=`pwd`
+cd $WORK_DIR/source_root
 
-export ANT_HOME=/usr/share/ant/
-export JAVA_HOME=/usr/lib64/jvm/java
+wget http://dev-www.libreoffice.org/src/cppunit-1.13.2.tar.gz
+tar -xzvf cppunit-1.13.2.tar.gz
+cd cppunit-1.13.2
+./configure &amp;&amp; make &amp;&amp; sudo make install
 
-#build zookepper
-cd $SRCRT
+cd $WORK_DIR/source_root
 git clone git://github.com/apache/zookeeper
-cd $SRCRT/zookeeper
-git checkout tags/release-3.4.11
+cd zookeeper
+git checkout tags/release-3.4.13
 
 ant compile
 
 cd src/c
+sudo apt-get install -y libcppunit-dev
 ACLOCAL=&quot;aclocal -I /usr/share/aclocal&quot; autoreconf -if
-./configure 
-make
-sudo make install
+./configure &amp;&amp; make &amp;&amp; sudo make install
 sudo make distclean
-     
-cd $SRCRT/zookeeper
+
+cd $WORK_DIR/source_root/zookeeper
 ant jar
 ant test | tee test.log
 
 # Add conf file
-sudo  bash -c &quot;cat &gt; conf/zoo.cfg&quot; &lt;&lt;&apos;EOF&apos;
+##sudo  bash -c &quot;cat &gt; conf/zoo.cfg&quot; &lt;&lt;&apos;EOF&apos;
 	
-# The number of milliseconds of each tick
-tickTime=2000
-# the directory where the snapshot is stored.
-# do not use /tmp for storage, /tmp here is just
-# example sakes.
-dataDir=/tmp/zookeeper
-# the port at which the clients will connect
-clientPort=2181
+ # The number of milliseconds of each tick
+## tickTime=2000
+ # the directory where the snapshot is stored.
+ # do not use /tmp for storage, /tmp here is just
+ # example sakes.
+## dataDir=/tmp/zookeeper
+ # the port at which the clients will connect
+## clientPort=2181
  
-EOF
+##EOF
+mv conf/zoo_sample.cfg conf/zoo.cfg
 
 sudo bin/zkServer.sh start | tee logfile.log
 
+bin/zkCli.sh -server 127.0.0.1:2181
+sleep 20
 cat logfile.log | grep STARTED
 
-</command>
+ps -ef | grep zookeeper</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -107,11 +111,10 @@ cat logfile.log | grep STARTED
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>

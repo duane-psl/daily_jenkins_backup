@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.3_2048</assignedNode>
+  <assignedNode>dc2_rh7.4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;zookeeper&quot;
-published_version=&quot;3.4.11&quot;
+published_version=&quot;3.4.13&quot;
 source /home/test/.bashrc
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,7 +49,7 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-sudo yum install -y git tar wget ant hostname ant-junit cppunit-devel cppunit-doc hamcrest-javadoc hamcrest-demo hamcrest patch xz libtool make
+sudo yum install -y git tar wget ant hostname ant-junit cppunit-devel cppunit-doc hamcrest-javadoc hamcrest-demo hamcrest xz libtool make java-1.8.0-openjdk-devel java-1.8.0-openjdk
 sudo yum groupinstall -y &quot;Development tools&quot;
 
 rm -rf source_root
@@ -58,7 +58,7 @@ cd source_root
 
 git clone git://github.com/apache/zookeeper
 cd zookeeper
-git checkout tags/release-3.4.11
+git checkout tags/release-3.4.13
 
 ant compile
 
@@ -72,23 +72,25 @@ ant jar
 ant test | tee test.log
 
 # Add conf file
-sudo  bash -c &quot;cat &gt; conf/zoo.cfg&quot; &lt;&lt;&apos;EOF&apos;
+##sudo  bash -c &quot;cat &gt; conf/zoo.cfg&quot; &lt;&lt;&apos;EOF&apos;
 	
  # The number of milliseconds of each tick
- tickTime=2000
+## tickTime=2000
  # the directory where the snapshot is stored.
  # do not use /tmp for storage, /tmp here is just
  # example sakes.
- dataDir=/tmp/zookeeper
+## dataDir=/tmp/zookeeper
  # the port at which the clients will connect
- clientPort=2181
+## clientPort=2181
  
-EOF
+##EOF
 
 sudo bin/zkServer.sh start | tee logfile.log
-
+bin/zkCli.sh -server 127.0.0.1:2181
+sleep 20
 cat logfile.log | grep STARTED
-</command>
+
+ps -ef | grep zookeeper</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
