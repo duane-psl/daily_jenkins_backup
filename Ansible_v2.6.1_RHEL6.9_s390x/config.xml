@@ -51,10 +51,21 @@ sudo yum install -y git svn bzip2 unzip gcc autoconf net-tools ssh python-setupt
 
 # Install Python 2.7.15
 cd $Ansible_home
-sudo yum install -y gcc gcc-c++ make ncurses wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb bzip2
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2 bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-devel gdb
 wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
 tar -xvf Python-2.7.15.tar.xz
 cd Python-2.7.15
+cp Lib/test/test_ssl.py Lib/test/test_ssl.py.orig
+sed -i  &apos;992i \ \ \ \ \ \ \ \ filename = u&quot;dhparam.pem&quot;&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;993i \ \ \ \ \ \ \ \ fs_encoding = sys.getfilesystemencoding()&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;994i \ \ \ \ \ \ \ \ try:&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;995i \ \ \ \ \ \ \ \ \ \ \ \ filename.encode(fs_encoding)&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;996i \ \ \ \ \ \ \ \ except UnicodeEncodeError:&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;997i \ \ \ \ \ \ \ \ \ \ \ \ self.skipTest(&quot;filename %r cannot be encoded to the filesystem encoding %r&quot; % (filename, fs_encoding))&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;1010d&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;1010i \ \ \ \ \ \ \ \ \ \ \ \ fname = os.path.join(d, filename)&apos; Lib/test/test_ssl.py
+
+diff -u Lib/test/test_ssl.py.orig Lib/test/test_ssl.py || true
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 make
 sudo make install

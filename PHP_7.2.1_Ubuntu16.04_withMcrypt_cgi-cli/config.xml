@@ -86,9 +86,9 @@ sudo sed -i &apos;109d&apos; main/php_globals.h
 sudo sed -i &apos;109i zend_bool ignore_user_abort;&apos; main/php_globals.h
 
 #Symlink LDAP libraries and GMP header
-sudo ln -sf /usr/lib64/libldap.so /usr/lib/libldap.so
-sudo ln -sf /usr/lib64/liblber.so /usr/lib/liblber.so
-sudo ln -sf /usr/include/gmp-s390x.h /usr/include/gmp.h
+sudo ln -sf /usr/lib/s390x-linux-gnu/libldap.so /usr/lib/libldap.so
+sudo ln -sf /usr/lib/s390x-linux-gnu/liblber.so /usr/lib/liblber.so
+sudo ln -sf /usr/include/s390x-linux-gnu/gmp.h /usr/include/gmp.h
 
 #Build PHP
 #Install extensions dependencies
