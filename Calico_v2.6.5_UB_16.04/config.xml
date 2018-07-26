@@ -9,7 +9,8 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <canRoam>true</canRoam>
+  <assignedNode>Calico-Ub1604</assignedNode>
+  <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
@@ -337,27 +338,34 @@ ARCH=s390x make calico/libnetwork-plugin-s390x
 
 ##############################################################################################################################
 #------------------------------------------------Build protobuf----------------------------------------------------------
+###Build protobuf
 git clone https://github.com/tigera/docker-protobuf $GOPATH/src/github.com/projectcalico/docker-protobuf
 cd  $GOPATH/src/github.com/projectcalico/docker-protobuf
-cp Dockerfile Dockerfile-s390x
-
-cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile.patch
-@@ -1,6 +1,6 @@
--FROM golang:1.9.2
-+FROM s390x/golang:1.9.2
-
--MAINTAINER Shaun Crampton &lt;shaun@tigera.io&gt;
-+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
-
- RUN apt-get update &amp;&amp; apt-get install -y git make autoconf automake libtool unzip
 
 
+cat &lt;&lt; &apos;EOF&apos; &gt; Dockerfile-s390x.patch
+diff --git a/Dockerfile-s390x b/Dockerfile-s390x
+index 0ead8c4..ee7caa9 100644
+--- a/Dockerfile-s390x
++++ b/Dockerfile-s390x
+@@ -25,6 +25,11 @@ RUN rm -rf protobuf
+
+ # TODO: Lock this down to specific versions
+ # Install gogo, an optimised fork of the Golang generators
++RUN rm -vrf /go/src/github.com/gogo/protobuf/*
++RUN go get -d github.com/gogo/protobuf/proto
++WORKDIR /go/src/github.com/gogo/protobuf
++RUN git checkout v1.0.0
++WORKDIR /src
+ RUN go get github.com/gogo/protobuf/proto \
+        github.com/gogo/protobuf/protoc-gen-gogo \
+        github.com/gogo/protobuf/gogoproto \
 EOF
 
-patch Dockerfile-s390x &lt; Dockerfile.patch
 
-docker build -t calico/protoc .
-docker tag calico/protoc calico/protoc-s390x
+patch &lt; Dockerfile-s390x.patch
+
+docker build -t calico/protoc-s390x -f Dockerfile-s390x .
 
 
 ##############################################################################################################################
@@ -438,6 +446,88 @@ index afa9033..a08c7a4 100644
 EOF
 
 patch &lt; Dockerfile.patch
+
+
+rm Makefile
+#not able to apply patch to Makefile, creating the file with required changes
+
+cat &lt;&lt; &apos;EOF&apos; &gt; Makefile
+CALICO_BUILD?=calico/go-build
+SRC_FILES=$(shell find . -type f -name &apos;*.go&apos;)
+GOBGPD_VERSION?=$(shell git describe --tags --dirty)
+CONTAINER_NAME?=calico/gobgpd
+PACKAGE_NAME?=github.com/projectcalico/calico-bgp-daemon
+LOCAL_USER_ID?=$(shell id -u $$USER)
+
+# Use this to populate the vendor directory after checking out the repository.
+# To update upstream dependencies, delete the glide.lock file first.
+vendor: glide.yaml
+	mkdir -p $(HOME)/.glide
+        # To build without Docker just run &quot;glide install -strip-vendor&quot;
+	docker run --rm \
+    -v $(CURDIR):/go/src/$(PACKAGE_NAME):rw \
+    -v $(HOME)/.glide:/home/user/.glide:rw \
+    -e LOCAL_USER_ID=$(LOCAL_USER_ID) \
+    $(CALICO_BUILD) /bin/sh -c &apos; \
+                  cd /go/src/$(PACKAGE_NAME) &amp;&amp; \
+      glide install -strip-vendor&apos;
+
+binary: dist/calico-bgp-daemon
+
+gobgp:
+        git clone -b v1.33 https://github.com/osrg/gobgp gobgp
+dist/gobgp: gobgp
+	mkdir -p $(@D)
+	docker run --rm -v $(CURDIR)/dist:/go/bin \
+        -v $(CURDIR)/gobgp:/go/src/github.com/osrg/gobgp \
+        -w /go/src/github.com/osrg/gobgp \
+        -e LOCAL_USER_ID=$(LOCAL_USER_ID) \
+        $(CALICO_BUILD) go get -v github.com/osrg/gobgp/gobgp
+
+dist/calico-bgp-daemon: $(SRC_FILES) vendor
+	mkdir -p $(@D)
+	go build -v -o dist/calico-bgp-daemon \
+        -ldflags &quot;-X main.VERSION=$(GOBGPD_VERSION) -s -w&quot; main.go ipam.go
+
+build-containerized: clean vendor dist/gobgp
+	mkdir -p dist
+	docker run --rm \
+        -v $(CURDIR):/go/src/$(PACKAGE_NAME) \
+        -v $(CURDIR)/dist:/go/src/$(PACKAGE_NAME)/dist \
+        -e LOCAL_USER_ID=$(LOCAL_USER_ID) \
+                $(CALICO_BUILD) sh -c &apos;\
+                        cd /go/src/$(PACKAGE_NAME) &amp;&amp; \
+                        make binary&apos;
+
+$(CONTAINER_NAME): build-containerized
+        docker build -t $(CONTAINER_NAME) .
+
+release: clean
+ifndef VERSION
+        $(error VERSION is undefined - run using make release VERSION=vX.Y.Z)
+endif
+        git tag $(VERSION)
+        $(MAKE) $(CONTAINER_NAME)
+        # Check that the version output appears on a line of its own (the -x option to grep).
+        # Tests that the &quot;git tag&quot; makes it into the binary. Main point is to catch &quot;-dirty&quot; builds
+        @echo &quot;Checking if the tag made it into the binary&quot;
+        docker run --rm calico/gobgpd -v | grep -x $(VERSION) || (echo &quot;Reported version:&quot; `docker run --rm calico/gobgpd -v` &quot;\nExpected version: $(VERSION)&quot; &amp;&amp; exit 1)
+        docker tag calico/gobgpd calico/gobgpd:$(VERSION)
+        docker tag calico/gobgpd quay.io/calico/gobgpd:$(VERSION)
+        docker tag calico/gobgpd quay.io/calico/gobgpd:latest
+
+        @echo &quot;Now push the tag and images. Then create a release on Github and attach the dist/gobgpd and dist/gobgp binaries&quot;
+        @echo &quot;git push origin $(VERSION)&quot;
+        @echo &quot;docker push calico/gobgpd:$(VERSION)&quot;
+        @echo &quot;docker push quay.io/calico/gobgpd:$(VERSION)&quot;
+        @echo &quot;docker push calico/gobgpd:latest&quot;
+        @echo &quot;docker push quay.io/calico/gobgpd:latest&quot;
+
+clean:
+        rm -rf vendor
+        rm -rf dist
+EOF
+
 
 make build-containerized
 
@@ -647,6 +737,7 @@ export PATH=$PATH:$GOPATH/bin
 #build calico/node image
 cd $GOPATH/src/github.com/projectcalico/calico/calico_node
 make dist/calicoctl
+docker tag calico/felix-s390x calico/felix-s390x:3.0.4
 mkdir filesystem/bin
 cp $GOPATH/src/github.com/projectcalico/bird/dist/s390x/* filesystem/bin
 cp $GOPATH/src/github.com/projectcalico/confd/bin/confd filesystem/bin

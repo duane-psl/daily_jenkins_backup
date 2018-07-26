@@ -9,80 +9,39 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-8192MB</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 18 * * 1</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 18 * * 1</spec>
+      <spec>H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Install dependencies
-export WORK_DIR=`pwd`
+      <command>sudo apt-get update -y
+cat /etc/os-release
+sudo apt-get install -y software-properties-common
+sudo apt-add-repository ppa:ansible/ansible
 sudo apt-get update -y
-sudo apt-get install -y tar wget curl original-awk
+ls /etc/apt/sources.list.d/ -la
+cat -n /etc/apt/sources.list.d/*
+sudo apt-get install -y ansible
+ansible --version | tee version.txt
 
-#Install IBM SDK
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.17/linux/s390x/ibm-java-s390x-sdk-8.0-5.17.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.7.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.7.bin -r installer.properties
+if grep -q &quot;2.6.1&quot; &quot;version.txt&quot;; then
+   exit 0
+else
+   exit 1
+fi
 
-#Set Environment Variables
-export JAVA_HOME=/opt/ibm/java
-export PATH=$JAVA_HOME/bin:$PATH
-java -version 
-
-
-
-#Install Node.js
-cd $WORK_DIR
-wget https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-s390x.tar.gz
-tar xvf node-v8.9.4-linux-s390x.tar.gz
-mv node-v8.9.4-linux-s390x nodejs
-
-
-#Get Kibana release package and extract
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/kibana/kibana-6.2.4-linux-x86_64.tar.gz
-tar xvf kibana-6.2.4-linux-x86_64.tar.gz
-
-
-#Replace Node.js in the package with the installed IBM SDK for Node.js.
-cd kibana-6.2.4-linux-x86_64
-mv node node_old
-ln -s $WORK_DIR/nodejs  node
-
- 
-# Start Kibana 
-
-cd $WORK_DIR
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.4.tar.gz
-tar -xvf elasticsearch-6.2.4.tar.gz
-ls
-nohup elasticsearch-6.2.4/bin/elasticsearch &amp;
-sleep 2m
-
-cd $WORK_DIR/kibana-6.2.4-linux-x86_64
-bin/kibana -H 0.0.0.0 &amp;
-
-sleep 2m
-
-curl http://localhost:5601
-
-pgrep -d&quot; &quot; -f &quot;node&quot; | xargs kill;
-pgrep -d&quot; &quot; -f &quot;elasticsearch&quot; | xargs kill;
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -108,7 +67,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@chandranana.naik,@ketank</room>
+      <room> #loz-jenkins-build,@ajakhade</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

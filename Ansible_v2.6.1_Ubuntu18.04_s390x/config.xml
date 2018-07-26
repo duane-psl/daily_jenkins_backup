@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -36,7 +36,7 @@ cat -n /etc/apt/sources.list.d/*
 sudo apt-get install -y ansible
 ansible --version | tee version.txt
 
-if grep -q &quot;2.5.0&quot; &quot;version.txt&quot;; then
+if grep -q &quot;2.6.1&quot; &quot;version.txt&quot;; then
    exit 0
 else
    exit 1

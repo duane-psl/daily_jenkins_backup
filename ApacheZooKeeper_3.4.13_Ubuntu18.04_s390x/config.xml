@@ -72,7 +72,7 @@ ant compile
 
 cd src/c
 sudo apt-get install -y libcppunit-dev
-ACLOCAL=&quot;aclocal -I /usr/share/aclocal&quot; autoreconf -if
+ACLOCAL=&quot;aclocal -I /usr/local/share/aclocal&quot; autoreconf -if
 ./configure &amp;&amp; make &amp;&amp; sudo make install
 sudo make distclean
 
