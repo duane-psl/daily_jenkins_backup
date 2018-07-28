@@ -1,0 +1,152 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dc2_ub16.04_2048||dockercloud_ubuntu16.04</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 13 * * 3</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#Set the below parameters manually
+package_name=&quot;rabbitmq-server&quot;
+published_version=&quot;3.7.7&quot;
+
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+    sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else
+   echo &quot;Availabel version in repo is $available_version&quot;
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+#--------------------------------------------------------------------------------------------
+export WORK_DIR=`pwd`
+export JAVA_HOME=/opt/ibm/java-s390x-80
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
+
+sudo apt-get update -y
+sudo apt-get install -y openjdk-8-jdk erlang openssl wget tar xz-utils make python xsltproc rsync git zip
+sudo apt-get install -y locales
+sudo locale-gen en_US.UTF-8
+export LANG=&quot;en_US.UTF-8&quot;
+export LC_ALL=&quot;en_US.UTF-8&quot; 
+
+#Install Erlang
+sudo apt-get install -y wget tar make perl openssl gcc g++ libncurses-dev libncurses5-dev unixodbc unixodbc-dev libssl-dev
+wget http://www.erlang.org/download/otp_src_20.0.tar.gz
+tar zxf otp_src_20.0.tar.gz
+cd otp_src_20.0
+export ERL_TOP=$(pwd)
+./configure --prefix=/usr
+make
+sudo make install
+
+
+#build and install elixir
+cd $WORK_DIR
+git clone https://github.com/elixir-lang/elixir
+cd elixir
+git checkout v1.6.1
+make
+sudo make install
+elixir --version
+
+#Install hex
+cd $WORK_DIR
+git clone https://github.com/hexpm/hex.git
+cd hex &amp;&amp;  git checkout v0.17.8
+mix install
+mix hex.info
+
+
+
+# Build rabbitmq
+cd $WORK_DIR
+wget https://dl.bintray.com/rabbitmq/all/rabbitmq-server/3.7.7/rabbitmq-server-3.7.7.tar.xz
+tar -xf rabbitmq-server-3.7.7.tar.xz
+cd rabbitmq-server-3.7.7
+sudo cp ../hex/_build/dev/lib/hex/ebin/*  deps/.mix/archives/hex-0.17.8/hex-0.17.8/ebin/
+make 
+sudo make install
+
+sudo mkdir -p /etc/rabbitmq
+echo &quot;[{rabbit, [{loopback_users, []}]}].&quot; | sudo tee /etc/rabbitmq/rabbitmq.config
+sudo ln -s $PWD/plugins deps/rabbit/plugins
+sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
+sudo deps/rabbit/scripts/rabbitmq-server -detached
+
+sleep 100
+curl http://localhost:15672
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+if(it.name==x){
+it.getComputer().doDoDelete()
+}
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room>#loz-jenkins-build, @cgopi</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>
