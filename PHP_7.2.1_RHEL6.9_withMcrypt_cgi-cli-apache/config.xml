@@ -131,19 +131,25 @@ sudo mv /usr/local/etc/php-fpm.d/www.conf.default /usr/local/etc/php-fpm.d/www.c
 
 #Modify the file /&lt;source_root&gt;/php-src/sapi/fpm/php-fpm.service.in to set php-fpm service environment variables
 cd $WORK_DIR/php-src/sapi/fpm/
-sudo cp php-fpm.service.in php-fpm.service.in.orig
-sudo sed -i &apos;10d&apos; php-fpm.service.in
-sudo sed -i &quot;10i Type=simple&quot; php-fpm.service.in
-sudo sed -i &apos;11d&apos; php-fpm.service.in
-sudo sed -i &quot;11i PIDFile=/var/run/php-fpm.pid&quot; php-fpm.service.in
-sudo sed -i &apos;12d&apos; php-fpm.service.in
-sudo sed -i &quot;12i ExecStart=/usr/local/sbin/php-fpm --nodaemonize --fpm-config /usr/local/etc/php-fpm.conf&quot; php-fpm.service.in
-
-cd $WORK_DIR/php-src
-sudo cp $WORK_DIR/php-src/sapi/fpm/php-fpm.service.in /lib/systemd/system/php-fpm.service
-sudo systemctl enable php-fpm.service
-#sudo systemctl daemon-reload (**NOTE-This command worked on host not in container)
-#sudo systemctl start php-fpm.service (**NOTE-This command worked on host not in container)
+sudo sed -i &apos;13d&apos; init.d.php-fpm.in
+sudo sed -i &apos;13i prefix=/usr/local&apos; init.d.php-fpm.in
+  
+sudo sed -i &apos;14d&apos; init.d.php-fpm.in
+sudo sed -i &apos;14i exec_prefix=/usr/local&apos; init.d.php-fpm.in
+  
+sudo sed -i &apos;16d&apos; init.d.php-fpm.in
+sudo sed -i &apos;16i php_fpm_BIN=/usr/local/sbin/php-fpm&apos; init.d.php-fpm.in
+  
+sudo sed -i &apos;17d&apos; init.d.php-fpm.in
+sudo sed -i &apos;17i php_fpm_CONF=/usr/local/etc/php-fpm.conf&apos; init.d.php-fpm.in
+  
+sudo sed -i &apos;18d&apos; init.d.php-fpm.in
+sudo sed -i &apos;18i php_fpm_PID=/var/run/php-fpm.pid&apos; init.d.php-fpm.in
+  
+sudo cp $WORK_DIR/php-src/sapi/fpm/init.d.php-fpm.in /etc/init.d/php-fpm
+sudo chmod 755 /etc/init.d/php-fpm
+sudo chkconfig --levels 235 php-fpm on
+sudo /etc/init.d/php-fpm start 
 
 #Zend OPcache
 #Modify the file /usr/local/etc/php.ini to enable Zend OPcache:

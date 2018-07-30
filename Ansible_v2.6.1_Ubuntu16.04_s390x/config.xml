@@ -36,7 +36,7 @@ cat -n /etc/apt/sources.list.d/*
 sudo apt-get install -y ansible
 ansible --version | tee version.txt
 
-if grep -q &quot;2.6.1&quot; &quot;version.txt&quot;; then
+if grep -q &quot;2.6.2&quot; &quot;version.txt&quot;; then
    exit 0
 else
    exit 1

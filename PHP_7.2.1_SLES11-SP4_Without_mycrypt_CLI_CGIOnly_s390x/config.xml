@@ -98,7 +98,7 @@ make &amp;&amp; sudo make install
  
 
 cd $WORK_DIR 
-wget https://ftp.postgresql.org/pub/source/v9.4.11/postgresql-9.4.11.tar.gz
+wget  --no-check-certificate https://ftp.postgresql.org/pub/source/v9.4.11/postgresql-9.4.11.tar.gz
 tar zxf postgresql-9.4.11.tar.gz
 cd postgresql-9.4.11
 ./configure --prefix=/usr/local --enable-thread-safety
@@ -106,7 +106,7 @@ make &amp;&amp; sudo make install
 
 
 cd $WORK_DIR
-wget https://cmake.org/files/v3.7/cmake-3.7.2.tar.gz
+wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.2.tar.gz
 tar xzf cmake-3.7.2.tar.gz
 cd cmake-3.7.2
 ./configure --prefix=/usr/local
@@ -116,7 +116,7 @@ export PATH=/usr/local/cmake/bin:$PATH
 cmake --version
 
 cd $WORK_DIR 
-wget https://downloads.mysql.com/archives/get/file/mysql-5.6.38.tar.gz
+wget --no-check-certificate https://downloads.mysql.com/archives/get/file/mysql-5.6.38.tar.gz
 tar zxf mysql-5.6.38.tar.gz
 cd mysql-5.6.38
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DINSTALL_INCLUDEDIR=/usr/local/include/mysql -DSYSCONFDIR=/usr/local/etc/mysql -DWITHOUT_SERVER=ON -DWITH_SSL=system
@@ -124,7 +124,7 @@ make &amp;&amp; sudo make install
  
 #Build autoconf v2.69
 cd $WORK_DIR
-wget https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+wget --no-check-certificate https://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
 tar xvf autoconf-2.69.tar.gz
 cd autoconf-2.69
 ./configure

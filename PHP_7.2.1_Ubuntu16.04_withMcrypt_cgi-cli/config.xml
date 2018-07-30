@@ -103,7 +103,7 @@ make clean
 make -j$(cat /proc/cpuinfo | grep processor | wc -l)
  
 #Run tests
-make test 
+#make test 
 #(**NOTE:There are few test case failures which are also observed on Intel x86 platform. These failures can be ignored.)
 
 #Install PHP
