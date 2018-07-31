@@ -84,7 +84,6 @@ fi
 if [ ! -d /usr/local/lib/pkgconfig ] || [ ! -d /usr/local/include/xercesc/dom ] || [ ! -d /usr/local/include/xercesc/framework ] || [ ! -d /usr/local/include/xercesc/internal ] || [ ! -d /usr/local/include/xercesc/parsers ] || [ ! -d /usr/local/include/xercesc/sax ] || [ ! -d /usr/local/include/xercesc/sax2 ] || [ ! -d /usr/local/include/xercesc/util ] || [ ! -d /usr/local/include/xercesc/validators ] || [ ! -d /usr/local/include/xercesc/xinclude ]
 then
      exit 1;
-
 fi</command>
     </hudson.tasks.Shell>
   </builders>
