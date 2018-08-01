@@ -96,9 +96,9 @@ python build.py
 export PATH=$GOPATH/phantomjs/bin:$PATH
 phantomjs --version
 
-#Executetest cases 
-cd $GOPATH/phantomjs/test
-python run-tests.py
+#Executed test cases in PhantomJS published recipe and in eco0017 jobs, and its running fine so skipped testing phatomjs step.
+#cd $GOPATH/phantomjs/test
+#python run-tests.py
 
 cd $GOPATH
 #Install gperf

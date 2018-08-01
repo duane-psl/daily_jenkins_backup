@@ -131,7 +131,7 @@ make build-js
 
 
 yum install -y curl
-./bin/grafana-server &amp;
+./bin/linux-s390x/grafana-server &amp;
 sleep 180s
 curl http://localhost:3000/login
 sleep 20s

@@ -33,15 +33,16 @@ sudo add-apt-repository &quot;deb [arch=s390x] https://download.docker.com/linux
 sudo apt-get update
 sudo apt-get install -y docker-ce
 
-#sudo service docker restart
-sudo service docker start
-sleep 60s
+sudo service docker restart
+#sudo service docker start
+sleep 60s 
 sudo service docker status
 
-sudo sudo chmod ugo+rw /var/run/docker.sock
+sudo chmod ugo+rw /var/run/docker.sock
 docker version
                  sudo free -mh&amp;&amp; sudo sync &amp;&amp; sudo sh -c &apos;echo 3 &gt; /proc/sys/vm/drop_caches&apos; &amp;&amp; sudo free -mh
 #-------------------------------------------Install go-1.10-----------------------------------------------------------
+rm -vrf calico
 mkdir calico
 cd calico
 
