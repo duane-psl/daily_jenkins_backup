@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.5_4096</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -240,16 +240,16 @@ export JENKINS_HOME=/home/test
 nohup java -Djenkins.install.runSetupWizard=false -jar jenkins.war &amp;
 sleep 2m
 
-ps -aef 
-cd $JENKINS_HOME/war/WEB-INF/lib/
-ls
-jar -tvf jna-4.2.1.jar
-jar -tvf jna-4.*.jar | grep 390   || true
+#ps -aef 
+#cd $JENKINS_HOME/war/WEB-INF/lib/
+#ls
+#jar -tvf jna-4.2.1.jar
+#jar -tvf jna-4.*.jar | grep 390   || true
 
 cd $WORK_DIR/tomcat85/output/build/webapps
 rm -f index.html
 curl http://localhost:8080/ --output index.html
-sleep 4m
+sleep 5m
 if grep -q Dashboard &quot;index.html&quot;; then
    whoami
    ps -aef

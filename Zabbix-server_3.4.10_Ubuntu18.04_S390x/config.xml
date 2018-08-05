@@ -34,7 +34,9 @@ cd $WORK_DIR
 sudo apt-get -y update
 export DEBIAN_FRONTEND=noninteractive
 sudo -E apt-get install -y mysql-server
-sudo apt-get -y install wget curl vim gcc make snmp snmptrapd ceph libmysqld-dev libmysqlclient-dev libxml2-dev libsnmp-dev libcurl3 libcurl4-openssl-dev git apache2 php php-mysql libapache2-mod-php php7.0-xml php7.0-gd php-bcmath php-mbstring php7.0-ldap libevent-dev libpcre3-dev
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install wget curl vim gcc make snmp snmptrapd ceph libmysqld-dev libmysqlclient-dev libxml2-dev libsnmp-dev libcurl4 libcurl4-openssl-dev git apache2 php php-mysql libapache2-mod-php php7.2-xml php7.2-gd php-bcmath php-mbstring php7.2-ldap libevent-dev libpcre3-dev
+sudo chmod 777 /etc/timezone
+sudo echo -e &quot;Asia/Kolkata&quot; &gt;&gt; /etc/timezone
 
 sudo chmod 766 /etc/apache2/apache2.conf
 cd /etc/apache2
@@ -86,13 +88,14 @@ sudo /usr/bin/mysql -e &quot;grant all privileges on zabbix.* to &apos;zabbix&ap
  mysql -uzabbix  zabbix &lt; images.sql
  mysql -uzabbix  zabbix &lt; data.sql
 
-filename=/etc/php/7.0/apache2/php.ini
+filename=/etc/php/7.2/apache2/php.ini
 cp $filename $HOME/bkup
 sudo -E sed -i &apos;s/max_execution_time = 30/max_execution_time = 300/g&apos; $filename
 sudo -E sed -i &apos;s/max_input_time = 60/max_input_time = 300/g&apos; $filename
 sudo -E sed -i &apos;s/post_max_size = 8M/post_max_size = 16M/g&apos; $filename
 sudo -E sed -i &quot;s/;date.timezone =/date.timezone = &apos;Asia\/Kolkata&apos;/g&quot; $filename
 diff -u $HOME/bkup $filename || true
+
 
 zabbix_server
 sudo service apache2 restart 

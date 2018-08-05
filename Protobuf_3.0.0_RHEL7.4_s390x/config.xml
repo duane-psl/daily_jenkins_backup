@@ -32,7 +32,7 @@ export WS=`pwd`
       
 ###Install dependencies
     
-       
+source /home/test/.bashrc      
 sudo yum install -y tar wget autoconf libtool automake gcc-c++ make git bzip2 curl unzip zlib zlib-devel patch
 
         
