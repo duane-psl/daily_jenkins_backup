@@ -22,7 +22,8 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command># Install dependencies
+      <command>source /home/test/.bashrc
+# Install dependencies
 sudo yum install -y git gcc gcc-c++ make cmake bison ncurses-devel util-linux tar zip wget zlib-devel bzip2.s390x libtool.s390x
 
 wget http://ftp.gnu.org/gnu/gcc/gcc-4.8.2/gcc-4.8.2.tar.bz2

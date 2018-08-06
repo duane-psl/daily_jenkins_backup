@@ -24,7 +24,7 @@
     <hudson.tasks.Shell>
       <command>###Install the Dependencies
 sudo zypper update -y
-sudo zypper install -y wget tar
+sudo zypper install -y wget tar curl
 
 export WORK_DIR=`pwd`
 

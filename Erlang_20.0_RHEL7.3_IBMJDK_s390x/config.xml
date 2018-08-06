@@ -22,7 +22,8 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel
+      <command>source /home/test/.bashrc
+sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel
 java -version
 
 export JAVA_HOME=export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm

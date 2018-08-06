@@ -49,8 +49,8 @@ fi
 
 #--------------------------------------------------------------------------------------------
 export WORK_DIR=`pwd`
-export JAVA_HOME=/opt/ibm/java-s390x-80
-export PATH=$JAVA_HOME/bin:$PATH
+#export JAVA_HOME=/opt/ibm/java-s390x-80
+#export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
 sudo apt-get update -y
@@ -75,7 +75,7 @@ sudo make install
 cd $WORK_DIR
 git clone https://github.com/elixir-lang/elixir
 cd elixir
-git checkout v1.6.1
+git checkout v1.6.6
 make
 sudo make install
 elixir --version
@@ -98,6 +98,13 @@ sudo cp ../hex/_build/dev/lib/hex/ebin/*  deps/.mix/archives/hex-0.17.8/hex-0.17
 make 
 sudo make install
 
+# Test rabbitmq
+
+sudo make tests
+cd deps/rabbit
+sudo make tests
+
+cd $WORK_DIR/rabbitmq-server-3.7.7
 sudo mkdir -p /etc/rabbitmq
 echo &quot;[{rabbit, [{loopback_users, []}]}].&quot; | sudo tee /etc/rabbitmq/rabbitmq.config
 sudo ln -s $PWD/plugins deps/rabbit/plugins
@@ -105,7 +112,7 @@ sudo deps/rabbit/scripts/rabbitmq-plugins enable rabbitmq_management
 sudo deps/rabbit/scripts/rabbitmq-server -detached
 
 sleep 100
-curl http://localhost:15672
+curl http://localhost:15672 | grep &quot;RabbitMQ Management&quot;
 </command>
     </hudson.tasks.Shell>
   </builders>
