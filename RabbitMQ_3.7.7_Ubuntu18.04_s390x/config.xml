@@ -53,10 +53,10 @@ fi
 sudo apt-get update -y
 sudo apt-get install -y openjdk-8-jdk erlang openssl wget curl tar xz-utils make python xsltproc rsync git zip
 
-sudo apt-get install -y locales
-sudo locale-gen en_US.UTF-8
-export LANG=&quot;en_US.UTF-8&quot;
-export LC_ALL=&quot;en_US.UTF-8&quot; 
+#sudo apt-get install -y locales
+#sudo locale-gen en_US.UTF-8
+#export LANG=&quot;en_US.UTF-8&quot;
+#export LC_ALL=&quot;en_US.UTF-8&quot; 
 
 #build and install elixir
 git clone https://github.com/elixir-lang/elixir
