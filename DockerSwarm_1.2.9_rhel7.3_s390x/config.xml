@@ -11,7 +11,7 @@
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -105,7 +105,8 @@ echo $GOROOT
 go install github.com/docker/swarm/
 
 export SWARM_HOST=2375
-
+whereis swarm
+which swarm
 swarm -v</command>
     </hudson.tasks.Shell>
   </builders>
