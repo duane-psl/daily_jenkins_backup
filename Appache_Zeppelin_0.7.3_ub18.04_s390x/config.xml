@@ -45,7 +45,7 @@ ps -axf | grep zeppelin
 sleep 100s
 curl  http://127.0.0.1:8080/#/
 
-pgrep -d&quot; &quot; -f &quot;zeppelin&quot; | sudo xargs kill || true</command>
+#pgrep -d&quot; &quot; -f &quot;zeppelin&quot; | sudo xargs kill || true</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

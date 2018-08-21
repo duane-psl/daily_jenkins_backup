@@ -52,8 +52,9 @@ bin/zeppelin-daemon.sh start
 sleep 5m
 curl  http://localhost:8080/#/ 
 
-pgrep -d&quot; &quot; -f &quot;zeppelin&quot; | sudo xargs kill || true
+#pgrep -d&quot; &quot; -f &quot;zeppelin&quot; | sudo xargs kill || true
 
+pgrep -d&quot; &quot; -f &quot;zeppelin&quot; || true
 
 </command>
     </hudson.tasks.Shell>
