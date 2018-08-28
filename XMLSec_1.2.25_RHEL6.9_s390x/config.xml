@@ -83,8 +83,7 @@ sudo make install
 
 # Check version
 export LD_LIBRARY_PATH=/usr/local/lib
-xmlsec1 --version | grep 1.2.26
-
+xmlsec1 --version 
 
 </command>
     </hudson.tasks.Shell>
