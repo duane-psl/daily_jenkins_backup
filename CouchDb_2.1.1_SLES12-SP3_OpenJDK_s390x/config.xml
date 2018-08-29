@@ -69,8 +69,8 @@ make
 sudo make install
 
 # Dependencies
-sudo zypper install -y libicu-devel libcurl4 libcurl-devel git wget mozilla-nspr mozilla-nspr-devel autoconf213 zip fontconfig fontconfig-devel pkg-config libasound2 yasm tar make gtk2-devel libXt-devel libIDL-2-0 libidl-devel libfreetype6 libgstreamer-1_0-0 dbus-1-devel dbus-1-glib-devel libnotify4 libnotify-devel python wget perl perl-base libopenssl-devel libssh-devel ncurses-devel unixODBC unixODBC-devel libtool pkg-config gcc-c++ curl
-
+sudo zypper install -y libicu-devel libcurl4 libcurl-devel git wget mozilla-nspr mozilla-nspr-devel autoconf213 zip fontconfig fontconfig-devel pkg-config libasound2 yasm tar make gtk2-devel libXt-devel libIDL-2-0 libidl-devel libfreetype6 libgstreamer-1_0-0 dbus-1-devel dbus-1-glib-devel libnotify4 libnotify-devel python wget perl perl-base libopenssl-devel libssh-devel ncurses-devel unixODBC unixODBC-devel libtool pkg-config gcc-c++ curl python-pip
+sudo pip install nose requests hypothesis
 # Build and install SpiderMonkey (for js)
 cd $CouchDb_home
 sudo rm -rf js-1.8.5 js185-1.0.0.tar.gz

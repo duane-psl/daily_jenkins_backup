@@ -51,7 +51,8 @@ fi
 export CouchDb_home=$(pwd)
 
 sudo apt-get update
-sudo apt-get install -y libicu55 erlang erlang-dev rebar ncurses-base gcc python git wget tar make autoconf2.13 automake autoconf g++ libmozjs185-1.0 libmozjs185-dev  openssl    libicu-dev libcurl4-openssl-dev  build-essential unixodbc libncurses5-dev libncursesw5-dev fop libncurses5-dev unixodbc-dev libssl-dev pkg-config curl
+sudo apt-get install -y libicu55 erlang erlang-dev rebar ncurses-base gcc python git wget tar make autoconf2.13 automake autoconf g++ libmozjs185-1.0 libmozjs185-dev  openssl    libicu-dev libcurl4-openssl-dev  build-essential unixodbc libncurses5-dev libncursesw5-dev fop libncurses5-dev unixodbc-dev libssl-dev pkg-config curl python-pip
+sudo pip install nose requests hypothesis
 
 cd $CouchDb_home
 sudo rm -rf couchdb
