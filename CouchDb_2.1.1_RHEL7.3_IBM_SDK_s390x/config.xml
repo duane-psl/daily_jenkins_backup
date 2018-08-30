@@ -64,7 +64,8 @@ make
 sudo make install
 
 # Dependencies
-sudo yum install -y libicu-devel libcurl libcurl-devel git wget zip bzip2 tar nspr nspr-devel autoconf213 fontconfig fontconfig-devel pkgconfig make gtk2-devel libXt-devel libIDL libIDL-devel freetype freetype-devel gstreamer1 gstreamer1-devel dbus dbus-devel dbus-glib dbus-glib-devel libnotify libnotify-devel python perl xz libtool which gcc-c++ curl python-pip
+sudo yum install -y libicu-devel libcurl libcurl-devel git wget zip bzip2 tar nspr nspr-devel autoconf213 fontconfig fontconfig-devel pkgconfig make gtk2-devel libXt-devel libIDL libIDL-devel freetype freetype-devel gstreamer1 gstreamer1-devel dbus dbus-devel dbus-glib dbus-glib-devel libnotify libnotify-devel python perl xz libtool which gcc-c++ curl python-setuptools
+sudo easy_install pip 
 sudo pip install nose requests hypothesis
 
 # Build and install SpiderMonkey (for js)

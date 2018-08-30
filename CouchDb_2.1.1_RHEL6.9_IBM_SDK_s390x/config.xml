@@ -47,7 +47,8 @@ echo &quot;Working Directory in Jenkins Node:&quot; `pwd`
 export CouchDb_home=$(pwd)
 
 # Build erlang 20.0
-sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel  wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel python-pip
+sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel  wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel python-setuptools
+sudo easy_install pip
 sudo pip install nose requests hypothesis
 
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm.s390x
