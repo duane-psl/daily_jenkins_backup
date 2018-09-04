@@ -24,17 +24,23 @@
     <hudson.tasks.Shell>
       <command>#Install the Dependencies
 sudo apt-get update
-sudo apt-get install -y nodejs npm curl 
+sudo apt-get install -y npm curl 
+wget https://nodejs.org/dist/v8.11.3/node-v8.11.3-linux-s390x.tar.gz
+tar -xvf node-v8.11.3-linux-s390x.tar.gz
+          
 sudo ln -fs `which nodejs` /usr/local/bin/node
 
 
 export WORK_DIR=`pwd`
+export PATH=$WORK_DIR/node-v8.11.3-linux-s390x/bin:$PATH
 
 
 #Install PM2
-sudo npm install pm2@2.10.2 -g
+#sudo npm install pm2@2.10.2 -g
+sudo npm install pm2@3.0.3 -g
 
-pm2 -v | grep 2.10.2
+#pm2 -v | grep 2.10.2
+pm2 -v | grep 3.0.3
 
 #Verification
 
