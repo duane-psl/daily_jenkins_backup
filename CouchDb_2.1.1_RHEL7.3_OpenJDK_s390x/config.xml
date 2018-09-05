@@ -55,7 +55,9 @@ echo &quot;Working Directory in Jenkins Node:&quot; `pwd`
 export CouchDb_home=$(pwd)
 
 # Build erlang
-sudo yum install -y java-1.8.0-openjdk-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel
+sudo yum install -y java-1.8.0-openjdk-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel  python-setuptools
+sudo easy_install pip 
+sudo pip install nose requests hypothesis
 wget http://www.erlang.org/download/otp_src_20.0.tar.gz
 tar zxf otp_src_20.0.tar.gz
 cd otp_src_20.0

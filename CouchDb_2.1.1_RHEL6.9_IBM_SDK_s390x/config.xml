@@ -48,7 +48,12 @@ export CouchDb_home=$(pwd)
 
 # Build erlang 20.0
 sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel  wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel python-setuptools
-sudo easy_install pip
+
+  curl -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py
+  which python
+  sudo python /tmp/get-pip.py
+   sudo ln -s /usr/local/bin/pip /usr/bin/pip 
+     
 sudo pip install nose requests hypothesis
 
 export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm.s390x

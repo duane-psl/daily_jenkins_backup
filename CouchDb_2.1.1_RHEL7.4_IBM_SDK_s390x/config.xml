@@ -55,7 +55,9 @@ echo &quot;Working Directory in Jenkins Node:&quot; `pwd`
 export CouchDb_home=$(pwd)
 
 # Build erlang
-sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel
+sudo yum install -y java-1.8.0-ibm java-1.8.0-ibm-devel wget tar make perl gcc gcc-c++ openssl openssl-devel ncurses-devel ncurses unixODBC unixODBC-devel python-setuptools
+sudo easy_install pip 
+sudo pip install nose requests hypothesis
 wget http://www.erlang.org/download/otp_src_20.0.tar.gz
 tar zxf otp_src_20.0.tar.gz
 cd otp_src_20.0
@@ -117,7 +119,7 @@ sed -i -e &apos;s|-define(SNAPPY, &lt;&lt;1,49,64,131,104,1,108,0,0,0,5,104,2,10
 sed -i -e &apos;s|1,97,97,1,104,1,8,8,98,97,2,5,8,8,99,97,3,5,8,44,100,97,|1,97,97,1,5,8,8,98,97,2,5,8,8,99,97,3,5,8,44,100,97,|g&apos; src/couch/test/couch_compress_tests.erl
 
 # Tests are failing intermittently due to load on vm.
-# make check
+make check
 
 # Start the server
 sudo dev/run &amp;
