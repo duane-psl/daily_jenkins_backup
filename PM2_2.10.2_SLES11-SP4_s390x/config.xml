@@ -30,18 +30,26 @@ export WORK_DIR=`pwd`
 
 #Install Nodejs
 cd $WORK_DIR
-wget https://nodejs.org/dist/v8.2.0/node-v8.2.0-linux-s390x.tar.gz
-tar xvf node-v8.2.0-linux-s390x.tar.gz
-mv node-v8.2.0-linux-s390x nodejs
-export PATH=$PATH:$WORK_DIR/nodejs/bin
+#wget https://nodejs.org/dist/v8.2.0/node-v8.2.0-linux-s390x.tar.gz
+#tar xvf node-v8.2.0-linux-s390x.tar.gz
+#mv node-v8.2.0-linux-s390x nodejs
+#export PATH=$PATH:$WORK_DIR/nodejs/bin
+
+wget https://nodejs.org/dist/v6.6.0/node-v6.6.0-linux-s390x.tar.gz 
+tar xvf node-v6.6.0-linux-s390x.tar.gz
+
+export PATH=$WORK_DIR/node-v6.6.0-linux-s390x/bin:$PATH
 node -v
 
 
 #Install pm2 
-npm install pm2@2.10.2 -g
+#npm install pm2@2.10.2 -g
+npm install pm2@3.0.3 -g
 
 #Verification
-pm2 -v | grep 2.10.2
+#pm2 -v | grep 2.10.2
+pm2 -v | grep 3.0.3
+
 echo &quot;var http = require(&apos;http&apos;);
 var server = http.createServer(function (request, response) {
 response.writeHead(200, {\&quot;Content-Type\&quot;: \&quot;text/plain\&quot;});

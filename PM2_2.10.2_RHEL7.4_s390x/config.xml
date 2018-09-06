@@ -32,14 +32,23 @@ sudo yum install -y wget tar
 
 #Install Nodejs
 cd $WORK_DIR
-wget https://nodejs.org/dist/v8.2.0/node-v8.2.0-linux-s390x.tar.gz
-tar xvf node-v8.2.0-linux-s390x.tar.gz
-mv node-v8.2.0-linux-s390x nodejs
-export PATH=$PATH:$WORK_DIR/nodejs/bin
+#wget https://nodejs.org/dist/v8.2.0/node-v8.2.0-linux-s390x.tar.gz
+#tar xvf node-v8.2.0-linux-s390x.tar.gz
+#mv node-v8.2.0-linux-s390x nodejs
+#export PATH=$PATH:$WORK_DIR/nodejs/bin
+
+wget https://nodejs.org/dist/v8.11.3/node-v8.11.3-linux-s390x.tar.gz
+tar -xvf node-v8.11.3-linux-s390x.tar.gz
+          
+sudo ln -fs `which nodejs` /usr/local/bin/node
+export PATH=$WORK_DIR/node-v8.11.3-linux-s390x/bin:$PATH
+
 node -v
 
 #Install PM2
-npm install pm2@2.10.2 -g
+#npm install pm2@2.10.2 -g
+npm install pm2@3.0.3 -g
+
 
 #Verification
 
@@ -55,6 +64,8 @@ console.log(\&quot;Server running at http://127.0.0.1:8080/\&quot;);&quot; &gt; 
 pm2 start app.js
 sleep 30s
 curl http://127.0.0.1:8080/
+
+pm2 -version
 
 #pm2 monit
 
