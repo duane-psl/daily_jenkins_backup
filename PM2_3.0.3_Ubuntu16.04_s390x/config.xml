@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-ibm-java-8</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,16 +26,13 @@
 sudo apt-get update
 sudo apt-get install -y wget curl 
 wget https://nodejs.org/dist/v8.11.3/node-v8.11.3-linux-s390x.tar.gz
-tar -xvf node-v8.11.3-linux-s390x.tar.gz
-ls
-mv node-v8.11.3-linux-s390x nodejs      
+mv node-v8.11.3-linux-s390x nodejs
+          
 #sudo ln -fs `which nodejs` /usr/local/bin/node
 
 
 export WORK_DIR=`pwd`
 export PATH=$WORK_DIR/nodejs/bin:$PATH
-
-node -v
 
 
 #Install PM2
