@@ -69,6 +69,9 @@ git clone https://github.com/openshift/origin.git
 cd origin  
 git checkout tags/v3.7.1 -b v3.7.1
 make clean build
+
+make test TEST_END_TO_END=direct
+
 </command>
     </hudson.tasks.Shell>
   </builders>

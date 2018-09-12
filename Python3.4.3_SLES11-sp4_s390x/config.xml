@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl11_2048</assignedNode>
+  <assignedNode>dc2_sl11-SP4_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -30,7 +30,7 @@
 
 mkdir src_root
 cd src_root
-wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tar.xz &amp;&amp; tar -xvf Python-3.4.3.tar.xz
+wget http://www.python.org/ftp/python/3.4.3/Python-3.4.3.tar.xz &amp;&amp; tar -xvf Python-3.4.3.tar.xz
 cd Python-3.4.3
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 wget https://bugs.python.org/file38347/test_support.patch
