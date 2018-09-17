@@ -24,7 +24,7 @@
     <hudson.tasks.Shell>
       <command>#Check if published version is already present in repo 
 package_name=&quot;joomla&quot;
-published_version=&quot;3.8.10&quot;
+published_version=&quot;3.8.12&quot;
 
 #Check distro and available version in repo : ubuntu
 available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
@@ -72,8 +72,8 @@ cd /srv/www/htdocs
 sudo rm -rf Joomla
 sudo mkdir Joomla
 cd Joomla
-sudo wget -O Joomla_3.8.10-Stable-Full_Package.zip  https://github.com/joomla/joomla-cms/releases/download/3.8.10/Joomla_3.8.10-Stable-Full_Package.zip
-sudo unzip Joomla_3.8.10-Stable-Full_Package.zip
+sudo wget -O Joomla_3.8.12-Stable-Full_Package.zip  https://github.com/joomla/joomla-cms/releases/download/3.8.12/Joomla_3.8.12-Stable-Full_Package.zip
+sudo unzip Joomla_3.8.12-Stable-Full_Package.zip
 sudo chmod a+w /srv/www/htdocs/Joomla/
 
 #Rename configuration.php-dist as configuration.php

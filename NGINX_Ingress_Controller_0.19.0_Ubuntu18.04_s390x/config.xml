@@ -29,7 +29,7 @@
       <command>
 #Set the below parameters manually
 package_name=&quot;nginx-ingress-controller&quot;
-published_version=&quot;0.13.0&quot;
+published_version=&quot;0.19.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,6 +49,9 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+
+
+export WORK_DIR=$PWD
 cat /etc/os-release
 #Install dependency
 sudo apt-get update
@@ -57,32 +60,55 @@ export PATH=/usr/lib/go-1.10/bin:$PATH
 go version
 cat /etc/os*
 
+
+				#Docker installation
+				sudo apt-get update
+				cat /etc/os*
+				sudo apt-get install -y apt-transport-https  ca-certificates  curl software-properties-common
+				curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+				sudo add-apt-repository &quot;deb [arch=s390x] https://download.docker.com/linux/ubuntu artful stable&quot;
+				sudo apt-get update
+				sudo apt-get install -y docker-ce
+				sudo service docker start
+				sleep 20s
+				sudo service docker status
+
+
 #Build
-export WORK_DIR=`pwd`
-export GOPATH=$WORK_DIR
-export DOCKER=docker
-mkdir -p $GOPATH/src/k8s.io/
-cd $GOPATH/src/k8s.io/
-git clone https://github.com/kubernetes/ingress-nginx.git
-cd ingress-nginx/
-git checkout nginx-0.13.0
-make build
+			export GOPATH=$WORK_DIR
+            export DOCKER=docker
+            export COMPOSE_INTERACTIVE_NO_CLI=1
+			mkdir -p $GOPATH/src/k8s.io/
+			cd $GOPATH/src/k8s.io/
+			git clone https://github.com/kubernetes/ingress-nginx.git
+			cd ingress-nginx/
+			git checkout nginx-0.19.0
+			cd images/e2e/
+			sed -i &apos;15d&apos; Dockerfile
+			sed -i &quot;15i FROM quay.io/kubernetes-ingress-controller/nginx-s390x:0.61&quot; Dockerfile
+			sed -i &apos;29d;30d&apos; Dockerfile
+			sed -i &quot;29i ENV GO_ARCH        linux-s390x&quot; Dockerfile
+			sed -i &quot;30i ENV GOLANG_SHA 	   c113495fbb175d6beb1b881750de1dd034c7ae8657c30b3de8808032c9af0a15&quot; Dockerfile
+			git diff
+            sudo service docker status
+			sudo -E make docker-build
+			
+			cd $GOPATH/src/k8s.io/ingress-nginx/
+			sed -i &apos;43d&apos; build/go-in-docker.sh
+			sed -i &quot;43i IMAGE_TAG=$(sudo docker images | grep e2e | awk &apos;{print $2}&apos;)&quot; build/go-in-docker.sh
+			sed -i &apos;44i E2E_IMAGE=quay.io/kubernetes-ingress-controller/e2e:$IMAGE_TAG&apos; build/go-in-docker.sh
+			git diff
+            go version
+			sudo -E make build ARCH=s390x
 
 #Test
-sed -i &quot;s/ -race//g&quot; $GOPATH/src/k8s.io/ingress-nginx/Makefile
+			cd $GOPATH/src/k8s.io/ingress-nginx/
+			sed -i &quot;s/ -race//g&quot; build/test.sh
 
-git diff
+			git diff
 
-cd $GOPATH/src/k8s.io/ingress-nginx/
-make test 2&gt;&amp;1 | tee test_logs
-grep FAIL: test_logs 2&gt;&amp;1 | tee failed_logs
-
-echo &quot;--- FAIL: TestCreateApiserverClient (0.00s)
---- FAIL: TestHandleSigterm (0.00s)
---- FAIL: TestStore (0.00s)
-&quot; &gt;&gt; Expectedfailed_logs
-
-diff -u --ignore-all-space -B &lt;(sort Expectedfailed_logs) &lt;(sort failed_logs)
+			cd $GOPATH/src/k8s.io/ingress-nginx/
+			sudo -E make test ARCH=s390x
 
 
 

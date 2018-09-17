@@ -69,6 +69,7 @@ go version
 sudo zypper install -y git make 
 export GOPATH=$WORK_DIR
 export DOCKER=docker
+export COMPOSE_INTERACTIVE_NO_CLI=1
 mkdir -p $GOPATH/src/k8s.io/
 cd $GOPATH/src/k8s.io/
 git clone https://github.com/kubernetes/ingress-nginx.git

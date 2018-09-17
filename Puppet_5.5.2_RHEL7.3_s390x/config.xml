@@ -29,7 +29,7 @@
       <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;puppet&quot;
-published_version=&quot;5.5.2&quot;
+published_version=&quot;5.5.6&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -87,7 +87,7 @@ sudo /usr/local/bin/gem install bundler rake-compiler
 
 #Install Puppet
 cd $WORK_DIR
-sudo /usr/local/bin/gem install puppet -v 5.5.2
+sudo /usr/local/bin/gem install puppet -v 5.5.6
 #Locate the $confdir by command
 sudo chmod 755 /usr/local/lib
 export PATH=/usr/local/bin/:$PATH
@@ -160,7 +160,7 @@ su -c whoami puppet
 
 echo &quot;puppet&quot; | su -c &apos;git clone git://github.com/puppetlabs/puppet&apos; puppet
 cd puppet
-echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.2&apos; puppet
+echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.6&apos; puppet
 echo &quot;puppet&quot; | su -c &apos;bundle install --path .bundle/gems/&apos; puppet
 
 cd /home/puppet/puppet
@@ -226,7 +226,7 @@ sudo bash -c &quot;cat &gt; puppetuser_tests.sh&quot; &lt;&lt;&apos;EOF&apos;
 EOF
 cat puppetuser_tests.sh
 echo &quot;puppet&quot; | su -c ./puppetuser_tests.sh puppet
-puppet --version
+puppet --version | grep 5.5.6
 
 </command>
     </hudson.tasks.Shell>
