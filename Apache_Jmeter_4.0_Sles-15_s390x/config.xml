@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>Abhay_Node</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,51 +28,16 @@
     <hudson.tasks.Shell>
       <command>rm -rf ./*
 export WS=`pwd`
-
-source /home/test/.bashrc
+sudo zypper refresh
+sudo zypper update -y
 #Install dependencies from repo
-sudo yum install -y git wget tar java-1.8.0-openjdk-devel ant dejavu-serif-fonts net-tools hostname
+sudo zypper install -y git wget tar java-1_8_0-openjdk-devel ant liberation-fonts net-tools
 
 #Set JAVA_HOME
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+export JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-#Install openjfx dependencies
-#sudo yum install -y mercurial bison flex gperf ksh pkgconfig \
-#libpng12-devel libjpeg-devel libxml2-devel libxslt-devel systemd-devel glib2-devel gtk2-devel  \
-#libXtst-devel pango-devel freetype-devel wget unzip ant gcc gcc-c++
-
-#Install gradle
-#wget https://services.gradle.org/distributions/gradle-1.8-bin.zip
-#unzip gradle-1.8-bin.zip
-#export PATH=$PATH:$PWD/gradle-1.8/bin
-
-#Get openjfx source
-#hg clone http://hg.openjdk.java.net/openjfx/8u60/rt
-#cp $WS/rt/build.gradle $WS/rt/build.gradle.orig
-
-#Add s390x support
-#sed -i &apos;707d&apos; $WS/rt/build.gradle
-#sed -i &apos;706a} else if (IS_LINUX &amp;&amp; OS_ARCH != &quot;i386&quot; &amp;&amp; OS_ARCH != &quot;amd64&quot; &amp;&amp; OS_ARCH != &quot;s390x&quot;) {&apos; $WS/rt/build.gradle
-#sed -i &apos;250d&apos; $WS/rt/build.gradle
-#sed -i &apos;249aext.IS_64 = OS_ARCH.toLowerCase().contains(&quot;64&quot;) || OS_ARCH.contains(&quot;s390x&quot;)&apos; $WS/rt/build.gradle
-#diff -u $WS/rt/build.gradle.orig $WS/rt/build.gradle || true
-
-#Increase grammar conversion timeout for antlr
-#cp $WS/rt/buildSrc/build.gradle $WS/rt/buildSrc/build.gradle.orig
-#sed -i &apos;117d&apos; $WS/rt/buildSrc/build.gradle
-#sed -i &apos;116a\\targs = [&quot;-Xconversiontimeout&quot;, 30000, &quot;-o&quot;, dest, grammars.files].flatten()&apos; $WS/rt/buildSrc/build.gradle
-#diff -u $WS/rt/buildSrc/build.gradle.orig $WS/rt/buildSrc/build.gradle || true
-
-#Build openjfx (Testing skipped because of known failures)
-#sudo rm -rf /usr/lib/jvm/java-1.8.0-openjdk/jre/lib/ext/jfxrt.jar
-#cd $WS/rt
-#gradle
-#gradle test
-
-#Copy jfxrt.jar 
-#sudo cp $WS/rt/build/sdk/rt/lib/ext/jfxrt.jar  /usr/lib/jvm/java-1.8.0-openjdk/jre/lib/ext/
 
 #Get Jmeter source
 				cd $WS
@@ -103,7 +68,7 @@ sed -i &apos;172along maxDurationPlusMargin = vars[&amp;quot;MaxDuration&amp;quo
 diff -u bin/testfiles/TestSchedulerWithTimer.jmx.orig bin/testfiles/TestSchedulerWithTimer.jmx || true
 
 #Run tests
-ant test -Djava.awt.headless=true
+ant test -Djava.awt.headless=true 
 
 #Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
 cp bin/jmeter bin/jmeter.orig
@@ -118,22 +83,6 @@ jmeter --version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
-      <script plugin="script-security@1.24">
-        <script>import jenkins.model.Jenkins
-
-def x=manager.envVars[&apos;NODE_NAME&apos;]
-Jenkins.instance.slaves.each {
-    if(it.name==x){
-it.getComputer().doDoDelete()
-    }
-}
-</script>
-        <sandbox>false</sandbox>
-      </script>
-      <behavior>0</behavior>
-      <runForMatrixParent>false</runForMatrixParent>
-    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

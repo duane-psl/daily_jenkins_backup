@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub18.04_4096</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -18,18 +18,28 @@
     <hudson.triggers.TimerTrigger>
       <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 4</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command># Install dependencies
+      <command>#Set the below parameters manually
+package_name=&quot;python&quot;
+published_version=&quot;2.7.14&quot;
 
-#Check if published version is already present in repo 
-package_name=&quot;joomla&quot;
-published_version=&quot;3.8.12&quot;
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+fi
 
-#Check distro and available version in repo : ubuntu
-available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo&quot;
@@ -39,58 +49,62 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+rm -rf ./*
+#Install dependencies
+sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar bzip2 zlib-devel xz readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_8-devel gdb awk netcfg libbz2-devel glibc-locale
 
-### Install dependencies
-sudo apt-get update
-export DEBIAN_FRONTEND=noninteractive
-sudo -E apt-get install -y mysql-server
-sudo -E apt-get install -y wget apache2 php7.2 php7.2-mysql libapache2-mod-php7.2 libapache2-mod-perl2  php7.2-cli php7.2-common php7.2-curl php7.2-dev unzip curl
+#Create symlinks
+sudo ln -sfv /usr/include/ncurses/* /usr/include/
 
+#Get source
+wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
+tar -xvf Python-2.7.14.tar.xz
+cd Python-2.7.14
 
-### Make changes in the configuration file 
-sudo chmod 777 /etc/apache2/apache2.conf
-sudo cp /etc/apache2/apache2.conf /etc/apache2/apache2.conf.old
-sudo chmod 777 /etc/apache2/apache2.conf.old
+#Apply patch to fix test_regrtest
+wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
+cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
 
-sudo echo -e &quot;AddType application/x-httpd-php .php&quot; &gt;&gt; /etc/apache2/apache2.conf
-sudo echo -e &quot;ServerName localhost&quot; &gt;&gt; /etc/apache2/apache2.conf
-sudo echo -e &quot;&lt;Directory /&gt;&quot; &gt;&gt; /etc/apache2/apache2.conf
-sudo echo -e &quot; DirectoryIndex index.php &quot; &gt;&gt; /etc/apache2/apache2.conf
-sudo echo -e &quot;&lt;/Directory&gt;&quot; &gt;&gt; /etc/apache2/apache2.conf
+#Build and test
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make 
+make test 2&gt;&amp;1 | tee testlog
 
-diff -u /etc/apache2/apache2.conf.old /etc/apache2/apache2.conf || true
+#Store failed tests
+grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
 
+#Store tests expected to fail and intermittent tests
+echo &quot;test_multiprocessing&quot; &gt;expected
 
-# Get source code
-cd /var/www/html/
-sudo rm -rf Joomla
-sudo mkdir Joomla
-cd Joomla/
-sudo wget -O Joomla_3.8.12-Stable-Full_Package.zip  https://github.com/joomla/joomla-cms/releases/download/3.8.12/Joomla_3.8.12-Stable-Full_Package.zip
-sudo unzip Joomla_3.8.12-Stable-Full_Package.zip
-sudo chmod a+w /var/www/html/Joomla/
+#Diff between expected and actual failures
+diff -u expected failures | tee diff_
 
-#Rename configuration.php-dist as configuration.php
-sudo mv installation/configuration.php-dist installation/configuration.php
+#Fail if any extra test failed apart from expected
+if grep -q &apos;+test&apos; diff_; then
+    exit 1
+fi
 
-# Start mysql server
-sudo /usr/sbin/mysqld --initialize --user=mysql --datadir=/var/lib/mysql/data
-sleep 5m
-sudo service mysql start
-sleep 20s
+#Run intermittent tests individually
+cd ./Lib/test
+../../python -m unittest test_bz2
 
-# Create database 
+#Install
+cd ../../
+sudo make install
 
-sudo /usr/bin/mysql  -e &quot;create database Joomla&quot;
-sudo /usr/bin/mysql  -e &quot;create user &apos;user&apos;@&apos;localhost&apos; identified by &apos;password&apos;&quot;
-sudo /usr/bin/mysql  -e &quot;GRANT ALL PRIVILEGES ON *.* TO &apos;user&apos;@&apos;localhost&apos; identified by &apos;password&apos;&quot;	     
+python_version=$(python --version 2&gt;&amp;1)
 
-# Start apache
-sudo /usr/sbin/apachectl -k start
-      
+echo $python_version &gt; output.txt
 
-# Verification
-wget http://127.0.0.1:80/Joomla/installation/index.php</command>
+echo &apos;Python 2.7.14&apos; &gt; expected.txt
+result=`diff output.txt expected.txt`
+
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -103,8 +117,7 @@ Jenkins.instance.slaves.each {
 if(it.name==x){
 it.getComputer().doDoDelete()
 }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -116,7 +129,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@nthorat</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
@@ -125,7 +138,7 @@ it.getComputer().doDoDelete()
       <notifyRegression>false</notifyRegression>
       <notifyFailure>true</notifyFailure>
       <notifyBackToNormal>true</notifyBackToNormal>
-      <notifyRepeatedFailure>false</notifyRepeatedFailure>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
       <includeTestSummary>false</includeTestSummary>
       <includeFailedTests>false</includeFailedTests>
       <commitInfoChoice>NONE</commitInfoChoice>

@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_ubuntu16.04-ibm-java-8</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -40,10 +40,10 @@ node -v
 
 #Install PM2
 #sudo npm install pm2@2.10.2 -g
-sudo npm install pm2@3.0.3 -g
+ npm install pm2 -g
 
 #pm2 -v | grep 2.10.2
-pm2 -v | grep 3.0.3
+pm2 -v | grep 3.1.2
 
 #Verification
 

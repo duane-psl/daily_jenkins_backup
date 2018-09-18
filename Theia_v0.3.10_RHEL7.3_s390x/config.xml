@@ -239,7 +239,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>true</botUser>
-      <room>#loz-jenkins-build,@nthorat</room>
+      <room>#loz-jenkins-build</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

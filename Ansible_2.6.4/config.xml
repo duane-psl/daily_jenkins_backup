@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>snehal_rhel</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 13 * * 1</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 1</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>source /home/test/.bashrc
+export Ansible_home=`pwd`
+
+#Set the below parameters manually
+package_name=&quot;ansible&quot;
+published_version=&quot;2.6.4&quot;
+
+cat /etc/red*
+
+cd $Ansible_home
+rm -rf ansible
+#Install the dependencies
+sudo yum install -y git svn bzip2 unzip gcc autoconf net-tools ssh python-setuptools sqlite-devel openldap-devel libxslt-devel libffi-devel openssl systemd-devel systemd zlib systemd-devel patch vim
+
+# Install Python 2.7.15
+cd $Ansible_home
+#sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2 bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-devel gdb
+sudo yum install -y gcc gcc-c++ make ncurses wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb bzip2
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
+cp Lib/test/test_ssl.py Lib/test/test_ssl.py.orig
+sed -i  &apos;992i \ \ \ \ \ \ \ \ filename = u&quot;dhparam.pem&quot;&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;993i \ \ \ \ \ \ \ \ fs_encoding = sys.getfilesystemencoding()&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;994i \ \ \ \ \ \ \ \ try:&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;995i \ \ \ \ \ \ \ \ \ \ \ \ filename.encode(fs_encoding)&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;996i \ \ \ \ \ \ \ \ except UnicodeEncodeError:&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;997i \ \ \ \ \ \ \ \ \ \ \ \ self.skipTest(&quot;filename %r cannot be encoded to the filesystem encoding %r&quot; % (filename, fs_encoding))&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;1010d&apos; Lib/test/test_ssl.py \
+&amp;&amp; sed -i  &apos;1010i \ \ \ \ \ \ \ \ \ \ \ \ fname = os.path.join(d, filename)&apos; Lib/test/test_ssl.py
+
+diff -u Lib/test/test_ssl.py.orig Lib/test/test_ssl.py || true
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make
+sudo make install
+export PATH=/usr/local/bin:$PATH
+sudo /usr/sbin/update-alternatives --install /usr/bin/python python /usr/local/bin/python 10
+sudo /usr/sbin/update-alternatives --display python
+python -V
+ 
+#Install certain Python modules for Ansible later on, pip is required:
+sudo env PATH=$PATH python -m ensurepip
+sudo env PATH=$PATH pip install --upgrade pip 
+
+#Install ansible
+sudo env PATH=$PATH pip install ansible
+
+ansible --version
+
+
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+    if(it.name==x){
+it.getComputer().doDoDelete()
+    }
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
+      <baseUrl></baseUrl>
+      <teamDomain></teamDomain>
+      <authToken></authToken>
+      <authTokenCredentialId></authTokenCredentialId>
+      <botUser>false</botUser>
+      <room> #loz-jenkins-build,@ajakhade</room>
+      <startNotification>false</startNotification>
+      <notifySuccess>false</notifySuccess>
+      <notifyAborted>false</notifyAborted>
+      <notifyNotBuilt>false</notifyNotBuilt>
+      <notifyUnstable>false</notifyUnstable>
+      <notifyRegression>false</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>true</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>false</includeCustomMessage>
+      <customMessage></customMessage>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>

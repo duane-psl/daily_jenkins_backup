@@ -30,7 +30,19 @@
 
 mkdir src_root
 cd src_root
-wget http://www.python.org/ftp/python/3.4.3/Python-3.4.3.tar.xz &amp;&amp; tar -xvf Python-3.4.3.tar.xz
+#Build openssl
+sudo rm -rf openssl
+git clone git://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_0_2l	 
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make
+sudo make install
+openssl version
+
+cd ../
+wget http://www.python.org/ftp/python/3.4.3/Python-3.4.3.tar.xz 
+tar -xvf Python-3.4.3.tar.xz
 cd Python-3.4.3
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
 wget https://bugs.python.org/file38347/test_support.patch
