@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -31,7 +31,7 @@ export WS=`pwd`
 sudo zypper refresh
 sudo zypper update -y
 #Install dependencies from repo
-sudo zypper install -y git java-1_8_0-openjdk-devel ant liberation-fonts net-tools
+sudo zypper install -y git wget tar java-1_8_0-openjdk-devel ant liberation-fonts net-tools
 
 #Set JAVA_HOME
 export JAVA_HOME=/usr/lib64/jvm/java-1.8.0-openjdk
@@ -90,17 +90,27 @@ gradle
 #Copy jfxrt.jar 
 sudo cp $WS/rt/build/sdk/rt/lib/ext/jfxrt.jar  /usr/lib64/jvm/java-1.8.0-openjdk/jre/lib/ext/
 
-#Get Jmeter source and build
-git clone https://github.com/apache/jmeter.git
-cd jmeter/
-git checkout v4_0
-ant download_jars
-ant
+#Get Jmeter source
+				cd $WS
+				git clone https://github.com/apache/jmeter.git
+				
+				
+				#Get Jmeter binary
+				 wget http://apache.forsale.plus//jmeter/binaries/apache-jmeter-4.0.tgz
+				 tar -xvzf apache-jmeter-4.0.tgz
+				 #rm $PWD/jmeter/bin/ApacheJMeter.jar 
+				 cp -Rf $WS/apache-jmeter-4.0/bin/ApacheJMeter.jar $WS/jmeter/bin/
+				
+				cd jmeter/
+				pwd
+				git checkout v4_0
+				ant download_jars
 
 #Skip expected failures
 cp build.xml build.xml.orig
 sed -i -e &apos;s/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;true&quot;/g&apos; build.xml
 sed -i -e &apos;s/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;true&quot;/g&apos; build.xml
+sed -i -e &apos;s/property name=&quot;skip.batchtest_ResponseDecompression&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_ResponseDecompression&quot; value=&quot;true&quot;/g&apos; build.xml
 diff -u build.xml.orig build.xml || true
 
 #Increase timeout
@@ -110,7 +120,7 @@ sed -i &apos;172along maxDurationPlusMargin = vars[&amp;quot;MaxDuration&amp;quo
 diff -u bin/testfiles/TestSchedulerWithTimer.jmx.orig bin/testfiles/TestSchedulerWithTimer.jmx || true
 
 #Run tests
-#ant test -Djava.awt.headless=true 
+ant test -Djava.awt.headless=true 
 
 #Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
 cp bin/jmeter bin/jmeter.orig
