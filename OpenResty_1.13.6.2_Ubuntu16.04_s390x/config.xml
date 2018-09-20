@@ -71,7 +71,8 @@ sudo ln -s luajit-2.1.0-beta3 /usr/local/bin/luajit
 
 #Install the dependencies
 sudo apt-get update
-sudo apt-get install -y git tar wget make gcc dos2unix hgview libreadline-dev patch libpcre3-dev libpcre3 libcurl4-openssl-dev libncursesada*-dev postgresql libpq-dev openssl libssl-dev perl
+#sudo apt-get install -y git tar wget make gcc dos2unix hgview libreadline-dev patch libpcre3-dev libpcre3 libcurl4-openssl-dev libncursesada*-dev postgresql libpq-dev openssl libssl-dev perl
+sudo apt-get install -y git tar wget make gcc dos2unix hgview libreadline-dev patch libpcre3-dev libpcre3 libcurl4-openssl-dev libncursesada*-dev postgresql libpq-dev openssl libssl-dev perl zlib1g zlib1g-dev
 sudo ln -s make /usr/bin/gmake
 export PATH=$PATH:/sbin
 

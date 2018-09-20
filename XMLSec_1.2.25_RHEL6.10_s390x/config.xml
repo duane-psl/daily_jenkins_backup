@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_rh6.10_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 0</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 0</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,53 +27,65 @@
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
-#Set the below parameters manually
-package_name=&quot;ceilometer&quot;
-published_version=&quot;2.9.0&quot;
+#Check if published version is already present in repo 
+package_name=&quot;xmlsec&quot;
+published_version=&quot;1.2.25&quot;
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
-fi
-
+available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
+	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
 else	
+   echo &quot;Available version: $available_version&quot;
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+
+
+export src_dir=$(pwd)
+
 # Install dependencies
-export sourcedir=`pwd`
+sudo yum install -y tar wget git make libtool libtool-ltdl-devel python-devel libgcrypt-devel openssl-devel.s390x
+#Install libxml2&apos; and &apos;libxslt&apos; 
 
-sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
-python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
-sudo easy_install pip
-sudo pip install --upgrade setuptools
-sudo pip install pbr virtualenv cryptography 
 
-cd $sourcedir/
-git clone git://github.com/openstack/python-ceilometerclient.git
-cd python-ceilometerclient
-git checkout 2.9.0
+cd $src_dir
+wget http://xmlsoft.org/sources/libxml2-2.9.8.tar.gz
+tar xzvf libxml2-2.9.8.tar.gz
+cd libxml2-2.9.8
+./configure &amp;&amp; make &amp;&amp; sudo make install
 
-sudo pip install -r requirements.txt         
+cd $src_dir
+wget http://xmlsoft.org/sources/libxslt-1.1.29.tar.gz
+tar zxvf libxslt-1.1.29.tar.gz
+cd libxslt-1.1.29
+./configure &amp;&amp; make &amp;&amp; sudo make install
 
-# Tests
-sudo pip install -r test-requirements.txt
-python setup.py test
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/usr/lib64
 
-sudo python setup.py install
+# Build and install XMLSec
+cd $src_dir
+git clone git://github.com/lsh123/xmlsec.git
+cd xmlsec
+git checkout xmlsec-1_2_25
+./autogen.sh --with-libxml=/usr/local/lib/ 
+#Build
+make
 
-ceilometer --help
-ceilometer --version</command>
+# Test
+make check
+
+# install 
+sudo make install 
+
+# Check version
+export LD_LIBRARY_PATH=/usr/local/lib
+xmlsec1 --version 
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -83,10 +95,11 @@ ceilometer --version</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -98,7 +111,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

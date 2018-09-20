@@ -49,7 +49,7 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-sudo yum install -ygcc git python-setuptools python-lxml curl python-ldap sqlite-devel openldap-devel python-devel libxslt-devel openssl-devel MySQL-python net-tools libffi-devel which openssl httpd httpd-devel memcached python-memcached mod_wsgi mariadb mariadb-server postgresql-devel
+sudo yum install -y gcc git python-setuptools python-lxml curl python-ldap sqlite-devel openldap-devel python-devel libxslt-devel openssl-devel MySQL-python net-tools libffi-devel which openssl httpd httpd-devel memcached python-memcached mod_wsgi mariadb mariadb-server postgresql-devel
 sudo easy_install pip
 sudo pip install --upgrade setuptools
 sudo pip install cryptography mod_wsgi python-memcached functools32 python-openstackclient requests pika==0.10.0

@@ -56,7 +56,7 @@ export sourcedir=`pwd`
 sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
 python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
 sudo easy_install pip
-sudo pip install --upgrade pip --upgrade setuptools
+sudo pip install --upgrade setuptools
 sudo pip install pbr virtualenv cryptography 
 
 cd $sourcedir/

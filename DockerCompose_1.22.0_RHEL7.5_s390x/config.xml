@@ -9,27 +9,19 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dockercloud_rhel7.5</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers>
-    <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
-    </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
-  </triggers>
+  <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;ceilometer&quot;
-published_version=&quot;2.9.0&quot;
+package_name=&quot;docker-compose&quot;
+published_version=&quot;1.21.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,31 +41,21 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+        
+# Install the following Dependencies
+		
+		sudo yum install -y python-setuptools
+        
+		sudo easy_install pip
 
-# Install dependencies
-export sourcedir=`pwd`
-
-sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
-python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
-sudo easy_install pip
-sudo pip install --upgrade setuptools
-sudo pip install pbr virtualenv cryptography 
-
-cd $sourcedir/
-git clone git://github.com/openstack/python-ceilometerclient.git
-cd python-ceilometerclient
-git checkout 2.9.0
-
-sudo pip install -r requirements.txt         
-
-# Tests
-sudo pip install -r test-requirements.txt
-python setup.py test
-
-sudo python setup.py install
-
-ceilometer --help
-ceilometer --version</command>
+       
+# Build and install        
+       
+        #sudo pip install backports.ssl_match_hostname --upgrade
+        
+        sudo pip install docker-compose==1.22.0
+        
+        docker-compose version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

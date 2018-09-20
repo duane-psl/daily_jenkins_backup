@@ -9,27 +9,26 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Set the below parameters manually
-package_name=&quot;ceilometer&quot;
-published_version=&quot;2.9.0&quot;
+      <command>#Set the below parameters manually
+package_name=&quot;python&quot;
+published_version=&quot;2.7.15&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,30 +49,62 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-# Install dependencies
-export sourcedir=`pwd`
+rm -rf ./*
+#Install dependencies
+sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar bzip2 zlib-devel xz readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-4_8-devel gdb awk netcfg libbz2-devel glibc-locale
 
-sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
-python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
-sudo easy_install pip
-sudo pip install --upgrade setuptools
-sudo pip install pbr virtualenv cryptography 
+#Create symlinks
+sudo ln -sfv /usr/include/ncurses/* /usr/include/
 
-cd $sourcedir/
-git clone git://github.com/openstack/python-ceilometerclient.git
-cd python-ceilometerclient
-git checkout 2.9.0
+#Get source
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
 
-sudo pip install -r requirements.txt         
+#Apply patch to fix test_regrtest
+#wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
+#cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
 
-# Tests
-sudo pip install -r test-requirements.txt
-python setup.py test
+#Build and test
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make 
+make test 2&gt;&amp;1 | tee testlog
 
-sudo python setup.py install
+#Store failed tests
+grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
 
-ceilometer --help
-ceilometer --version</command>
+#Store tests expected to fail and intermittent tests
+echo &quot;test_multiprocessing&quot; &gt;expected
+
+#Diff between expected and actual failures
+diff -u expected failures | tee diff_
+
+#Fail if any extra test failed apart from expected
+if grep -q &apos;+test&apos; diff_; then
+    exit 1
+fi
+
+#Run intermittent tests individually
+cd ./Lib/test
+../../python -m unittest test_bz2
+
+#Install
+cd ../../
+sudo make install
+
+python_version=$(python --version 2&gt;&amp;1)
+
+echo $python_version &gt; output.txt
+
+echo &apos;Python 2.7.15&apos; &gt; expected.txt
+result=`diff output.txt expected.txt`
+
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -98,7 +129,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

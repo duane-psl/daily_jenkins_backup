@@ -69,7 +69,7 @@ git checkout 5.2.15
 
 #Build 
 mkdir -p $HOME/.gem/jruby/1.9
-./gradlew build -x :documentation:renderGettingStartedGuides -x :documentation:renderIntegrationGuide -x :documentation:renderUserGuide -x test
+./gradlew build -x :documentation:renderGettingStartedGuides -x :documentation:renderIntegrationGuide -x :documentation:renderUserGuide -x test -x hibernate-core:test -x hibernate-orm-modules:test
 
 #Run testcases 
 cp build.gradle build.gradle.org 

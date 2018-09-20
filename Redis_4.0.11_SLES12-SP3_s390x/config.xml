@@ -9,27 +9,26 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 6</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 3</spec>
+      <spec>H 13 * * 6</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Set the below parameters manually
-package_name=&quot;ceilometer&quot;
-published_version=&quot;2.9.0&quot;
+      <command>#Check if published version is already present in repo 
+package_name=&quot;redis&quot;
+published_version=&quot;4.0.11&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -38,7 +37,8 @@ if [ $ID == &quot;rhel&quot; ]; then
 elif [ $ID == &quot;sles&quot; ]; then
 	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
 elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+	sudo apt-get update
+	available_version=$(sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
 
@@ -47,33 +47,49 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
     echo &quot;Exact name: $available_version ... Failing&quot;
     exit 1
 else	
+   echo &quot;Available version: $available_version&quot;
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+
+#==============================================================================================#
+
 # Install dependencies
-export sourcedir=`pwd`
+sudo zypper up -y
+sudo zypper install -y gcc gcc-c++ make git tcl gawk which
 
-sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
-python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
-sudo easy_install pip
-sudo pip install --upgrade setuptools
-sudo pip install pbr virtualenv cryptography 
+#Get the source code
+git clone https://github.com/antirez/redis.git
+cd redis
+git checkout 4.0.11
 
-cd $sourcedir/
-git clone git://github.com/openstack/python-ceilometerclient.git
-cd python-ceilometerclient
-git checkout 2.9.0
+# Build redis
+make distclean 
+make
 
-sudo pip install -r requirements.txt         
+# Run the testcases
+#make test
+ 
+# Install the redis
+sudo make install
 
-# Tests
-sudo pip install -r test-requirements.txt
-python setup.py test
+# Start server
+export PATH=/usr/local/bin:$PATH
+redis-server &amp;
 
-sudo python setup.py install
+sleep 10s
 
-ceilometer --help
-ceilometer --version</command>
+# Verification
+if [ $(redis-cli ping) != &quot;PONG&quot; ] || [ $(redis-cli set foo bar) != &quot;OK&quot; ] || [ $(redis-cli get foo) != &quot;bar&quot; ];
+then
+    exit 1
+fi
+
+
+
+
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -98,7 +114,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build,@nthorat</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

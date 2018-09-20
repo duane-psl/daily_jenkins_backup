@@ -116,7 +116,6 @@ sudo cp $WS/rt/build/sdk/rt/lib/ext/jfxrt.jar  /usr/lib64/jvm/java-1.8.0-openjdk
 cp build.xml build.xml.orig
 sed -i -e &apos;s/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;true&quot;/g&apos; build.xml
 sed -i -e &apos;s/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;true&quot;/g&apos; build.xml
-sed -i -e &apos;s/property name=&quot;skip.batchtest_FTP_TESTS&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_FTP_TESTS&quot; value=&quot;true&quot;/g&apos; build.xml
 diff -u build.xml.orig build.xml || true
 
 #Increase timeout
@@ -125,7 +124,19 @@ sed -i &apos;173d&apos; bin/testfiles/TestSchedulerWithTimer.jmx
 sed -i &apos;172along maxDurationPlusMargin = vars[&amp;quot;MaxDuration&amp;quot;].toInteger()*100000+500;&apos; bin/testfiles/TestSchedulerWithTimer.jmx
 diff -u bin/testfiles/TestSchedulerWithTimer.jmx.orig bin/testfiles/TestSchedulerWithTimer.jmx || true
 
-ant test -Djava.awt.headless=true
+#Run tests
+ant test -Djava.awt.headless=true 2&gt;&amp;1 | tee jmeter_tests.log
+
+echo &quot;CSV Files are not identical.&quot; &gt; expected_failures.log
+
+grep -o &quot;CSV Files are not identical.&quot; jmeter_tests.log | tee actual_failures.log
+
+if diff -u --ignore-all-space expected_failures.log actual_failures.log ; then
+	echo &quot;Expected failures found!&quot;
+#	exit 0
+else
+	exit 1
+fi
 
 
 #Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
@@ -139,20 +150,11 @@ diff -u bin/jmeter.orig bin/jmeter || true
 export PATH=$PATH:`pwd`/bin/
 jmeter --version
 
+cd $WS/apache-jmeter-4.0/
+jmeter -n -t ./extras/Test.jmx -l Test.jtl
+cat Test.jtl
 
-#Run tests
-#ant test -Djava.awt.headless=true 2&gt;&amp;1 | tee jmeter_tests.log
 
-#echo &quot;CSV Files are not identical.&quot; expected_failures.log
-
-#grep &quot;CSV Files are not identical.&quot; jmeter_tests.log | tee actual_failures.log
-
-#if diff -u --ignore-all-space expected_failures.log actual_failures.log ; then
-#	echo &quot;Expected failures found!&quot;
-#	exit 0
-#else
-#	exit 1
-#fi
 </command>
     </hudson.tasks.Shell>
   </builders>
