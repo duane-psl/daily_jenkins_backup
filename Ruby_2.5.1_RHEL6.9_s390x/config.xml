@@ -33,7 +33,7 @@ package_name=&quot;ruby&quot;
 published_version=&quot;2.5.1&quot;
 
 available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.10 (Santiago)&quot;
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;

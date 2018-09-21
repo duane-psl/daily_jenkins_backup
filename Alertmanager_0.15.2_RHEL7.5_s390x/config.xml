@@ -9,23 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 6 * * 3</spec>
+      <spec>H 23 * * 3</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 23 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;statsd&quot;
-published_version=&quot;0.8.0&quot;
+package_name=&quot;alertmanager&quot;
+published_version=&quot;0.15.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -45,40 +49,50 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-#-----------------------------------------------------------------------------------------
-export work_dir=`pwd`
+cat /etc/os-release
+cat /etc/os*
 
-sudo yum install -y git tar wget unzip hostname make gcc-c++ nc
+sudo yum install -y git make curl glibc-static file
+sudo yum install -y tar wget gcc
 
-#Install Nodejs
-wget https://nodejs.org/dist/v6.12.2/node-v6.12.2-linux-s390x.tar.gz
-tar -xvf node-v6.12.2-linux-s390x.tar.gz
+export GOPATH=`pwd`
+cd $GOPATH
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+go version
 
-export PATH=$PATH:$work_dir/node-v6.12.2-linux-s390x/bin
-node -v
 
-#Download Statsd source code
- cd $work_dir
- git clone https://github.com/etsy/statsd.git
- cd statsd
- git checkout v0.8.0
- 
- 
-#Build Statsd
-npm install
+mkdir -p $GOPATH/src/github.com/prometheus
+cd $GOPATH/src/github.com/prometheus
+git clone https://github.com/prometheus/alertmanager.git
+cd alertmanager/
+git checkout v0.15.2
+make build
 
-#Run test cases
-cd $work_dir/statsd/
-./run_tests.sh
-
-#Run Statsd daemon
-cd $work_dir/statsd/
-node stats.js $work_dir/statsd/exampleConfig.js &amp;
+file $GOPATH/src/github.com/prometheus/alertmanager/alertmanager
+file $GOPATH/src/github.com/prometheus/alertmanager/amtool
+$GOPATH/src/github.com/prometheus/alertmanager/alertmanager --version
+cd $GOPATH/src/github.com/prometheus/alertmanager
+./alertmanager --config.file=doc/examples/simple.yml &amp;
+sleep 20s
+curl http://localhost:9093/
 sleep 10s
-echo &quot;foo:1|c&quot; | nc -u -w2 127.0.0.1 8125
-pgrep statsd
-pkill statsd
 
+cd $GOPATH/src/github.com/prometheus/alertmanager
+sed -i &apos;/-race/d&apos; Makefile.common
+make test 2&gt;&amp;1 | tee build_logs
+cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; sleep 20s; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+count=$(grep FAIL individual_test_log | wc -l)
+while [ $count -gt 0 ]
+do
+   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+   count=$(grep FAIL individual_test_log | wc -l)
+done
 
 
 </command>
@@ -91,11 +105,10 @@ pkill statsd
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -107,7 +120,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@snalkar</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

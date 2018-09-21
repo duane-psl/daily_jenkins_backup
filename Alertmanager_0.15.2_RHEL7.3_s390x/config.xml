@@ -9,27 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub16.04_2048</assignedNode>
+  <assignedNode>dc2_rh7.3_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 22 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 1 * * 2</spec>
+      <spec>H 22 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>source /home/test/.bashrc
 #Set the below parameters manually
 package_name=&quot;alertmanager&quot;
-published_version=&quot;0.14.0&quot;
+published_version=&quot;0.15.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,22 +49,28 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-
-
+cat /etc/os-release
 cat /etc/os*
 
-sudo apt-get update
-sudo apt-get install -y build-essential libc6-dev git make golang-1.9 curl
-export PATH=/usr/lib/go-1.9/bin:$PATH 
+sudo yum install -y git make curl glibc-static file
+sudo yum install -y tar wget gcc
+
+export GOPATH=`pwd`
+cd $GOPATH
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
 go version
 
 
-export GOPATH=`pwd`
 mkdir -p $GOPATH/src/github.com/prometheus
 cd $GOPATH/src/github.com/prometheus
 git clone https://github.com/prometheus/alertmanager.git
 cd alertmanager/
-git checkout v0.14.0
+git checkout v0.15.2
 make build
 
 file $GOPATH/src/github.com/prometheus/alertmanager/alertmanager
@@ -77,7 +83,7 @@ curl http://localhost:9093/
 sleep 10s
 
 cd $GOPATH/src/github.com/prometheus/alertmanager
-
+sed -i &apos;s/-race//g&apos; Makefile.common
 make test 2&gt;&amp;1 | tee build_logs
 cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
 while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; sleep 20s; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
@@ -87,6 +93,8 @@ do
    while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
    count=$(grep FAIL individual_test_log | wc -l)
 done
+
+
 </command>
     </hudson.tasks.Shell>
   </builders>

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Build Snappy-Java on SLES12-SP2</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,18 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp2</assignedNode>
+  <assignedNode>dc2_rh7.4_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 1 * * 3</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 1 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;snappy-java&quot;
-published_version=&quot;1.1.7&quot;
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;alertmanager&quot;
+published_version=&quot;0.15.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -40,86 +49,53 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+cat /etc/os-release
+cat /etc/os*
 
-sudo zypper update -y 
-cat /etc/issue
-export WORK_DIR=`pwd`
-# Install dependencies
-sudo zypper install -y automake autoconf libtool pkg-config gcc-c++ git-core wget tar make patch which curl net-tools
+sudo yum install -y git make curl glibc-static file
+sudo yum install -y tar wget gcc
 
-# Install Cmake 3.1.0 from source
-wget http://www.cmake.org/files/v3.1/cmake-3.1.0.tar.gz
-gzip -d cmake-3.1.0.tar.gz
-tar xvf cmake-3.1.0.tar
-cd cmake-3.1.0
-./configure --prefix=/cmake-3.1.0/cmake
-make &amp;&amp; sudo make install
-export PATH=$WORK_DIR/cmake-3.1.0/bin:$PATH
-
-# Check out the Snappy-Java source code:
-cd $WORK_DIR
-git clone https://github.com/xerial/snappy-java.git
-cd snappy-java
-git checkout 1.1.7
+export GOPATH=`pwd`
+cd $GOPATH
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+chmod ugo+r go1.10.1.linux-s390x.tar.gz
+sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+cd /usr/bin
+sudo ln gcc s390x-linux-gnu-gcc
+go version
 
 
-# Set the JAVA_HOME environment variable
-cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.16.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.16.bin -r installer.properties
-export JAVA_HOME=/opt/ibm/java
-export PATH=$JAVA_HOME/bin:$PATH
-java -version
+mkdir -p $GOPATH/src/github.com/prometheus
+cd $GOPATH/src/github.com/prometheus
+git clone https://github.com/prometheus/alertmanager.git
+cd alertmanager/
+git checkout v0.15.2
+make build
 
-# build the C++ code as well as the Java classes, and use Scala SBT to package the binaries into a JAR file
-cd $WORK_DIR/snappy-java
-make IBM_JDK_7=1 USE_GIT=1 GIT_SNAPPY_BRANCH=1.1.7 GIT_REPO_URL=https://github.com/google/snappy.git 
+file $GOPATH/src/github.com/prometheus/alertmanager/alertmanager
+file $GOPATH/src/github.com/prometheus/alertmanager/amtool
+$GOPATH/src/github.com/prometheus/alertmanager/alertmanager --version
+cd $GOPATH/src/github.com/prometheus/alertmanager
+./alertmanager --config.file=doc/examples/simple.yml &amp;
+sleep 20s
+curl http://localhost:9093/
+sleep 10s
+
+cd $GOPATH/src/github.com/prometheus/alertmanager
+sed -i &apos;s/-race//g&apos; Makefile.common
+make test 2&gt;&amp;1 | tee -a build_logs
+cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+count=$(grep -a FAIL individual_test_log | wc -l)
+while [ $count -gt 0 ]
+do
+   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+   count=$(grep -a FAIL individual_test_log | wc -l)
+done
 
 
-ldd target/snappy-1.1.7-Linux-s390x/libsnappyjava.so
-
-cd target
-echo &apos;
-import org.xerial.snappy.*;
-public class Test {
-      public static void main(String[] args) {
-           try {
-                String input = &quot;Hello snappy-java! Snappy-java is a JNI-based wrapper of &quot; + 
-						&quot;Snappy, a fast compresser/decompresser.&quot;;
-				byte[] compressed = Snappy.compress(input.getBytes(&quot;UTF-8&quot;));
-				byte[] uncompressed = Snappy.uncompress(compressed);
-
-				String result = new String(uncompressed, &quot;UTF-8&quot;);
-				System.out.println(result);
-                } catch(Exception e){
-                         System.out.println(e);
-                }
-      }
-}
-&apos; &gt; Test.java
-
-# Compile java example
-javac -cp &quot;.:snappy-java-1.1.7.jar&quot; Test.java
-
-# Run example: 
-java -cp &quot;.:snappy-java-1.1.7.jar&quot; Test &gt; test_result.txt
-
-#Following ouput should be observed:
-# ```Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.```
-
-echo &apos;Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.&apos; &gt; expected_result.txt
-
-result=`diff test_result.txt expected_result.txt`
-
-if [ -z &quot;$result&quot; ] ; then
-  exit 0
-else
-  exit 1
-fi</command>
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -129,9 +105,9 @@ fi</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>

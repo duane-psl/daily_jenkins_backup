@@ -80,7 +80,7 @@ sudo cp $WS/rt/build/sdk/rt/lib/ext/jfxrt.jar  /usr/lib/jvm/java-1.8.0-openjdk/j
 				
 				
 				#Get Jmeter binary
-				 wget http://apache.forsale.plus//jmeter/binaries/apache-jmeter-4.0.tgz
+				 wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-4.0.tgz
 				 tar -xvzf apache-jmeter-4.0.tgz
 				 #rm $PWD/jmeter/bin/ApacheJMeter.jar 
 				 cp -Rf $WS/apache-jmeter-4.0/bin/ApacheJMeter.jar $WS/jmeter/bin/
@@ -116,7 +116,12 @@ diff -u bin/jmeter.orig bin/jmeter || true
 
 #Verify
 export PATH=$PATH:`pwd`/bin/
-jmeter --version</command>
+jmeter --version
+
+cd $WS/apache-jmeter-4.0/
+jmeter -n -t ./extras/Test.jmx -l Test.jtl
+cat Test.jtl
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

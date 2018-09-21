@@ -9,86 +9,79 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh6.9_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 1</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command># Install dependencies
-sudo yum install -y git flex bison gcc gcc-c++ texlive-latex.s390x make python-argparse.noarch openssl wget tar qt-devel-4.6.2-28.el6_5.s390x cmake
+      <command>rm -rf ./*
+export WS=`pwd`
 
-export WORK_DIR=`pwd`
-mkdir latex_dependencies
-cd latex_dependencies
-# Install dependencies(latex) for make docs command: 
-wget http://mirrors.ctan.org/macros/latex/contrib/multirow/multirow.dtx
-wget http://mirrors.ctan.org/macros/latex/contrib/multirow/multirow.ins
-wget http://mirrors.ctan.org/macros/latex/contrib/multirow/multirow.pdf
-tex multirow.ins
-  
-wget  http://mirrors.ctan.org/macros/latex/contrib/import/import.sty 
-wget http://mirrors.ctan.org/macros/latex/contrib/xtab/xtab.dtx
-wget http://mirrors.ctan.org/macros/latex/contrib/xtab/xtab.ins 
-wget http://mirrors.ctan.org/macros/latex/contrib/xtab/xtab.pdf 
-latex xtab.ins 
-  
-wget http://mirrors.ctan.org/macros/latex/contrib/sectsty/sectsty.dtx
-wget http://mirrors.ctan.org/macros/latex/contrib/sectsty/sectsty.ins 
-wget http://mirrors.ctan.org/macros/latex/contrib/sectsty/sectsty.pdf 
-latex sectsty.ins 
-  
-wget http://mirrors.ctan.org/macros/latex/contrib/tocloft/tocloft.dtx 
-wget http://mirrors.ctan.org/macros/latex/contrib/tocloft/tocloft.ins 
-wget http://mirrors.ctan.org/macros/latex/contrib/tocloft/tocloft.pdf 
-latex tocloft.ins 
-  
-wget http://mirrors.ctan.org/macros/latex/contrib/appendix/appendix.dtx 
-wget http://mirrors.ctan.org/macros/latex/contrib/appendix/appendix.ins 
-wget http://mirrors.ctan.org/macros/latex/contrib/appendix/appendix.pdf 
-latex appendix.ins 
-  
-wget http://mirrors.ctan.org/macros/latex/contrib/tabu/tabu.dtx 
-wget http://mirrors.ctan.org/macros/latex/contrib/tabu/tabu.ins 
-wget http://mirrors.ctan.org/macros/latex/contrib/tabu/tabu.pdf 
-latex tabu.ins
-  
-# The files are made available to latex by placing at specific location
-sudo cp *.sty /usr/share/texmf/tex/latex/  
-sudo mktexlsr
+source /home/test/.bashrc
+#Install dependencies
+sudo yum install -y git which java-1.8.0-openjdk-devel.s390x gcc-c++ make automake autoconf libtool libstdc++-static tar wget patch words libXt-devel libX11-devel texinfo unzip python
 
+#Install ant
+wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.4-bin.tar.gz
+tar -xvf apache-ant-1.9.4-bin.tar.gz
+export ANT_HOME=`pwd`/apache-ant-1.9.4
+export PATH=$PATH:$ANT_HOME/bin
 
-cd $WORK_DIR
-#  Check-out Doxygen from github, it will be placed in a sub-directory doxygen
-git clone git://github.com/doxygen/doxygen.git
-cd doxygen
-git checkout Release_1_8_14
+#Set environment variables
+export LANG=&quot;en_US.UTF-8&quot;
+export JAVA_TOOL_OPTIONS=&quot;-Dfile.encoding=UTF8&quot;
+export ANT_OPTS=&quot;-Xms4G -Xmx4G&quot;
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk/
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-# Create a build directory where the output should be stored
-mkdir build
-cd build
-cmake -G &quot;Unix Makefiles&quot; -Dbuild_doc=ON -Dbuild_wizard=YES ..
-make
-make docs
-sudo make install
-make tests
+#Get source code
+git clone https://github.com/apache/cassandra.git
+cd $WS/cassandra
+git checkout cassandra-3.11.2
 
-doxygen -v
-if [[ $? -gt 0 ]]
-then
-	exit 1
-fi</command>
+#Replace jna.jar
+cd $WS
+git clone https://github.com/java-native-access/jna.git
+cd jna
+git checkout 4.2.2
+ant
+rm $WS/cassandra/lib/jna-4.2.2.jar
+cp $WS/jna/build/jna.jar $WS/cassandra/lib/jna-4.2.2.jar
+
+#Replace snappy-java.jar
+cd $WS/cassandra
+rm $WS/cassandra/lib/snappy-java-1.1.1.7.jar
+wget -O $WS/cassandra/lib/snappy-java-1.1.2.6.jar http://search.maven.org/remotecontent?filepath=org/xerial/snappy/snappy-java/1.1.2.6/snappy-java-1.1.2.6.jar
+
+#Edit files to relax timeout and memory
+cd $WS/cassandra
+sed -i &apos;s/Xss256k/Xss32m/g&apos; build.xml conf/jvm.options
+sed -i &apos;s/&lt;jvmarg value=&quot;-Dcassandra.ring_delay_ms=1000&quot;\/&gt;/&lt;jvmarg value=&quot;-Dcassandra.ring_delay_ms=10000&quot;\/&gt;/g&apos; build.xml
+sed -i &apos;s/&lt;property name=&quot;test.timeout&quot; value=&quot;240000&quot; \/&gt;/&lt;property name=&quot;test.timeout&quot; value=&quot;24000000&quot; \/&gt;/g&apos; build.xml
+sed -i &apos;s/timeout = 10000/timeout = 1000000/g&apos; test/unit/org/apache/cassandra/io/sstable/IndexSummaryManagerTest.java
+sed -i &apos;s/future.get(30, TimeUnit.SECONDS)/future.get(3000, TimeUnit.SECONDS)/g&apos; test/unit/org/apache/cassandra/cql3/validation/entities/JsonTest.java
+echo &apos;key_cache_size_in_mb: 12&apos; &gt;&gt; test/conf/cassandra.yaml
+
+git diff
+
+#Build. Skipping test due to high timeout and random failures.
+cd $WS/cassandra/
+ant
+
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

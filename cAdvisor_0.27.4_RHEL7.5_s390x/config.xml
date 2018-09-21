@@ -9,27 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 12 * * 2</spec>
+      <spec>H 15 * * 3</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 12 * * 2</spec>
+      <spec>H 15 * * 3</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>
+      <command>source /home/test/.bashrc
 #Set the below parameters manually
-package_name=&quot;alertmanager&quot;
-published_version=&quot;0.14.0&quot;
+package_name=&quot;cadvisor&quot;
+published_version=&quot;0.27.4&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -50,49 +50,63 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
+# Building and Installing cAdvisor 
+export WORK_DIR=`pwd`
 
-cat /etc/os*
+# Install the dependencies
+sudo yum install -y git libseccomp-devel golang
 
-sudo zypper install -y git make curl file
-sudo zypper install -y tar wget gcc
+# Export go path
+export GOPATH=$WORK_DIR
+export PATH=$PATH:$GOPATH/bin
 
-export GOPATH=`pwd`
-cd $GOPATH
-wget https://storage.googleapis.com/golang/go1.9.2.linux-s390x.tar.gz
-chmod ugo+r go1.9.2.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.9.2.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-go version
+# Install godep tool
+go get github.com/tools/godep
+
+# Checkout the code from repository
+rm -rf $GOPATH/src/github.com/google
+mkdir -p $GOPATH/src/github.com/google
+cd $GOPATH/src/github.com/google
+git clone https://github.com/google/cadvisor.git
+cd cadvisor  
+git checkout v0.27.4
+
+echo -e &quot; func updateCastagnoli(crc uint32, p []byte) uint32 { \n // only use slicing-by-8 when input is &gt;= 16 Bytes \n if len(p) &gt;= 16 { \n return updateSlicingBy8(crc, castagnoliTable8, p) \n } \n return update(crc, castagnoliTable, p) \n } \n &quot;  &gt;&gt; vendor/github.com/klauspost/crc32/crc32.go	
+echo -e &quot;func updateIEEE(crc uint32, p []byte) uint32 { \n // only use slicing-by-8 when input is &gt;= 16 Bytes \n  if len(p) &gt;= 16 { \n  iEEETable8Once.Do(func() { \n iEEETable8 = makeTable8(IEEE) \n }) \n return updateSlicingBy8(crc, iEEETable8, p) \n  } \n  return update(crc, IEEETable, p) \n  } \n &quot; &gt;&gt; vendor/github.com/klauspost/crc32/crc32.go
+cat vendor/github.com/klauspost/crc32/crc32.go
+
+#  Build cAdvisor
+cd $GOPATH/src/github.com/google/cadvisor
+godep go build .
+
+#  Run unit tests
+cd $GOPATH/src/github.com/google/cadvisor 
+go test -short `go list ./... | grep -v Microsoft` 2&gt;&amp;1 | tee outputfile.txt
+
+grep &quot;^FAIL&quot; outputfile.txt &gt; generated_failures.txt
+cat generated_failures.txt
+awk &apos;{print $1 &quot; &quot; $2}&apos; generated_failures.txt &gt; failures.txt
+echo &apos;FAIL github.com/google/cadvisor/machine&apos; &gt; expected_failures.txt
+cat failures.txt
+cat expected_failures.txt
+
+# Veriication step 
+result=`diff expected_failures.txt failures.txt`
+if [ -z &quot;$result&quot; ] ; then
+ 	sudo ./cadvisor &amp;
+	sleep 180s
+    curl http://127.0.0.1:8080/containers/ &gt; cadvisorpage.txt
+    if grep -q &quot;Docker Containers&quot;  &quot;cadvisorpage.txt&quot;; then
+    	exit 0
+    else
+    	exit 1
+    fi
+ 
+else
+  exit 1
+fi
 
 
-mkdir -p $GOPATH/src/github.com/prometheus
-cd $GOPATH/src/github.com/prometheus
-git clone https://github.com/prometheus/alertmanager.git
-cd alertmanager/
-git checkout v0.14.0
-make build
-
-file $GOPATH/src/github.com/prometheus/alertmanager/alertmanager
-file $GOPATH/src/github.com/prometheus/alertmanager/amtool
-$GOPATH/src/github.com/prometheus/alertmanager/alertmanager --version
-cd $GOPATH/src/github.com/prometheus/alertmanager
-./alertmanager --config.file=doc/examples/simple.yml &amp;
-sleep 20s
-curl http://localhost:9093/
-sleep 10s
-
-cd $GOPATH/src/github.com/prometheus/alertmanager
-make test 2&gt;&amp;1 | tee build_logs
-cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
-while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; sleep 20s; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
-count=$(grep FAIL individual_test_log | wc -l)
-while [ $count -gt 0 ]
-do
-   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
-   count=$(grep FAIL individual_test_log | wc -l)
-done
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -118,7 +132,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@duaned</room>
+      <room>#loz-jenkins-build, @narang</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>Build Snappy-Java on RHEL6.10</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,14 +9,14 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel6.9</assignedNode>
+  <assignedNode>dockercloud_rhel6.10</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 2 * * 0</spec>
+      <spec>H 13 * * 0</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -24,11 +24,11 @@
     <hudson.tasks.Shell>
       <command>source /home/test/.bashrc 
 #Set the below parameters manually
-package_name=&quot;xerces-c&quot;
-published_version=&quot;3.2.1&quot;
+package_name=&quot;snappy-java&quot;
+published_version=&quot;1.1.7&quot;
 
 available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.10 ()&quot;
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
@@ -39,40 +39,74 @@ else
 fi
 
 
-# Build Dependencies
-sudo yum install -y git automake libtool make gcc-c++ tar
 
-#checkout the Xercex 3.2.1
-git clone git://github.com/apache/xerces-c.git 
-cd xerces-c
-git checkout Xerces-C_3_2_1
+cat /etc/redhat-release
+export WORK_DIR=`pwd`
+# Install dependencies
+sudo yum install -y  automake which autoconf libtool pkgconfig gcc-c++ libstdc++-static git wget tar make patch curl java-1.8.0-ibm.s390x java-1.8.0-ibm-devel.s390x
 
-# Set Environment variables
-export LANG=&apos;en_US.UTF-8&apos;
-export LC_ALL=&apos;en_US.UTF-8&apos;
+# Install Cmake 3.1.0 from source
+wget http://www.cmake.org/files/v3.1/cmake-3.1.0.tar.gz
+gzip -d cmake-3.1.0.tar.gz
+tar xvf cmake-3.1.0.tar
+cd cmake-3.1.0
+./configure --prefix=/cmake-3.1.0/cmake
+make &amp;&amp; sudo make install
+export PATH=$WORK_DIR/cmake-3.1.0/bin:$PATH
 
+# Check out the Snappy-Java source code:
+cd $WORK_DIR
+git clone https://github.com/xerial/snappy-java.git
+cd snappy-java
+git checkout 1.1.7
 
-# configure
-./reconf
-./configure
+# Set the JAVA_HOME environment variable
+export JAVA_HOME=/etc/alternatives/java_sdk_ibm
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-# make,test,install
-make
+# build the C++ code as well as the Java classes, and use Scala SBT to package the binaries into a JAR file
+make IBM_JDK_7=1 USE_GIT=1 GIT_SNAPPY_BRANCH=1.1.7 GIT_REPO_URL=https://github.com/google/snappy.git 
 
-make check
+ldd target/snappy-1.1.7-Linux-s390x/libsnappyjava.so
 
-sudo make install
+cd target
+echo &apos;
+import org.xerial.snappy.*;
+public class Test {
+      public static void main(String[] args) {
+           try {
+                String input = &quot;Hello snappy-java! Snappy-java is a JNI-based wrapper of &quot; + 
+						&quot;Snappy, a fast compresser/decompresser.&quot;;
+				byte[] compressed = Snappy.compress(input.getBytes(&quot;UTF-8&quot;));
+				byte[] uncompressed = Snappy.uncompress(compressed);
 
-# Verification 
-if [ ! -f /usr/local/lib/libxerces-c-3.2.so ] || [ ! -f /usr/local/lib/libxerces-c.a ] || [ ! -f /usr/local/lib/libxerces-c.la ] || [ ! -f /usr/local/lib/libxerces-c.so ]
-then
-     exit 1;
-fi
+				String result = new String(uncompressed, &quot;UTF-8&quot;);
+				System.out.println(result);
+                } catch(Exception e){
+                         System.out.println(e);
+                }
+      }
+}
+&apos; &gt; Test.java
 
-if [ ! -d /usr/local/lib/pkgconfig ] || [ ! -d /usr/local/include/xercesc/dom ] || [ ! -d /usr/local/include/xercesc/framework ] || [ ! -d /usr/local/include/xercesc/internal ] || [ ! -d /usr/local/include/xercesc/parsers ] || [ ! -d /usr/local/include/xercesc/sax ] || [ ! -d /usr/local/include/xercesc/sax2 ] || [ ! -d /usr/local/include/xercesc/util ] || [ ! -d /usr/local/include/xercesc/validators ] || [ ! -d /usr/local/include/xercesc/xinclude ]
-then
-     exit 1;
+# Compile java example
+javac -cp &quot;.:snappy-java-1.1.7.jar&quot; Test.java
 
+# Run example: 
+java -cp &quot;.:snappy-java-1.1.7.jar&quot; Test &gt; test_result.txt
+
+#Following ouput should be observed:
+# ```Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.```
+
+echo &apos;Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.&apos; &gt; expected_result.txt
+
+result=`diff test_result.txt expected_result.txt`
+
+if [ -z &quot;$result&quot; ] ; then
+  exit 0
+else
+  exit 1
 fi</command>
     </hudson.tasks.Shell>
   </builders>
@@ -86,8 +120,7 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>

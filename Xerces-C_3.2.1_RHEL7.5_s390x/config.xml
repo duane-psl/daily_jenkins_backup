@@ -9,23 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_2048</assignedNode>
+  <assignedNode>dockercloud_rhel7.5</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 6 * * 3</spec>
+      <spec>H 6 * * 0</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 6 * * 0</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
+      <command>source /home/test/.bashrc 
 #Set the below parameters manually
-package_name=&quot;statsd&quot;
-published_version=&quot;0.8.0&quot;
+package_name=&quot;xerces-c&quot;
+published_version=&quot;3.2.1&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -45,43 +49,42 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-#-----------------------------------------------------------------------------------------
-export work_dir=`pwd`
-
-sudo yum install -y git tar wget unzip hostname make gcc-c++ nc
-
-#Install Nodejs
-wget https://nodejs.org/dist/v6.12.2/node-v6.12.2-linux-s390x.tar.gz
-tar -xvf node-v6.12.2-linux-s390x.tar.gz
-
-export PATH=$PATH:$work_dir/node-v6.12.2-linux-s390x/bin
-node -v
-
-#Download Statsd source code
- cd $work_dir
- git clone https://github.com/etsy/statsd.git
- cd statsd
- git checkout v0.8.0
- 
- 
-#Build Statsd
-npm install
-
-#Run test cases
-cd $work_dir/statsd/
-./run_tests.sh
-
-#Run Statsd daemon
-cd $work_dir/statsd/
-node stats.js $work_dir/statsd/exampleConfig.js &amp;
-sleep 10s
-echo &quot;foo:1|c&quot; | nc -u -w2 127.0.0.1 8125
-pgrep statsd
-pkill statsd
 
 
+# Build Dependencies
+sudo yum install -y git automake libtool make gcc-c++ tar
 
-</command>
+# Set Environment variables
+export LANG=&apos;en_US.UTF-8&apos;
+export LC_ALL=&apos;en_US.UTF-8&apos;
+
+#checkout the Xercex 3.2.1
+git clone git://github.com/apache/xerces-c.git 
+cd xerces-c
+git checkout Xerces-C_3_2_1
+
+# configure
+./reconf
+./configure
+
+# make,test,install
+make
+
+make check
+
+sudo make install
+
+# Verification 
+if [ ! -f /usr/local/lib/libxerces-c-3.2.so ] || [ ! -f /usr/local/lib/libxerces-c.a ] || [ ! -f /usr/local/lib/libxerces-c.la ] || [ ! -f /usr/local/lib/libxerces-c.so ]
+then
+     exit 1;
+fi
+
+if [ ! -d /usr/local/lib/pkgconfig ] || [ ! -d /usr/local/include/xercesc/dom ] || [ ! -d /usr/local/include/xercesc/framework ] || [ ! -d /usr/local/include/xercesc/internal ] || [ ! -d /usr/local/include/xercesc/parsers ] || [ ! -d /usr/local/include/xercesc/sax ] || [ ! -d /usr/local/include/xercesc/sax2 ] || [ ! -d /usr/local/include/xercesc/util ] || [ ! -d /usr/local/include/xercesc/validators ] || [ ! -d /usr/local/include/xercesc/xinclude ]
+then
+     exit 1;
+
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -107,7 +110,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@snalkar</room>
+      <room>#loz-jenkins-build,@duaned</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

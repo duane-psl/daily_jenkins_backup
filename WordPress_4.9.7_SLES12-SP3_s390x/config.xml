@@ -69,6 +69,7 @@ line_new=&quot;\/srv\/www\/htdocs\/WordPress&quot;
 sudo sed -i &quot;s/$line/$line_new/g&quot; /etc/apache2/default-server.conf
 
 sudo echo -e &quot;AddType application/x-httpd-php .php&quot; &gt;&gt;  /etc/apache2/httpd.conf
+sudo echo -e &quot;ServerName localhost&quot; &gt;&gt;  /etc/apache2/httpd.conf
 sudo echo -e &quot;&lt;Directory /&gt;&quot; &gt;&gt;  /etc/apache2/httpd.conf
 sudo echo -e &quot; DirectoryIndex index.php &quot; &gt;&gt;  /etc/apache2/httpd.conf
 sudo echo -e &quot;&lt;/Directory&gt;&quot; &gt;&gt;  /etc/apache2/httpd.conf

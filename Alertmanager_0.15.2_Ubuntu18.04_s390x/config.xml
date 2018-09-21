@@ -9,18 +9,27 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles12-sp2</assignedNode>
+  <assignedNode>dc2_ub18.04_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H 1 * * 3</spec>
+    </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 1 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>#Set the below parameters manually
-package_name=&quot;xerces-c&quot;
-published_version=&quot;3.2.1&quot;
+      <command>
+#Set the below parameters manually
+package_name=&quot;alertmanager&quot;
+published_version=&quot;0.15.2
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -40,41 +49,45 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
-# Build Dependencies
-sudo zypper update -y
-sudo zypper install -y libtool automake gcc-c++ make git tar
 
-# Set Environment variables
-export LANG=&apos;en_US.UTF-8&apos;
-export LANGUAGE=&apos;en_US.UTF-8&apos;
 
-#checkout the Xercex 3.2.1
-git clone git://github.com/apache/xerces-c.git 
-cd xerces-c
-git checkout Xerces-C_3_2_1
+cat /etc/os*
 
-# configure
-./reconf
-./configure
+sudo apt-get update
+sudo apt-get install -y build-essential libc6-dev git make golang-1.10 curl
+export PATH=/usr/lib/go-1.10/bin:$PATH 
+go version
 
-# make,test,install
-make
 
-make check
+export GOPATH=`pwd`
+mkdir -p $GOPATH/src/github.com/prometheus
+cd $GOPATH/src/github.com/prometheus
+git clone https://github.com/prometheus/alertmanager.git
+cd alertmanager/
+git checkout v0.15.2
+make build
 
-sudo make install
+file $GOPATH/src/github.com/prometheus/alertmanager/alertmanager
+file $GOPATH/src/github.com/prometheus/alertmanager/amtool
+$GOPATH/src/github.com/prometheus/alertmanager/alertmanager --version
+cd $GOPATH/src/github.com/prometheus/alertmanager
+./alertmanager --config.file=doc/examples/simple.yml &amp;
+sleep 20s
+curl http://localhost:9093/
+sleep 10s
 
-# Verification 
-if [ ! -f /usr/local/lib/libxerces-c-3.2.so ] || [ ! -f /usr/local/lib/libxerces-c.a ] || [ ! -f /usr/local/lib/libxerces-c.la ] || [ ! -f /usr/local/lib/libxerces-c.so ]
-then
-     exit 1;
-fi
-
-if [ ! -d /usr/local/lib/pkgconfig ] || [ ! -d /usr/local/include/xercesc/dom ] || [ ! -d /usr/local/include/xercesc/framework ] || [ ! -d /usr/local/include/xercesc/internal ] || [ ! -d /usr/local/include/xercesc/parsers ] || [ ! -d /usr/local/include/xercesc/sax ] || [ ! -d /usr/local/include/xercesc/sax2 ] || [ ! -d /usr/local/include/xercesc/util ] || [ ! -d /usr/local/include/xercesc/validators ] || [ ! -d /usr/local/include/xercesc/xinclude ]
-then
-     exit 1;
-
-fi</command>
+cd $GOPATH/src/github.com/prometheus/alertmanager
+sed -i &apos;/-race/d&apos; Makefile.common
+make test 2&gt;&amp;1 | tee build_logs
+cat build_logs | grep -a &quot;FAIL&quot; | grep -a &quot;github.com&quot; | awk &apos;{print $2}&apos; 2&gt;&amp;1 | tee test.txt
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; sleep 20s; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+count=$(grep FAIL individual_test_log | wc -l)
+while [ $count -gt 0 ]
+do
+   while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do go test -v $line; done &lt; test.txt 2&gt;&amp;1 | tee individual_test_log
+   count=$(grep FAIL individual_test_log | wc -l)
+done
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -84,11 +97,10 @@ fi</command>
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
