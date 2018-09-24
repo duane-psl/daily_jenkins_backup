@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Build Snappy-Java on RHEL7</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,17 +9,17 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles11-sp4</assignedNode>
+  <assignedNode>dc2_ub16.04_2048</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 0</spec>
+      <spec>H 13 * * 4</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
@@ -27,8 +27,8 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
-package_name=&quot;snappy-java&quot;
-published_version=&quot;1.1.7&quot;
+package_name=&quot;python&quot;
+published_version=&quot;2.7.15&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -49,91 +49,60 @@ else
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
 
-sudo zypper update -y 
-cat /etc/issue
-export WORK_DIR=`pwd`
-# Install dependencies
-sudo zypper install -y automake autoconf libtool pkg-config gcc-c++ git-core wget-openssl1 tar make patch curl-openssl1 net-tools awk
+rm -rf ./*
+#Install dependencies
+sudo apt-get update -y
+sudo apt-get install -y gcc g++ make libncurses5-dev libreadline6-dev libssl-dev libgdbm-dev libc6-dev libsqlite3-dev libbz2-dev xz-utils patch wget tar curl patch bzip2 zlib1g-dev libdb1-compat libdb-dev tk8.5-dev gdb
 
-git config --global url.&quot;git://github.com/&quot;.insteadOf &quot;https://github.com/&quot;
+#Get source
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
 
-# Install Cmake 3.1.0 from source
+#Apply patch to fix test_regrtest
+#wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
+#cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
 
-wget http://www.cmake.org/files/v3.1/cmake-3.1.0.tar.gz
-gzip -d cmake-3.1.0.tar.gz
-tar xvf cmake-3.1.0.tar
-cd cmake-3.1.0
-./configure --prefix=/cmake-3.1.0/cmake
-make &amp;&amp; sudo make install
-export PATH=$WORK_DIR/cmake-3.1.0/bin:$PATH
+#Build and test
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make 
+make test 2&gt;&amp;1 | tee testlog
 
+#Store failed tests
+grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
 
-# Set the JAVA_HOME environment variable
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java/8.0.5.16/linux/s390x/ibm-java-s390x-sdk-8.0-5.16.bin
-wget https://raw.githubusercontent.com/zos-spark/scala-workbench/master/files/installer.properties.java
-tail -n +3 installer.properties.java | tee installer.properties
-cat installer.properties
-chmod +x ibm-java-s390x-sdk-8.0-5.16.bin
-sudo ./ibm-java-s390x-sdk-8.0-5.16.bin -r installer.properties
-export JAVA_HOME=/opt/ibm/java/
-export PATH=$JAVA_HOME/bin:$PATH
-java -version
+#Store tests expected to fail and intermittent tests
+echo &quot;test_multiprocessing&quot; &gt;expected
 
+#Diff between expected and actual failures
+diff -u expected failures | tee diff_
 
-# Check out the Snappy-Java source code:
-cd $WORK_DIR
-git clone https://github.com/xerial/snappy-java.git
-cd snappy-java
-git checkout 1.1.7
+#Fail if any extra test failed apart from expected
+if grep -q &apos;+test&apos; diff_; then
+    exit 1
+fi
 
+#Run intermittent tests individually
+cd ./Lib/test
+../../python -m unittest test_bz2
 
-export JDK_HOME=/opt/ibm/java/
-java -version
+#Install
+cd ../../
+sudo make install
 
-# build the C++ code as well as the Java classes, and use Scala SBT to package the binaries into a JAR file
-make IBM_JDK_7=1 USE_GIT=1 GIT_SNAPPY_BRANCH=1.1.7 GIT_REPO_URL=https://github.com/google/snappy.git 
+python_version=$(python --version 2&gt;&amp;1)
 
+echo $python_version &gt; output.txt
 
-ldd target/snappy-1.1.7-Linux-s390x/libsnappyjava.so
-
-cd target
-echo &apos;
-import org.xerial.snappy.*;
-public class Test {
-      public static void main(String[] args) {
-           try {
-                String input = &quot;Hello snappy-java! Snappy-java is a JNI-based wrapper of &quot; + 
-						&quot;Snappy, a fast compresser/decompresser.&quot;;
-				byte[] compressed = Snappy.compress(input.getBytes(&quot;UTF-8&quot;));
-				byte[] uncompressed = Snappy.uncompress(compressed);
-
-				String result = new String(uncompressed, &quot;UTF-8&quot;);
-				System.out.println(result);
-                } catch(Exception e){
-                         System.out.println(e);
-                }
-      }
-}
-&apos; &gt; Test.java
-
-# Compile java example
-javac -cp &quot;.:snappy-java-1.1.7.jar&quot; Test.java
-
-# Run example: 
-java -cp &quot;.:snappy-java-1.1.7.jar&quot; Test &gt; test_result.txt
-
-#Following ouput should be observed:
-# ```Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.```
-
-echo &apos;Hello snappy-java! Snappy-java is a JNI-based wrapper of Snappy, a fast compresser/decompresser.&apos; &gt; expected_result.txt
-
-result=`diff test_result.txt expected_result.txt`
+echo &apos;Python 2.7.15&apos; &gt; expected.txt
+result=`diff output.txt expected.txt`
 
 if [ -z &quot;$result&quot; ] ; then
   exit 0
 else
   exit 1
-fi</command>
+fi
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>

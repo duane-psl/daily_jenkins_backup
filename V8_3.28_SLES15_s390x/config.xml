@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>ravi_sl12-sp3||dockercloud_sles12-sp3</assignedNode>
+  <assignedNode>ravi_sl15</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -41,7 +41,7 @@ export VPYTHON_BYPASS=&quot;manually managed python not supported by chrome oper
 
 # Obtain the V8 source code
 cd $JENKINS_HOME
-git clone git://github.com/ibmruntimes/v8z
+git clone https://github.com/ibmruntimes/v8z
 cd v8z
 git checkout 3.28-s390
 
@@ -108,6 +108,7 @@ if [ -z &quot;$result_lib_headers&quot; ] ; then
 else
   exit 1
 fi
+
 
 # Install V8 header files
 cd $JENKINS_HOME/v8z/

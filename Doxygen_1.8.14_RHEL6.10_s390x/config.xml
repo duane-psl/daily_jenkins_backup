@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3-8192MB</assignedNode>
+  <assignedNode>dc2_rh6.10_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -28,13 +28,9 @@
     <hudson.tasks.Shell>
       <command># Install dependencies
 source /home/test/.bashrc
-sudo yum install -y git flex bison gcc gcc-c++ texlive-bibtex-bin make perl-Test-Simple.noarch openssl wget tar cpan qt-devel latex ghostscript texlive unzip texlive-epstopdf.noarch texlive.s390x python-argparse.noarch cmake
+sudo yum install -y git flex bison gcc gcc-c++ texlive-latex.s390x make python-argparse.noarch openssl wget tar qt-devel-4.6.2-28.el6_5.s390x cmake
 
 export WORK_DIR=`pwd`
-# Use CPAN to install Perl modules 
-sudo cpan Test::More
-sudo cpan File::Path
-
 mkdir latex_dependencies
 cd latex_dependencies
 # Install dependencies(latex) for make docs command: 
@@ -70,7 +66,6 @@ wget http://mirrors.ctan.org/macros/latex/contrib/tabu/tabu.pdf
 latex tabu.ins
   
 # The files are made available to latex by placing at specific location
-sudo mkdir -p /usr/share/texmf/tex/latex/
 sudo cp *.sty /usr/share/texmf/tex/latex/  
 sudo mktexlsr
 

@@ -45,16 +45,16 @@ sudo zypper update -y
 
 export WORK_DIR=`pwd`
 # Install dependencies
-sudo zypper install -y automake autoconf libtool pkg-config gcc-c++ git-core wget tar make patch which curl net-tools
+sudo zypper install -y automake autoconf libtool pkg-config gcc-c++ git-core wget tar make patch which curl net-tools cmake
 
 # Install Cmake 3.1.0 from source
-wget http://www.cmake.org/files/v3.1/cmake-3.1.0.tar.gz
-gzip -d cmake-3.1.0.tar.gz
-tar xvf cmake-3.1.0.tar
-cd cmake-3.1.0
-./configure --prefix=/cmake-3.1.0/cmake
-make &amp;&amp; sudo make install
-export PATH=$WORK_DIR/cmake-3.1.0/bin:$PATH
+#wget http://www.cmake.org/files/v3.1/cmake-3.1.0.tar.gz
+#gzip -d cmake-3.1.0.tar.gz
+##tar xvf cmake-3.1.0.tar
+#cd cmake-3.1.0
+#./configure --prefix=/cmake-3.1.0/cmake
+#make &amp;&amp; sudo make install
+#export PATH=$WORK_DIR/cmake-3.1.0/bin:$PATH
 
 # Check out the Snappy-Java source code:
 cd $WORK_DIR

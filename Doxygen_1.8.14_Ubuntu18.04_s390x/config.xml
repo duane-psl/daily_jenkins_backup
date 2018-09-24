@@ -9,86 +9,51 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 1</spec>
+      <spec>H 13 * * 4</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 4</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-cat /etc/os*
-sudo yum install -y tar wget gcc
+      <command>#Install dependencies
+sudo apt-get update
+sudo apt-get install -y git cmake python flex bison qt5-default build-essential texlive libc6 libclang1-3.* libgcc1 libstdc++6 doxygen-doc doxygen-gui doxygen-latex graphviz libxml2-utils
 
-export GOPATH=`pwd`
-cd $GOPATH
-#Install GO
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-cd /usr/bin
-sudo ln gcc s390x-linux-gnu-gcc
-export PATH=$PATH:/usr/local/go/bin
-go version
+export WORK_DIR=`pwd`
 
+#Check-out Doxygen from github, it will be placed in a sub-directory doxygen
+git clone git://github.com/doxygen/doxygen.git
+cd doxygen
+git checkout Release_1_8_14
 
+#Create a build directory where the output should be stored
+mkdir build
+cd build
+cmake -G &quot;Unix Makefiles&quot; -Dbuild_doc=ON -Dbuild_wizard=YES ..
+make
+make docs
+sudo make install
 
-cd $GOPATH
-#Install Terraform
-sudo yum install -y git wget make zip file which
-export PATH=$GOPATH/bin:$PATH
-mkdir -p $GOPATH/src/github.com/hashicorp
-cd $GOPATH/src/github.com/hashicorp
-git clone https://github.com/hashicorp/terraform.git
-cd terraform/
-git checkout v0.11.7
-
-
-
-# While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
-make 2&gt;&amp;1 | tee -a build_logs
-cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
-
-COUNTER=1
-echo &quot;after assignment&quot;
-echo $COUNTER
-#while [[ (IFS=&apos;&apos; read -r line || (( -n &quot;$line&quot; ))) &amp;&amp; ( $COUNTER &lt; 5 )]]
-while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
-echo &quot;11 condition&quot;
-echo $COUNTER
-echo &quot;222 condition&quot;
-if [ $COUNTER -lt 6 ]
-then 
-    echo &quot;inside if condition&quot;
-    echo $COUNTER
-    go test -v $line
-    COUNTER=$((COUNTER + 1))
-fi
-echo &quot;outside if condition&quot;
-echo $COUNTER
-done &lt; test.txt
-
-#Build terraform
-
-XC_OS=linux XC_ARCH=s390x make bin
-
-file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
-
+#Run the functional test suite 
+make tests
 
 #Verification
-terraform --version | grep 0.11.7
-echo &quot;1 + 5&quot; | terraform console
-
-
-
-
-</command>
+doxygen -v
+if [[ $? -gt 0 ]]
+then
+	exit 1
+fi</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -98,11 +63,10 @@ echo &quot;1 + 5&quot; | terraform console
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
 }
-</script>
+}</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -114,7 +78,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@vitthalb</room>
+      <room>#loz-jenkins-build, @gsalgaon</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

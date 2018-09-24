@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-sp3_4096</assignedNode>
+  <assignedNode>dc2_sl15_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -46,7 +46,8 @@ mkdir -p $GOPATH/src/github.com/hashicorp
 cd $GOPATH/src/github.com/hashicorp
 git clone https://github.com/hashicorp/terraform.git
 cd terraform/
-git checkout v0.11.7
+git checkout v0.11.8
+make tools
 
 # While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
 make 2&gt;&amp;1 | tee -a build_logs
@@ -79,7 +80,7 @@ file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
 
 
 #Verification
-terraform --version | grep 0.11.7
+terraform --version | grep 0.11.8
 echo &quot;1 + 5&quot; | terraform console
 
 

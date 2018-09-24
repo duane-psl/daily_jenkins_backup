@@ -28,21 +28,18 @@
   <builders>
     <hudson.tasks.Shell>
       <command>###some steps mentioned in recipe can not be checked in container, have to check them on host
-zypper update -y
-zypper install -y patch wget tar gcc cmake make gcc-c++ lua51 lua51-devel kernel-default-devel
-
-wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
-tar -xvzf 0.21.0.tar.gz
-cd sysdig-0.21.0
-
-mkdir build
-cd build
-cmake -DUSE_BUNDLED_LUAJIT=OFF -DBUILD_DRIVER=OFF ..
-
-make
-make install
-##cd driver
-##insmod sysdig-probe.ko
+        sudo zypper update -y
+        sudo zypper install -y patch wget tar gcc cmake make gcc-c++ lua51 lua51-devel kernel-default-devel
+        wget https://github.com/draios/sysdig/archive/0.21.0.tar.gz
+        tar -xvzf 0.21.0.tar.gz
+        cd sysdig-0.21.0
+        mkdir build
+        cd build
+        cmake -DUSE_BUNDLED_LUAJIT=OFF -DBUILD_DRIVER=OFF ..
+        make
+        sudo make install
+        ##cd driver
+        ##insmod sysdig-probe.ko
 
 
 

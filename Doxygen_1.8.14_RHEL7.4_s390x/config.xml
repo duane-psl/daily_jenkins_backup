@@ -27,6 +27,7 @@
   <builders>
     <hudson.tasks.Shell>
       <command># Install dependencies
+source /home/test/.bashrc
 sudo yum install -y git flex bison gcc gcc-c++ texlive-bibtex-bin make perl-Test-Simple.noarch openssl wget tar cpan qt-devel latex ghostscript texlive unzip texlive-epstopdf.noarch texlive.s390x python-argparse.noarch cmake
 
 export WORK_DIR=`pwd`

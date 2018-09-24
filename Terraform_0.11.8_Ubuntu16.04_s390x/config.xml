@@ -9,69 +9,77 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_rh7.4_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu16.04</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 5</spec>
+      <spec>H 13 * * 1</spec>
     </hudson.triggers.TimerTrigger>
-    <hudson.triggers.SCMTrigger>
-      <spec>H 13 * * 5</spec>
-      <ignorePostCommitHooks>false</ignorePostCommitHooks>
-    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc
-#Set the below parameters manually
-package_name=&quot;origin&quot;
-published_version=&quot;3.7.1&quot;
+      <command>cat /etc/os*
 
-#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
-. /etc/os-release
-if [ $ID == &quot;rhel&quot; ]; then
-	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;sles&quot; ]; then
-	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-elif [ $ID == &quot;ubuntu&quot; ]; then
-	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
+
+export GOPATH=`pwd`
+cd $GOPATH
+
+#Install Terraform
+sudo apt-get update
+sudo apt-get install -y git wget make zip golang-1.10
+export PATH=/usr/lib/go-1.10/bin:$PATH
+go version
+
+export PATH=$GOPATH/bin:$PATH
+mkdir -p $GOPATH/src/github.com/hashicorp
+cd $GOPATH/src/github.com/hashicorp
+rm -rf terraform
+git clone https://github.com/hashicorp/terraform.git
+cd terraform/
+git checkout v0.11.8
+make tools
+
+
+# While building Terraform, test also runs &amp; Some of the tests are intermittent failures 
+make 2&gt;&amp;1 | tee -a build_logs
+cat build_logs | grep &quot;FAIL&quot; | grep github.com | awk &apos;{print $2}&apos; &gt;&gt; test.txt
+
+COUNTER=1
+echo &quot;after assignment&quot;
+echo $COUNTER
+#while [[ (IFS=&apos;&apos; read -r line || (( -n &quot;$line&quot; ))) &amp;&amp; ( $COUNTER &lt; 5 )]]
+while IFS=&apos;&apos; read -r line || [[ -n &quot;$line&quot; ]]; do
+echo &quot;11 condition&quot;
+echo $COUNTER
+echo &quot;222 condition&quot;
+if [ $COUNTER -lt 6 ]
+then 
+    echo &quot;inside if condition&quot;
+    echo $COUNTER
+    go test -v $line
+    COUNTER=$((COUNTER + 1))
 fi
+echo &quot;outside if condition&quot;
+echo $COUNTER
+done &lt; test.txt
+
+#Build terraform
+
+XC_OS=linux XC_ARCH=s390x make bin
+
+file pkg/linux_s390x/terraform | grep &quot;IBM S/390&quot;
 
 
-if [[ $available_version == *&quot;$published_version&quot;* ]]; then
-	echo &quot;Version $published_version is already available in repo&quot;
-    echo &quot;Exact name: $available_version ... Failing&quot;
-    exit 1
-else	
-   echo &quot;Published version is not available in repo. Going ahead.&quot;     
-fi
+#Verification
+terraform --version | grep 0.11.8
+echo &quot;1 + 5&quot; | terraform console
 
-##Build for Openshift origin 3.7.1
-sudo yum install -y git tar which wget make gcc createrepo bsdtar krb5-devel rsync go rpm-build gpgme-devel libassuan-devel
-curl &quot;https://bootstrap.pypa.io/get-pip.py&quot; -o &quot;get-pip.py&quot;
-sudo python get-pip.py
-sudo pip install blessings bugzilla python-bugzilla
 
-#wget ftp://ftp.unicamp.br/pub/linuxpatch/s390x/redhat/rhel7.3/docker-17.05.0-ce-rhel7.3-20170523.tar.gz
-#tar -xzvf docker-17.05.0-ce-rhel7.3-20170523.tar.gz
 
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
-#export PATH=$PATH:$GOPATH/bin:$HOME/docker-17.05.0-ce-rhel7.3-20170523
-export OS_OUTPUT_GOPATH=1
-mkdir -p $GOPATH/src/github.com/openshift
-cd $GOPATH/src/github.com/openshift
-git clone https://github.com/openshift/origin.git  
-cd origin  
-git checkout tags/v3.7.1 -b v3.7.1
-make clean build
-
-#Docker is required to build some of the images which are required for running tests.
-#make test TEST_END_TO_END=direct
 
 </command>
     </hudson.tasks.Shell>
@@ -83,10 +91,11 @@ make clean build
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
+    }
 }
-}</script>
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
