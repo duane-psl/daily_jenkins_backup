@@ -77,7 +77,7 @@ sed -i &apos;254s/512M/1024M/&apos; build.gradle
 sed -i &apos;257s/2G/10G/&apos; build.gradle
 git diff
 
-./gradlew test -Dtests.haltonfailure=false --continue</command>
+./gradlew test -Dtests.haltonfailure=false --continue -x hibernate-core:test -x hibernate-orm-modules:test</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
