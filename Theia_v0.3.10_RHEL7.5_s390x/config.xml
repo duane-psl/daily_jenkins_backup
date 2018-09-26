@@ -113,7 +113,7 @@ index 807c7f7..4a5099d 100755
  DESTINATION=$2
  BASEDIR=$3
 -
-+GIT_LFS_VERSION=2.4.0
++GIT_LFS_VERSION=2.5.2
  mkdir -p $DESTINATION
 
 -docker run --rm --privileged multiarch/qemu-user-static:register --reset

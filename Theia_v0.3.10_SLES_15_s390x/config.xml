@@ -9,9 +9,9 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl12-SP2_4096</assignedNode>
+  <assignedNode>Abhay_Node</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
@@ -28,8 +28,8 @@
     <hudson.tasks.Shell>
       <command>#Install dependencies
 cat /etc/os*
-sudo zypper install -y git curl java-1_8_0-openjdk make wget tar unzip zlib-devel libexpat-devel libcurl-devel patch
-sudo zypper install -y tar wget gcc
+sudo zypper install -y git curl java-1_8_0-openjdk make wget tar unzip zlib-devel libexpat-devel libcurl-devel
+sudo zypper install -y tar wget gcc patch
 
 export WORK_DIR=`pwd`
 cd $WORK_DIR
@@ -44,22 +44,72 @@ go version
 
 #Install Nodejs
 cd $WORK_DIR
-wget http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/nodejs/8.9.0.0/linux/s390x/ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin
-chmod +x ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin
-echo -e &quot;LICENSE_ACCEPTED=TRUE\nUSER_INSTALL_DIR=$HOME/ibm/node\n-fileOverwrite_$HOME/ibm/node/_node_installation/uninstall.lax=Yes&quot; &gt; installer.properties
-cat installer.properties
-./ibm-8.9.0.0-node-v8.9.0-linux-s390x.bin -f installer.properties -i silent 
-export PATH=$PATH:$HOME/ibm/node/bin
+wget https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-s390x.tar.gz
+tar xzf node-v8.9.4-linux-s390x.tar.gz
+export PATH=$WORK_DIR/node-v8.9.4-linux-s390x/bin:$PATH
 node -v
 
+
 #Installing PhantomJS
-sudo zypper install -y gcc gcc-c++ make flex bison gperf ruby openssl-devel freetype-devel fontconfig-devel libicu-devel sqlite-devel libpng-devel libjpeg-devel python python-devel python-setuptools git xorg-x11-devel xorg-x11-essentials xorg-x11-fonts xorg-x11 xorg-x11-util-devel libXfont-devel libXfont1 python-pytz
-sudo easy_install argparse
+sudo zypper install -y gcc gcc-c++ make flex bison gperf ruby freetype2-devel fontconfig-devel libicu-devel sqlite3-devel libpng16-compat-devel libjpeg8-devel python2 python2-setuptools git xorg-x11-devel xorg-x11-essentials xorg-x11-fonts xorg-x11 xorg-x11-util-devel libXfont-devel libXfont1 autoconf automake libtool
+#sudo easy_install argparse
+
+cd $WORK_DIR
+git clone git://github.com/openssl/openssl.git
+cd openssl
+git checkout OpenSSL_1_0_2l
+./config --prefix=/usr --openssldir=/usr/local/openssl shared
+make
+sudo make install
+
+cd $WORK_DIR
+git clone git://github.com/curl/curl.git
+cd curl
+git checkout curl-7_52_1
+./buildconf 
+./configure --prefix=/usr/local --with-ssl --disable-shared
+make &amp;&amp; sudo make install
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
+export PATH=/usr/local/bin:$PATH
+
+
+echo insecure &gt;&gt; $HOME/.curlrc
+wget https://raw.githubusercontent.com/curl/curl/curl-7_53_0/lib/mk-ca-bundle.pl
+perl mk-ca-bundle.pl -k
+export SSL_CERT_FILE=`pwd`/ca-bundle.crt
+rm $HOME/.curlrc
 
 cd $WORK_DIR
 git clone git://github.com/ariya/phantomjs.git
 cd phantomjs
 git checkout 2.1.1
+git submodule init
+git submodule update
+
+cat &lt;&lt; &apos;EOF&apos; &gt; $WORK_DIR/phantomjs/src/qt/qtwebkit/Source/JavaScriptCore/API/JSStringRef.patch
+@@ -27,6 +27,7 @@
+ #define JSStringRef_h
+
+ #include &lt;JavaScriptCore/JSValueRef.h&gt;
++#include &lt;uchar.h&gt;
+
+ #ifndef __cplusplus
+ #include &lt;stdbool.h&gt;
+@@ -43,7 +44,7 @@
+ @typedef JSChar
+ @abstract A Unicode character.
+ */
+-    typedef unsigned short JSChar;
++    typedef char16_t JSChar;
+ #else
+    typedef wchar_t JSChar;
+ #endif
+EOF
+
+cd $WORK_DIR/phantomjs/src/qt/qtwebkit/Source/JavaScriptCore/API/
+patch JSStringRef.h &lt; JSStringRef.patch
+git diff
+cd $WORK_DIR/phantomjs/
 python build.py
 export PATH=$WORK_DIR/phantomjs/bin:$PATH
 phantomjs -v
@@ -76,15 +126,15 @@ git checkout v0.3.10
 #Build the package
 yarn 2&gt;&amp;1 | tee yarnlog
 yarn run build
-
 #Build vscode-ripgrep and dugite-native from source on s390x
 
 #Install vscode-ripgrep
 cd $WORK_DIR
-wget https://static.rust-lang.org/dist/rust-1.25.0-s390x-unknown-linux-gnu.tar.gz
-tar -xzf rust-1.25.0-s390x-unknown-linux-gnu.tar.gz
-cd rust-1.25.0-s390x-unknown-linux-gnu
+wget https://static.rust-lang.org/dist/rust-1.29.0-s390x-unknown-linux-gnu.tar.gz
+tar -xzf rust-1.29.0-s390x-unknown-linux-gnu.tar.gz
+cd rust-1.29.0-s390x-unknown-linux-gnu
 sudo ./install.sh
+export PATH=/usr/local/bin:$PATH
 cargo install ripgrep
 export PATH=$HOME/.cargo/bin:$PATH
 cp -a $HOME/.cargo/bin $WORK_DIR/theia/node_modules/vscode-ripgrep/
@@ -107,7 +157,7 @@ index 807c7f7..4a5099d 100755
  DESTINATION=$2
  BASEDIR=$3
 -
-+GIT_LFS_VERSION=2.4.0
++GIT_LFS_VERSION=2.5.2
  mkdir -p $DESTINATION
 
 -docker run --rm --privileged multiarch/qemu-user-static:register --reset
@@ -201,25 +251,11 @@ yarn run start --hostname 0.0.0.0 &amp;
 
 sleep 200s
 
-curl http://localhost:3000</command>
+curl http://localhost:3000
+</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
-      <script plugin="script-security@1.24">
-        <script>import jenkins.model.Jenkins
-
-def x=manager.envVars[&apos;NODE_NAME&apos;]
-Jenkins.instance.slaves.each {
-    if(it.name==x){
-it.getComputer().doDoDelete()
-    }
-}</script>
-        <sandbox>false</sandbox>
-      </script>
-      <behavior>0</behavior>
-      <runForMatrixParent>false</runForMatrixParent>
-    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>
