@@ -81,7 +81,7 @@ cp build.gradle build.gradle.org
 sed -i &apos;254s/512M/1024M/&apos; build.gradle
 sed -i &apos;257s/2G/10G/&apos; build.gradle
 git diff
-./gradlew test -Dtests.haltonfailure=false --continue 2&gt;&amp;1 |tee testlogs
+./gradlew test -Dtests.haltonfailure=false --continue -x hibernate-core:test -x hibernate-orm-modules:test 2&gt;&amp;1 |tee testlogs
 
 
 
