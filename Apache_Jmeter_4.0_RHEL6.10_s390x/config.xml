@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description></description>
+  <description>Jmeter on RHEL-6&#xd;
+</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,62 +10,67 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl15_2048</assignedNode>
+  <assignedNode>dockercloud_rhel6.10-8192MB</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 12 * * 6</spec>
+      <spec>H 13 * * 2</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 2</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORKSPACE=`pwd`
+      <command>rm -rf ./*
+export WS=`pwd`
 
-#Install dependencies
-sudo zypper install -y git wget gcc make tar which python mercurial
+source /home/test/.bashrc
+#Install dependencies from repo
+sudo yum install -y git wget tar java-1.8.0-ibm java-1.8.0-ibm-devel ant dejavu-serif-fonts net-tools hostname
+
+#Set JAVA_HOME
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
 
-#Install Go
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-go version
+#Get Jmeter source
+				cd $WS
+				git clone https://github.com/apache/jmeter.git
+				
+				
+				#Get Jmeter binary
+				 wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-4.0.tgz
+				 tar -xvzf apache-jmeter-4.0.tgz
+				 #rm $PWD/jmeter/bin/ApacheJMeter.jar 
+				 cp -Rf $WS/apache-jmeter-4.0/bin/ApacheJMeter.jar $WS/jmeter/bin/
+				
+				cd jmeter/
+				pwd
+				git checkout v4_0
+				ant download_jars
 
-sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
 
-export GOPATH=$WORKSPACE
-mkdir $GOPATH/bin
-export PATH=$GOPATH/bin:$PATH
-wget https://glide.sh/get
-sh get
+#Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
+cp bin/jmeter bin/jmeter.orig
+sed -i &apos;178d&apos; bin/jmeter
+sed -i &apos;177a# : &quot;${GC_ALGO:=&quot;-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:G1ReservePercent=20&quot;}&quot;
+&apos; bin/jmeter
+diff -u bin/jmeter.orig bin/jmeter || true
 
-# clone and build the heketi
-git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
-cd $GOPATH/src/github.com/heketi/heketi
-git checkout v7.0.0
-make
-make test
+#Verify
+export PATH=$PATH:`pwd`/bin/
+jmeter --version
 
-# verify
-cd $GOPATH/src/github.com/heketi/heketi
-sudo mkdir -p /var/lib/heketi/
-sudo ./heketi --config=etc/heketi.json &amp;
-sleep 15s
-wget http://127.0.0.1:8080/hello
-
-export Expected_str=&quot;Hello from Heketi&quot;
-export Actual_str=$(cat hello)
-
-if [[ $Expected_str == *&quot;$Actual_str&quot;* ]]; then 
-  echo &quot;Same&quot; 
-else	
-  exit 1 
-fi
+cd $WS/apache-jmeter-4.0/
+jmeter -n -t ./extras/Test.jmx -l Test.jtl
+cat Test.jtl
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -78,7 +84,8 @@ Jenkins.instance.slaves.each {
     if(it.name==x){
 it.getComputer().doDoDelete()
     }
-}</script>
+}
+</script>
         <sandbox>false</sandbox>
       </script>
       <behavior>0</behavior>
@@ -90,7 +97,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room> #loz-jenkins-build,@bhatekar</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_sles11-sp4</assignedNode>
+  <assignedNode>dockercloud_rhel7.5</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -26,109 +26,81 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>rm -rf ./*
-homedir=/home/test
-#Install dependencies
-sudo zypper install -y gcc gcc-c++ make ncurses patch wget tar bzip2 zlib-devel xz readline-devel wget-openssl1 curl-openssl1 sqlite-devel tk-devel libopenssl-devel ncurses-devel gdbm-devel openssl openssl-devel libdb-4_5-devel gdb awk glibc-debuginfo netcfg libbz2-devel awk netcfg libtool automake autoconf
+      <command>source /home/test/.bashrc 
+#Set the below parameters manually
+package_name=&quot;python&quot;
+published_version=&quot;2.7.15&quot;
 
-#Create symlinks
-sudo ln -sfv /usr/include/ncurses/* /usr/include/
-
-#Build openssl
-cd $homedir
-sudo rm -rf openssl
-git clone git://github.com/openssl/openssl.git
-cd openssl
-git checkout OpenSSL_1_0_2l	 
-./config --prefix=/usr --openssldir=/usr/local/openssl shared
-make
-sudo make install
-openssl version
-
-
-export PATH=/usr/local/bin:$PATH
-#export LDFLAGS=&quot;-L/usr/local/lib/&quot;
-#export LD_LIBRARY_PATH=&quot;/usr/local/lib/&quot;
-#export CPPFLAGS=&quot;-I/usr/local/include -I/usr/local/include/openssl&quot;
-cat /etc/services
-
-#Build curl
-cd $homedir
-sudo rm -rf curl
-git clone git://github.com/curl/curl.git
-cd curl
-git checkout curl-7_52_1
-./buildconf 
-./configure --prefix=/usr/local --with-ssl --disable-shared
-make &amp;&amp; sudo make install
-
-
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
-export PATH=/usr/local/bin:$PATH
-
-#Generate ca-bundle.crt for curl
-
-echo insecure &gt;&gt; $HOME/.curlrc
-wget --no-check-certificate https://raw.githubusercontent.com/curl/curl/curl-7_53_0/lib/mk-ca-bundle.pl
-perl mk-ca-bundle.pl -k
-
-export SSL_CERT_FILE=`pwd`/ca-bundle.crt
-rm  $HOME/.curlrc
-
-export LDFLAGS=&quot;-L/usr/local/lib/&quot;
-export LD_LIBRARY_PATH=&quot;/usr/local/lib/&quot;
-export CPPFLAGS=&quot;-I/usr/local/include -I/usr/local/include/openssl&quot;
-
-
-
-
-#Get source
-wget http://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
-tar -xvf Python-2.7.15.tar.xz
-cd Python-2.7.15
-
-#Apply patch to fix test_regrtest
-#wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
-#cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
-
-#Build and test
-./configure --prefix=/usr/local --exec-prefix=/usr/local
-make 
-make test 2&gt;&amp;1 | tee testlog
-
-#Store failed tests
-grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
-
-#Store tests expected to fail and intermittent tests
-echo &quot;test_gdb
-test_ssl
-test_gdb
-test_ssl &quot; &gt;expected
-
-#Diff between expected and actual failures
-diff -u --ignore-all-space expected failures | tee diff_
-
-#Fail if any extra test failed apart from expected
-if grep -q &apos;+test&apos; diff_; then
-    exit 1
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
 
-#Run intermittent tests individually
-#cd ./Lib/test
-#../../python -m unittest test_ssl
 
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
 
+rm -rf ./*
+#Install dependencies
+sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2 bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-devel gdb
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
+#fix for test_ssl
+cp Lib/test/test_ssl.py Lib/test/test_ssl.py.orig
+cat &lt;&lt; &apos;EOF&apos; &gt; Lib/test/test_ssl.patch
+--- Lib/test/test_ssl.py.orig	2018-08-20 13:08:52.340780063 -0400
++++ Lib/test/test_ssl.py	2018-08-20 13:08:52.400780063 -0400
+@@ -989,6 +989,12 @@
+ 
+ 
+     def test_load_dh_params(self):
++        filename = u&quot;dhparam.pem&quot;
++        fs_encoding = sys.getfilesystemencoding()
++        try:
++            filename.encode(fs_encoding)
++        except UnicodeEncodeError:
++            self.skipTest(&quot;filename %r cannot be encoded to the filesystem encoding %r&quot; % (filename, fs_encoding))
+         ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+         ctx.load_dh_params(DHFILE)
+         if os.name != &apos;nt&apos;:
+EOF
+cd Lib/test/
+pwd
+patch test_ssl.py &lt; test_ssl.patch
+sed -i &quot;1010 s/u.*/filename)/&quot; test_ssl.py
+diff -u test_ssl.py.orig test_ssl.py || true
 
-#Install
-#cd ../../
-#./python Lib/test/regrtest.py -v test_ssl
-#./python Lib/test/regrtest.py -v test_gdb
+cd ../../
+./configure --prefix=/usr/local --exec-prefix=/usr/local
+make
 sudo make install
+export PATH=&quot;/usr/local/bin:${PATH}&quot;
+
+make test 2&gt;&amp;1 | tee testlog
+grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
+echo &quot;test_ssl &quot; &gt;expected
+diff -u --ignore-all-space expected failures | tee diff_
+if grep -q &apos;+test&apos; diff_; then
+	exit 1
+fi
+./python Lib/test/regrtest.py -v test_ssl
+    
 python_version=$(python --version 2&gt;&amp;1)
 
 echo $python_version &gt; output.txt
 
-echo &apos;Python 2.7.14&apos; &gt; expected.txt
+echo &apos;Python 2.7.15&apos; &gt; expected.txt
 result=`diff output.txt expected.txt`
 
 if [ -z &quot;$result&quot; ] ; then
@@ -136,7 +108,6 @@ if [ -z &quot;$result&quot; ] ; then
 else
   exit 1
 fi
-
 </command>
     </hudson.tasks.Shell>
   </builders>

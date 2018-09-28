@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel6.9</assignedNode>
+  <assignedNode>dockercloud_rhel6.10</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -29,11 +29,11 @@
       <command>source /home/test/.bashrc 
  #Set the below parameters manually
 package_name=&quot;python&quot;
-published_version=&quot;2.7.14&quot;
+published_version=&quot;2.7.15&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
-PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.9 (Santiago)&quot;
+PRETTY_NAME=&quot;Red Hat Enterprise Linux Server release 6.10&quot;
 
 if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 	echo &quot;Version $published_version is already available in repo for $PRETTY_NAME.&quot;
@@ -45,54 +45,63 @@ fi
 #------------------------------------------------------------------------------------
 rm -rf ./*
 #Install dependencies
-sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb
+sudo yum install -y gcc gcc-c++ make ncurses wget tar patch bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel db4-devel gdb bzip2
 
 #Get source
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-tar -xvf Python-2.7.14.tar.xz
-cd Python-2.7.14
+wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tar.xz
+tar -xvf Python-2.7.15.tar.xz
+cd Python-2.7.15
 
-#Apply patch to fix test_regrtest
-wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
-cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
+#fix for test_ssl
+			cp Lib/test/test_ssl.py Lib/test/test_ssl.py.orig
+			cat &lt;&lt; &apos;EOF&apos; &gt; Lib/test/test_ssl.patch
+--- Lib/test/test_ssl.py.orig	2018-08-20 13:08:52.340780063 -0400
++++ Lib/test/test_ssl.py	2018-08-20 13:08:52.400780063 -0400
+@@ -989,6 +989,12 @@
+ 
+ 
+     def test_load_dh_params(self):
++        filename = u&quot;dhparam.pem&quot;
++        fs_encoding = sys.getfilesystemencoding()
++        try:
++            filename.encode(fs_encoding)
++        except UnicodeEncodeError:
++            self.skipTest(&quot;filename %r cannot be encoded to the filesystem encoding %r&quot; % (filename, fs_encoding))
+         ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+         ctx.load_dh_params(DHFILE)
+         if os.name != &apos;nt&apos;:
+EOF
+             		cd Lib/test/
+             		pwd
+             		patch test_ssl.py &lt; test_ssl.patch
+             		sed -i &quot;1010 s/u.*/filename)/&quot; test_ssl.py
+             		diff -u test_ssl.py.orig test_ssl.py || true
+                    
+cd ../../
 
 #Build and test
 ./configure --prefix=/usr/local --exec-prefix=/usr/local
-make 
+make
+sudo make install
+export PATH=&quot;/usr/local/bin:${PATH}&quot;
 make test 2&gt;&amp;1 | tee testlog
-
-#Store failed tests
 grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
-
-#Store tests expected to fail and intermittent tests
-echo &quot;test_bz2 test_multiprocessing&quot; &gt;expected
-
-#Diff between expected and actual failures
-diff -u expected failures | tee diff_
-
-#Fail if any extra test failed apart from expected
+echo &quot;test_ssl &quot; &gt;expected
+diff -u --ignore-all-space expected failures | tee diff_
 if grep -q &apos;+test&apos; diff_; then
     exit 1
 fi
-
-#Run intermittent tests individually
-cd ./Lib/test
-../../python -m unittest test_bz2
+./python Lib/test/regrtest.py -v test_ssl
 
 #Install
-cd ../../
-sudo make install
 python_version=$(python --version 2&gt;&amp;1)
-
 echo $python_version &gt; output.txt
-
-echo &apos;Python 2.7.14&apos; &gt; expected.txt
+echo &apos;Python 2.7.15&apos; &gt; expected.txt
 result=`diff output.txt expected.txt`
-
 if [ -z &quot;$result&quot; ] ; then
-  exit 0
+	exit 0
 else
-  exit 1
+	exit 1
 fi
 </command>
     </hudson.tasks.Shell>

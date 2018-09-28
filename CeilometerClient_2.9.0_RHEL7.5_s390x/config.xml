@@ -9,63 +9,71 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_sl15_2048</assignedNode>
+  <assignedNode>dc2_rh7.5_2048</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 12 * * 6</spec>
+      <spec>H 13 * * 3</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 3</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>export WORKSPACE=`pwd`
+      <command>source /home/test/.bashrc
+#Set the below parameters manually
+package_name=&quot;ceilometer&quot;
+published_version=&quot;2.9.0&quot;
 
-#Install dependencies
-sudo zypper install -y git wget gcc make tar which python mercurial
-
-
-#Install Go
-wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
-chmod ugo+r go1.10.1.linux-s390x.tar.gz
-sudo tar -C /usr/local -xzf go1.10.1.linux-s390x.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-go version
-
-sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
-
-export GOPATH=$WORKSPACE
-mkdir $GOPATH/bin
-export PATH=$GOPATH/bin:$PATH
-wget https://glide.sh/get
-sh get
-
-# clone and build the heketi
-git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi
-cd $GOPATH/src/github.com/heketi/heketi
-git checkout v7.0.0
-make
-make test
-
-# verify
-cd $GOPATH/src/github.com/heketi/heketi
-sudo mkdir -p /var/lib/heketi/
-sudo ./heketi --config=etc/heketi.json &amp;
-sleep 15s
-wget http://127.0.0.1:8080/hello
-
-export Expected_str=&quot;Hello from Heketi&quot;
-export Actual_str=$(cat hello)
-
-if [[ $Expected_str == *&quot;$Actual_str&quot;* ]]; then 
-  echo &quot;Same&quot; 
-else	
-  exit 1 
+#Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
+. /etc/os-release
+if [ $ID == &quot;rhel&quot; ]; then
+	available_version=$(sudo yum info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;sles&quot; ]; then
+	available_version=$(sudo zypper info $package_name | grep Version | head -1 | cut -d &apos;:&apos; -f 2| cut -d &apos; &apos; -f 2)
+elif [ $ID == &quot;ubuntu&quot; ]; then
+	available_version=$(sudo apt-get update &amp;&amp; sudo apt-cache policy $package_name | grep Candidate | head -1 | cut -d &apos; &apos; -f 4)
 fi
-</command>
+
+
+if [[ $available_version == *&quot;$published_version&quot;* ]]; then
+	echo &quot;Version $published_version is already available in repo&quot;
+    echo &quot;Exact name: $available_version ... Failing&quot;
+    exit 1
+else	
+   echo &quot;Published version is not available in repo. Going ahead.&quot;     
+fi
+
+# Install dependencies
+export sourcedir=`pwd`
+
+sudo yum install -y make git python-devel python-setuptools python-setuptools-devel openssl-devel \
+python-virtualenv libffi-devel python-devel  libffi python-cffi findutils gcc libssl-dev
+sudo easy_install pip
+sudo pip install --upgrade setuptools
+sudo pip install pbr virtualenv cryptography 
+
+cd $sourcedir/
+git clone git://github.com/openstack/python-ceilometerclient.git
+cd python-ceilometerclient
+git checkout 2.9.0
+
+sudo pip install -r requirements.txt         
+
+# Tests
+sudo pip install -r test-requirements.txt --ignore-installed pyinotify
+python setup.py test
+
+sudo python setup.py install
+
+ceilometer --help
+ceilometer --version</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -75,9 +83,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-    if(it.name==x){
+if(it.name==x){
 it.getComputer().doDoDelete()
-    }
+}
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -90,7 +98,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room>#loz-jenkins-build,@vitthalb</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

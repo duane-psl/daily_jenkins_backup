@@ -9,7 +9,7 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>Abhay_Node</assignedNode>
+  <assignedNode>dc2_sl15_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -102,7 +102,7 @@ sudo cp $WS/rt/build/sdk/rt/lib/ext/jfxrt.jar  /usr/lib64/jvm/java-1.8.0-openjdk
 				
 				
 				#Get Jmeter binary
-				 wget http://apache.forsale.plus//jmeter/binaries/apache-jmeter-4.0.tgz
+				 wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-4.0.tgz
 				 tar -xvzf apache-jmeter-4.0.tgz
 				 #rm $PWD/jmeter/bin/ApacheJMeter.jar 
 				 cp -Rf $WS/apache-jmeter-4.0/bin/ApacheJMeter.jar $WS/jmeter/bin/
@@ -159,6 +159,21 @@ cat Test.jtl
     </hudson.tasks.Shell>
   </builders>
   <publishers>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.3.1">
+      <script plugin="script-security@1.24">
+        <script>import jenkins.model.Jenkins
+
+def x=manager.envVars[&apos;NODE_NAME&apos;]
+Jenkins.instance.slaves.each {
+    if(it.name==x){
+it.getComputer().doDoDelete()
+    }
+}</script>
+        <sandbox>false</sandbox>
+      </script>
+      <behavior>0</behavior>
+      <runForMatrixParent>false</runForMatrixParent>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
     <jenkins.plugins.slack.SlackNotifier plugin="slack@2.2">
       <baseUrl></baseUrl>
       <teamDomain></teamDomain>

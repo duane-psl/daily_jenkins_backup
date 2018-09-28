@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>Job exists on ecos0041. Can disable run here if needed.</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
@@ -9,23 +9,26 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dockercloud_rhel7.3</assignedNode>
+  <assignedNode>dc2_sl15_4096</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 13 * * 4</spec>
+      <spec>H 13 * * 7</spec>
     </hudson.triggers.TimerTrigger>
+    <hudson.triggers.SCMTrigger>
+      <spec>H 13 * * 7</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>source /home/test/.bashrc 
-#Set the below parameters manually
-package_name=&quot;python&quot;
-published_version=&quot;2.7.14&quot;
+      <command>#Set the below parameters manually
+package_name=&quot;r-base&quot;
+published_version=&quot;3.5.0&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -45,59 +48,36 @@ if [[ $available_version == *&quot;$published_version&quot;* ]]; then
 else	
    echo &quot;Published version is not available in repo. Going ahead.&quot;     
 fi
+########################
+# Install dependencies
+sudo zypper update -y
+cat /etc/os-release
+sudo zypper install -y --auto-agree-with-licenses wget tar rpm-build help2man zlib-devel xz-devel ncurses-devel make cairo-devel gcc-c++ gcc-fortran libcurl-devel libjpeg-devel libpng-devel libtiff-devel readline-devel fdupes texlive-helvetic texlive-metafont texlive-psnfss texlive-times xdg-utils pango-devel tcl-devel tk-devel xorg-x11-devel perl-macros texinfo  java-1_8_0-ibm-devel
 
-rm -rf ./*
-#Install dependencies
-sudo yum install -y gcc gcc-c++ make ncurses patch wget tar bzip2-devel zlib-devel xz xz-devel readline-devel sqlite-devel tk-devel ncurses-devel gdbm-devel openssl-devel libdb-devel gdb
 
-#Get source
-wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tar.xz
-tar -xvf Python-2.7.14.tar.xz
-cd Python-2.7.14
+export JAVA_HOME=/usr/lib64/jvm/java-1_8_0-ibm-1.8.0
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
-#Apply patch to fix test_regrtest
-wget https://github.com/python/cpython/pull/3912/commits/ab35adc682ec51800aa19a77de9947c6aaa50f41.diff
-cat ab35adc682ec51800aa19a77de9947c6aaa50f41.diff | patch -p1
-
-#Build and test
-./configure --prefix=/usr/local --exec-prefix=/usr/local
-make 
-make test 2&gt;&amp;1 | tee testlog
-
-#Store failed tests
-grep &quot;test test.*failed&quot; testlog | cut -d&quot; &quot; -f2-2 | uniq &gt;failures
-
-#Store tests expected to fail and intermittent tests
-echo &quot;test_bz2&quot; &gt;expected
-
-#Diff between expected and actual failures
-diff -u expected failures | tee diff_
-
-#Fail if any extra test failed apart from expected
-if grep -q &apos;+test&apos; diff_; then
-    exit 1
-fi
-
-#Run intermittent tests individually
-cd ./Lib/test
-../../python -m unittest test_bz2
-
-#Install
-cd ../../
+# Build and Install R
+wget https://cran.r-project.org/src/base/R-3/R-3.5.0.tar.gz
+tar zxvf R-3.5.0.tar.gz
+cd R-3.5.0
+./configure --with-x=no
+make
 sudo make install
 
-python_version=$(python --version 2&gt;&amp;1)
+# Execute test cases
+export PATH=/usr/local/bin:$PATH
+export LANG=&quot;en_US.UTF-8&quot;
+make check
 
-echo $python_version &gt; output.txt
+# Check for version of R-package installed
+echo &quot;sessionInfo()&quot; | R --save 
 
-echo &apos;Python 2.7.14&apos; &gt; expected.txt
-result=`diff output.txt expected.txt`
 
-if [ -z &quot;$result&quot; ] ; then
-  exit 0
-else
-  exit 1
-fi
+
+
 </command>
     </hudson.tasks.Shell>
   </builders>
@@ -108,9 +88,9 @@ fi
 
 def x=manager.envVars[&apos;NODE_NAME&apos;]
 Jenkins.instance.slaves.each {
-if(it.name==x){
+    if(it.name==x){
 it.getComputer().doDoDelete()
-}
+    }
 }</script>
         <sandbox>false</sandbox>
       </script>
@@ -123,7 +103,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@duaned</room>
+      <room>#loz-jenkins-build,@vaibhavv</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>

@@ -9,63 +9,115 @@
     </hudson.plugins.heavy__job.HeavyJobProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
-  <assignedNode>dc2_ub17.10_4096</assignedNode>
+  <assignedNode>dockercloud_ubuntu18.04_8192</assignedNode>
   <canRoam>false</canRoam>
-  <disabled>true</disabled>
+  <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H 14 * * 2</spec>
+      <spec>H 13 * * 5</spec>
     </hudson.triggers.TimerTrigger>
     <hudson.triggers.SCMTrigger>
-      <spec>H 14 * * 2</spec>
+      <spec> 	
+H 13 * * 5</spec>
       <ignorePostCommitHooks>false</ignorePostCommitHooks>
     </hudson.triggers.SCMTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>rm -rf ./*
+      <command># Install dependencies
+sudo apt-get update
+sudo apt-get install -y git subversion make tar wget gcc g++ python
 
-#Install dependencies
-sudo apt-get update -y
-sudo apt-get install -y git openjdk-8-jdk ant openssl openjfx
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-s390x
-export PATH=$JAVA_HOME/bin:$PATH
+export JENKINS_HOME=`pwd`
 
-#Get Jmeter source and build
-git clone https://github.com/apache/jmeter.git
-cd jmeter/
-git checkout v4_0
-ant download_jars
-ant
+#Obtain the V8 source code
+cd $JENKINS_HOME
+git clone git://github.com/ibmruntimes/v8z
+cd v8z
+git checkout 3.14-s390
 
-#Skip expected failures
-cp build.xml build.xml.orig
-sed -i -e &apos;s/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_SlowCharsFeature&quot; value=&quot;true&quot;/g&apos; build.xml
-sed -i -e &apos;s/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;false&quot;/property name=&quot;skip.batchtest_TestKeepAlive&quot; value=&quot;true&quot;/g&apos; build.xml
-diff -u build.xml.orig build.xml || true
+# Fetch source code for dependent lbraries
+make dependencies
 
-#Increase timeout
-cp bin/testfiles/TestSchedulerWithTimer.jmx bin/testfiles/TestSchedulerWithTimer.jmx.orig
-sed -i &apos;173d&apos; bin/testfiles/TestSchedulerWithTimer.jmx
-sed -i &apos;172along maxDurationPlusMargin = vars[&amp;quot;MaxDuration&amp;quot;].toInteger()*100000+500;&apos; bin/testfiles/TestSchedulerWithTimer.jmx
-diff -u bin/testfiles/TestSchedulerWithTimer.jmx.orig bin/testfiles/TestSchedulerWithTimer.jmx || true
+# Build v8
+make s390x -j4
 
-#Run tests
-ant test -Djava.awt.headless=true 
+# Build v8 with shared libraries
+make s390x -j4 library=shared
 
-#Comment out G1GC algorithm as it is unimplemented in OpenJDK zero
-cp bin/jmeter bin/jmeter.orig
-sed -i &apos;178d&apos; bin/jmeter
-sed -i &apos;177a# : &quot;${GC_ALGO:=&quot;-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:G1ReservePercent=20&quot;}&quot;
-&apos; bin/jmeter
-diff -u bin/jmeter.orig bin/jmeter || true
 
-#Verify
-export PATH=$PATH:`pwd`/bin/
-jmeter --version</command>
+# Cross checking generated files
+rm -rf include_headers_test.txt executables_test.txt lib_headers_test.txt
+cat &lt;&lt;EOT &gt;&gt; include_headers_test.txt
+v8-debug.h
+v8-preparser.h
+v8-profiler.h
+v8-testing.h
+v8.h
+v8stdint.h
+EOT
+
+cat &lt;&lt;EOT &gt;&gt; executables_test.txt
+libv8.so
+EOT
+
+cat &lt;&lt;EOT &gt;&gt; lib_headers_test.txt
+js2c.stamp
+libpreparser_lib.a
+libv8.so
+libv8_base.a
+libv8_nosnapshot.a
+libv8_snapshot.a
+v8.stamp
+EOT
+
+ls include/ | tee include_headers.txt
+ls out/s390x.release/lib.target/ | tee executables.txt
+ls out/s390x.release/obj.target/tools/gyp/ | tee lib_headers.txt
+
+result_include_headers=`diff include_headers.txt include_headers_test.txt`
+ 
+if [ -z &quot;$result_include_headers&quot; ] ; then
+  echo &quot;include_headers are generated&quot;
+else
+  exit 1
+fi
+
+result_executables=`diff executables.txt executables_test.txt`
+ 
+if [ -z &quot;$result_executables&quot; ] ; then
+  echo &quot;executables are generated&quot;
+else
+  exit 1
+fi
+result_lib_headers=`diff lib_headers.txt lib_headers_test.txt`
+ 
+if [ -z &quot;$result_lib_headers&quot; ] ; then
+  echo &quot;lib_headers are generated&quot;
+else
+  exit 1
+fi
+
+
+
+
+# Install V8 header files
+sudo cp -vR include/* /usr/include/
+sudo chmod -f 644 /usr/include/v8*h
+
+sudo cp -v out/s390x.release/lib.target/lib*.so /usr/local/lib/
+sudo chmod -f 755 /usr/local/lib/libv8.so
+sudo cp -v out/s390x.release/obj.target/tools/gyp/lib*.a /usr/local/lib/
+
+sudo chmod -f 644 /usr/local/lib/libv8*.a /usr/local/lib/libpreparser_lib.a
+
+sudo ldconfig -v
+
+# Verify version of shell
+$JENKINS_HOME/v8z/out/s390x.release/shell</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -90,7 +142,7 @@ it.getComputer().doDoDelete()
       <authToken></authToken>
       <authTokenCredentialId></authTokenCredentialId>
       <botUser>false</botUser>
-      <room>#loz-jenkins-build,@abhays</room>
+      <room>#loz-jenkins-build,@salamani</room>
       <startNotification>false</startNotification>
       <notifySuccess>false</notifySuccess>
       <notifyAborted>false</notifyAborted>
