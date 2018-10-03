@@ -83,6 +83,8 @@ gpg --batch --gen-key gen-key-script
 
 #create binary distribution
 cd storm-dist/binary &amp;&amp; mvn -B package
+
+mvn test
 </command>
     </hudson.tasks.Shell>
   </builders>
