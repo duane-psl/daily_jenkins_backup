@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.heavy__job.HeavyJobProperty plugin="heavy-job@1.1">
+      <weight>1</weight>
+    </hudson.plugins.heavy__job.HeavyJobProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>dc2_ub16.04_4096</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>sudo apt-get update
+sudo apt-get install libseccomp-dev btrfs-tools socat git make gcc iptables pkg-config
+
+export GOPATH=`pwd`
+cd $GOPATH
+wget https://storage.googleapis.com/golang/go1.10.1.linux-s390x.tar.gz
+ta -xf go1.10.1.linux-s390x.tar.gz
+export PATH=$PATH:$GOPATH/bin:$GOPATH/go/bin
+
+git clone https://github.com/containerd/cri $GOPATH/src/github.com/containerd/cri
+cd $GOPATH/src/github.com/containerd/cri
+git checkout v1.11.1
+
+# Build cri
+cd $GOPATH/src/github.com/containerd/cri
+sed -i &apos;149i s/^/\/\//g&apos; $GOPATH/src/github.com/containerd/cri/vendor/github.com/containerd/containerd/platforms/platforms.go
+make install.deps
+make
+sudo make install
+
+sed -i &apos;s/-race//g&apos; $GOPATH/src/github.com/containerd/cri/Makefile
+
+# test
+cd $GOPATH/src/github.com/containerd/cri/
+make test 2&gt;&amp;1 | tee -a unit_test
+make test-integration  2&gt;&amp;1 | tee -a int_test # Integration Test suit
+make test-cri 2&gt;&amp;1 | tee -a cri_test</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
