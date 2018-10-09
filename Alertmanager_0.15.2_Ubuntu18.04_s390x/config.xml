@@ -29,7 +29,7 @@
       <command>
 #Set the below parameters manually
 package_name=&quot;alertmanager&quot;
-published_version=&quot;0.15.2
+published_version=&quot;0.15.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
