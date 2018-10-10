@@ -45,8 +45,17 @@ sudo ln /usr/bin/gcc /usr/bin/s390x-linux-gnu-gcc
 export GOPATH=$WORKSPACE
 mkdir $GOPATH/bin
 export PATH=$GOPATH/bin:$PATH
-wget https://glide.sh/get 
-sh get
+#wget https://glide.sh/get 
+#cp -Rf get get.orig
+#sed -i &apos;119d&apos; get
+#sed -i &apos;119 s/\$TAG/v0.13.1/&apos; get
+#diff -u get.orig  get || true
+#sh get
+cd $GOPATH
+wget https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-linux-s390x.tar.gz
+tar -xzf glide-v0.13.1-linux-s390x.tar.gz
+export PATH=$GOPATH/linux-s390x:$PATH
+glide --version
 
 # clone and build the heketi
 git clone https://github.com/heketi/heketi.git $GOPATH/src/github.com/heketi/heketi

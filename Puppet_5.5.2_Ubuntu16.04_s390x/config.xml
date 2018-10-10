@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;puppet&quot;
-published_version=&quot;5.5.6&quot;
+published_version=&quot;5.5.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -60,10 +60,14 @@ sudo bash -c &quot;cat &gt; puppetinstall.sh&quot; &lt;&lt;&apos;finish&apos;
 sudo apt-get update
 sudo apt-get install -y g++ libreadline6 libreadline6-dev \
 tar openssl unzip libyaml-dev libssl-dev make git wget libsqlite3-dev libc6-dev cron locales ruby ruby-dev
+
 echo $PATH
-cat /etc/os*            
+cat /etc/os* 
 export WORK_DIR=`pwd`
+
 whoami
+
+
 # Download and Install ruby
 cd $WORK_DIR
 ruby -v
@@ -79,7 +83,7 @@ sudo /usr/bin/gem install bundler rake-compiler
 
 #Install Puppet
 cd $WORK_DIR
-sudo /usr/bin/gem install puppet -v 5.5.6
+sudo /usr/bin/gem install puppet -v 5.5.2
 which puppet
 #Locate the $confdir by command
 sudo chmod 755 /usr/local/lib
@@ -151,7 +155,7 @@ echo &quot;puppet&quot; | su -c whoami puppet
 
 echo &quot;puppet&quot; | su -c &apos;git clone git://github.com/puppetlabs/puppet&apos; puppet
 cd puppet
-echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.6&apos; puppet
+echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.2&apos; puppet
 echo &quot;puppet&quot; | su -c &apos;bundle install --path .bundle/gems/&apos; puppet
 
 cd /home/puppet/puppet
