@@ -35,46 +35,58 @@ export JAVA_HOME=$WRK_DIR/jdk-9+181/
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 
-# Download and extract SonarQube 7.1 and sonar-scanner-cli 3.0.3
-wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.1.zip
-unzip sonarqube-7.1.zip
-wget https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.0.3.778-linux.zip
-unzip sonar-scanner-cli-3.0.3.778-linux.zip
-rm -rf sonarqube-7.1.zip sonar-scanner-cli-3.0.3.778-linux.zip
+# Download and extract SonarQube 7.3 and sonar-scanner-cli 3.0.3
+wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.3.zip
+unzip sonarqube-7.3.zip
+wget https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.2.0.1227-linux.zip
+unzip sonar-scanner-cli-3.2.0.1227-linux.zip
+rm -rf sonarqube-7.3.zip sonar-scanner-cli-3.2.0.1227-linux.zip
 
-cd $WRK_DIR/sonarqube-7.1/lib/
-java -jar sonar-application-7.1.jar &gt; sonar_service_status.log &amp;
 
-sonarqube_is_up=false
 
-until [ $sonarqube_is_up == true ]; do
-  sleep 5m
-  if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.1/logs/web.log &amp;&amp; \
-  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.1/logs/sonar.log ; then sonarqube_is_up=true; fi
-done
+COUNT=0
+			cd $WRK_DIR/sonarqube-7.3/lib/
+                        java -jar sonar-application-7.3.jar &gt; sonar_service_status.log &amp;
+			while [ $COUNT -lt 6 ]
+			do
+			   sleep 5m
+			   if grep &quot;HTTP connector enabled on port 9000&quot; $WRK_DIR/sonarqube-7.3/logs/web.log  &amp;&amp;  grep &quot;SonarQube is up&quot; $WRK_DIR/sonarqube-7.3/logs/sonar.log &amp;&amp; sudo netstat -nlp | grep :9000
+			   then
+			     curl http://localhost:9000
+			     if (( $? == 0 ))
+			     then
+   			       break
+   			     fi
+   			   fi
+			   if (( $COUNT == 5 ))
+   			   then 
+   			      exit 1
+   			   fi
+   			COUNT=$((COUNT + 1))
+			done
 
 # Testing
 cd $WRK_DIR
 git clone https://github.com/khatilov/sonar-examples.git
 
 cd $WRK_DIR
-sed -i &quot;47d&quot; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
-sed -i &apos;47 i use_embedded_jre=false&apos; sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+sed -i &quot;47d&quot; sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
+sed -i &apos;47 i use_embedded_jre=false&apos; sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
 
 cd $WRK_DIR/sonar-examples/projects/languages/java/sonar-runner/java-sonar-runner-simple/
-$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+$WRK_DIR/sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
 curl http://localhost:9000/dashboard/index/java-sonar-runner-simple
 
 cd $WRK_DIR/sonar-examples/projects/languages/javascript/javascript-sonar-runner/
-$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+$WRK_DIR/sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
 curl http://localhost:9000/dashboard/index/org.codehaus.sonar:javascript-sonar-runner
 
 cd $WRK_DIR/sonar-examples/projects/languages/python/python-sonar-runner
-$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+$WRK_DIR/sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
 curl http://localhost:9000/dashboard/index/org.codehaus.sonar:example-python-sonar-runner
 
 cd $WRK_DIR/sonar-examples/projects/languages/php/php-sonar-runner
-$WRK_DIR/sonar-scanner-3.0.3.778-linux/bin/sonar-scanner
+$WRK_DIR/sonar-scanner-3.2.0.1227-linux/bin/sonar-scanner
 curl http://localhost:9000/dashboard/index/org.codehaus.sonar:php-sonar-runner
 
 
