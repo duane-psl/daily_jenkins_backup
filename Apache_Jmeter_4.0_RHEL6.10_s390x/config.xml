@@ -35,7 +35,7 @@ source /home/test/.bashrc
 sudo yum install -y git wget tar java-1.8.0-ibm java-1.8.0-ibm-devel ant dejavu-serif-fonts net-tools hostname
 
 #Set JAVA_HOME
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-ibm.s390x/
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 

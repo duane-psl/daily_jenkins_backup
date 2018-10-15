@@ -28,7 +28,7 @@
     <hudson.tasks.Shell>
       <command>#Set the below parameters manually
 package_name=&quot;puppet&quot;
-published_version=&quot;5.5.2&quot;
+published_version=&quot;6.0.2&quot;
 
 #Check distro and available version in repo : rhel7.x, Sles11.x/12.x, Ub16.x/17.x 
 . /etc/os-release
@@ -58,24 +58,18 @@ sudo touch puppetinstall.sh
 sudo chmod +x puppetinstall.sh
 sudo bash -c &quot;cat &gt; puppetinstall.sh&quot; &lt;&lt;&apos;finish&apos;
 sudo apt-get update
-sudo apt-get install -y g++ libreadline7 libreadline-dev tar make git wget libsqlite3-dev \
-libc6-dev cron locales unzip libyaml-dev zlibc zlib1g-dev zlib1g libxml2-dev libgdbm-dev openssl1.0 libssl1.0-dev
+sudo apt-get install -y g++ libreadline6 libreadline6-dev \
+tar openssl unzip libyaml-dev libssl-dev make git wget libsqlite3-dev libc6-dev cron locales ruby ruby-dev
+
 echo $PATH
-cat /etc/os*            
+cat /etc/os* 
 export WORK_DIR=`pwd`
+
 whoami
-export PATH=/usr/lib/ssl1.0/:$PATH
-openssl version
+
 
 # Download and Install ruby
 cd $WORK_DIR
-wget http://cache.ruby-lang.org/pub/ruby/2.4/ruby-2.4.1.tar.gz
-tar -xvf ruby-2.4.1.tar.gz
-cd ruby-2.4.1
-./configure
-make
-sudo -E make install
-
 ruby -v
 which ruby
 
@@ -85,15 +79,15 @@ gem -v
 
 # Install bundler
 cd $WORK_DIR
-sudo /usr/local/bin/gem install bundler rake-compiler  
+sudo /usr/bin/gem install bundler rake-compiler  
 
 #Install Puppet
 cd $WORK_DIR
-sudo /usr/local/bin/gem install puppet -v 5.5.2
+sudo /usr/bin/gem install puppet -v 6.0.2
 which puppet
 #Locate the $confdir by command
 sudo chmod 755 /usr/local/lib
-confdir=`puppet master --configprint confdir` 
+confdir=`puppet config print confdir`
 echo $confdir
 mkdir -p $confdir
 
@@ -161,7 +155,7 @@ echo &quot;puppet&quot; | su -c whoami puppet
 
 echo &quot;puppet&quot; | su -c &apos;git clone git://github.com/puppetlabs/puppet&apos; puppet
 cd puppet
-echo &quot;puppet&quot; | su -c &apos;git checkout 5.5.2&apos; puppet
+echo &quot;puppet&quot; | su -c &apos;git checkout 6.0.2&apos; puppet
 echo &quot;puppet&quot; | su -c &apos;bundle install --path .bundle/gems/&apos; puppet
 
 cd /home/puppet/puppet
