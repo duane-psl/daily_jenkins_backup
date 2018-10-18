@@ -78,7 +78,7 @@ git diff
 
 #Build. Skipping test due to high timeout and random failures.
 cd $WS/cassandra/
-ant
+ant test
 
 </command>
     </hudson.tasks.Shell>
