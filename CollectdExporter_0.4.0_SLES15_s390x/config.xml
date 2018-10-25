@@ -51,7 +51,7 @@ sudo zypper up
 export BUILDDIR=`pwd`
 
 # Install dependencies
-sudo zypper install -y make cmake gcc gcc-c++ wget tar git    
+sudo zypper install -y make cmake gcc gcc-c++ wget tar git bzip2
 
 # Install go
 #sudo zypper install -y tar wget gcc    - already installed
@@ -121,9 +121,9 @@ EOF
 # Install collectd
 sudo zypper install -y perl libcurl-devel                  
 cd $BUILDDIR
-wget http://collectd.org/files/collectd-5.5.1.tar.gz   
-tar -xvf collectd-5.5.1.tar.gz  
-cd collectd-5.5.1  
+wget http://collectd.org/files/collectd-5.8.1.tar.bz2  
+tar -xvf collectd-5.8.1.tar.bz2  
+cd collectd-5.8.1  
 ./configure
 make  
 sudo make install  
